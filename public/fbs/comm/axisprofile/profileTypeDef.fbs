@@ -1,0 +1,8 @@
+include "profile.fbs";
+namespace comm.axisprofile.fbtypes;
+
+table profileTypeData{
+  type : ProfileType;         //profile type
+}
+
+root_type profileTypeData;

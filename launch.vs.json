@@ -1,0 +1,166 @@
+{ 
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "cppdbg",
+      "name": "- ControlX @ x86_64 -",
+      "project": "CMakeLists.txt",
+      "projectTarget": "libcomm_axisprofile.so",
+      "cwd": "${debugInfo.remoteWorkspaceRoot}/private/dependencies/automationframework/public/bin/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}",
+      "program": "${debugInfo.remoteWorkspaceRoot}/private/dependencies/automationframework/public/bin/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/rexroth-automation-frame",
+      "args": [ "${debugInfo.remoteWorkspaceRoot}/private/dependencies/automationframework/public/bin/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/config.properties" ],
+      "additionalSOLibSearchPath": "${debugInfo.remoteWorkspaceRoot}/private/dependencies/automationframework/public/bin/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/bin",
+      "MIMode": "gdb",
+      "externalConsole": true,
+      "remoteMachineName": "${debugInfo.remoteMachineName}",
+      "pipeTransport": {
+        "debuggerPath": "sudo ${debugInfo.remoteWorkspaceRoot}/private/dependencies/automationframework/public/bin/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/launch.sh -p ${debugInfo.remoteWorkspaceRoot}/private/dependencies/automationframework/public/bin/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/config.properties",
+        "pipeProgram": "${debugInfo.shellexecPath}",
+        "pipeArgs": [
+          "/s",
+          "${debugInfo.remoteMachineId}",
+          "/p",
+          "${debugInfo.parentProcessId}",
+          "/c",
+          "${debuggerCommand}",
+          "--tty=${debugInfo.tty}"
+        ]
+      },
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": false
+        },
+        {
+          "description": "Prevent print of (and stop on) signal: '...received signal SIGTTOU, Stopped (tty output).'",
+          "text": "handle SIGTTOU ignore nostop noprint",
+          "ignoreFailures": false
+        },
+        {
+          "description": "Prevent print of (and stop on) signal: '...received signal SIG40, Stopped (tty output).'",
+          "text": "handle SIG40 ignore nostop noprint",
+          "ignoreFailures": false
+        }
+      ],
+      "visualizerFile": "${debugInfo.linuxNatvisPath}",
+      "showDisplayString": true,
+      "stopOnEntry": false
+    },
+    {
+      "type": "cppdbg",
+      "name": "- ControlX @ aarch64 -",
+      "project": "CMakeLists.txt",
+      "projectTarget": "libcomm_axisprofile.so",
+      "cwd": "${debugInfo.remoteWorkspaceRoot}/private/dependencies/automationframework/public/bin/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}",
+      "program": "${debugInfo.remoteWorkspaceRoot}/private/dependencies/automationframework/public/bin/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/rexroth-automation-frame",
+      "args": [ "$SNAP_DATA/framework/config.properties" ],
+      "additionalSOLibSearchPath": "${debugInfo.remoteWorkspaceRoot}/private/dependencies/automationframework/public/bin/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/bin",
+      "MIMode": "gdb",
+      "externalConsole": true,
+      "remoteMachineName": "192.168.6.42",
+      "pipeTransport": {
+        "debuggerPath": "sudo ${debugInfo.remoteWorkspaceRoot}/private/dependencies/automationframework/public/bin/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/debug.sh",
+        "pipeProgram": "${debugInfo.shellexecPath}",
+        "pipeArgs": [
+          "/s",
+          "${debugInfo.remoteMachineId}",
+          "/p",
+          "${debugInfo.parentProcessId}",
+          "/c",
+          "${debuggerCommand}",
+          "--tty=${debugInfo.tty}"
+        ]
+      },
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": false
+        },
+        {
+          "description": "Prevent print of (and stop on) signal: '...received signal SIGTTOU, Stopped (tty output).'",
+          "text": "handle SIGTTOU ignore nostop noprint",
+          "ignoreFailures": false
+        },
+        {
+          "description": "Prevent print of (and stop on) signal: '...received signal SIG40, Stopped (tty output).'",
+          "text": "handle SIG40 ignore nostop noprint",
+          "ignoreFailures": false
+        }
+      ],
+      "visualizerFile": "${debugInfo.linuxNatvisPath}",
+      "showDisplayString": true,
+      "stopOnEntry": false
+    },
+    {
+      "type": "cppdbg",
+      "name": "- LinuxTest -",
+      "project": "CMakeLists.txt",
+      "projectTarget": "comm_axisprofile_test",
+      "cwd": "${debugInfo.remoteWorkspaceRoot}/private/generated/test/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/",
+      "program": "${debugInfo.remoteWorkspaceRoot}/private/generated/test/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/comm_axisprofile_test",
+      "commented: args": [ "-group", "1_AutoTest" ],
+      "MIMode": "gdb",
+      "externalConsole": true,
+      "remoteMachineName": "${debugInfo.remoteMachineName}",
+      "pipeTransport": {
+        "pipeProgram": "${debugInfo.shellexecPath}",
+        "pipeArgs": [
+          "/s",
+          "${debugInfo.remoteMachineId}",
+          "/p",
+          "${debugInfo.parentProcessId}",
+          "/c",
+          "${debuggerCommand}",
+          "--tty=${debugInfo.tty}"
+        ],
+        "debuggerPath": "sudo /usr/bin/gdb"
+      },
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": false
+        },
+        {
+          "description": "Prevent print of (and stop on) signal: '...received signal SIGTTOU, Stopped (tty output).'",
+          "text": "handle SIGTTOU ignore nostop noprint",
+          "ignoreFailures": false
+        },
+        {
+          "description": "Set path variable to .",
+          "text": "set env LD_LIBRARY_PATH .:$ENV{LD_LIBRARY_PATH}",
+          "ignoreFailures": false
+        }
+
+      ],
+      "visualizerFile": "${debugInfo.linuxNatvisPath}",
+      "showDisplayString": true,
+      "stopOnEntry": false
+    },
+    {
+      "type": "dll",
+      "name": "- TestBuddy Win64 -",
+      "exe": "${workspaceRoot}\\private\\dependencies\\apptestbuddy\\public\\bin\\win-msvc-x64\\release\\appTestBuddy.exe",
+      "currentDir": "${workspaceRoot}/private/generated/test/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}",
+      "args": [ "-arch", "aarch64" ],
+      "project": "CMakeLists.txt",
+      "projectTarget": "comm_axisprofile_test.dll (private\\src\\test\\comm_axisprofile_test.dll)"
+    },
+    {
+      "type": "dll",
+      "name": "- TestBuddy Win64 WEB -",
+      "exe": "${workspaceRoot}\\private\\dependencies\\apptestbuddy\\public\\bin\\win-msvc-x64\\release\\appTestBuddy.exe",
+      "env": {
+        "EQUIPMENT_DIR": "..\\..\\..\\..\\dependencies\\testequipment",
+        "MOTION_LIB_TEST_WEB_PLOTS": "true"
+      },
+      "currentDir": "${workspaceRoot}/private/generated/test/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}",
+      "args": [ "-port", "9090" ],
+      "project": "CMakeLists.txt",
+      "projectTarget": "comm_axisprofile_test.dll (private\\src\\test\\comm_axisprofile_test.dll)"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+include "profileScalingStrategy.fbs";
+include "profileDeviceScalingType.fbs";
+include "scalingFactor.fbs";
+
+namespace comm.axisprofile.fbtypes;
+
+// Important: This enum must have the same structure
+//            as the internal enum 'AxisProfileScalingStrategy'!
+
+table profileScalingCfg {
+
+  /// type of scaling strategy
+  scalingStrategy : profileScalingStrategy;    
+
+  /// type of scaling (linear/rotary..)
+  scalingType     : profileDeviceScalingType;  
+
+  /// numerator of scaling strategy
+  numerator       : uint;                      
+
+  /// denominator of electronic gear scaling strategy
+  denominator     : uint;                      
+
+  /// resolution of encoder
+  resolution      : uint;                      
+
+  /// velocity scaling factor cfg
+  velocityFactor  : ScalingFactor;
+}
+
+root_type profileScalingCfg;

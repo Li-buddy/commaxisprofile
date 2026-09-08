@@ -1,0 +1,38 @@
+{
+  "$persistence_header": {
+    "bfbs": "",
+    "version": ""
+  },
+  "$schema": "",
+  "deviceAddress": 1,
+  "inputBuffer": "changedInputBuffer",
+  "inputMapping": {
+    "mapping": [
+      {
+        "datalayerURI": "datalayer/myBundle/position",
+        "valueID": "position"
+      },
+      {
+        "datalayerURI": "datalayer/myBundle/stsWord",
+        "valueID": "statusword"
+      }
+    ]
+  },
+  "outputBuffer": "",
+  "outputMapping": {
+    "mapping": [
+      {
+        "datalayerURI": "datalayer/myBundle/ctrlWord",
+        "valueID": "controlword"
+      },
+      {
+        "datalayerURI": "datalayer/myBundle/position",
+        "valueID": "position"
+      }
+    ]
+  },
+  "profileBasicData": {
+    "name": "testProfile",
+    "type": "Servodrive_over_Ethercat"
+  }
+}

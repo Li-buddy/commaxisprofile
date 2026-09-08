@@ -1,0 +1,14 @@
+# this is the white list for the junit creation of the warnings (that leads to test fails, when there are warnings)
+#
+# each line represents one file
+# syntax:  <filepath>:<line>:<column>
+#
+# <filepath>          should be the end part of the file path starting with "/private/src/" or "/public/"
+# <line>              line in which the warning stands
+# <column>            column in which the warning stands
+#
+# Write only the file, when you want to suppress all warnings of this file. Write only file and line, when you want to suppress all warnings of this line in the file.
+#
+# example:
+#/private/src/impl/diagnosis/dia.cpp:92:29
+

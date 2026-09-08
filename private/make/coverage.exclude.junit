@@ -1,0 +1,25 @@
+# this is the white list for the junit creation of the coverage (that leads to test fails, when the coverage is too low)
+#
+# each line represents one file
+# syntax:  <filepath>:<allowedCoverage>
+#
+# <filepath>          should be the end part of the file path
+# <allowedCoverage>   set the minimum allowed coverage (in percent) for the file, that will not lead to an test fail
+#
+
+# use key word // LCOV_EXCL_START and // LCOV_EXCL_STOP to exclude specific lines of the code
+
+# Example:
+impl\profiles\scaling\unit_defs.h:80
+impl\common\datalayer\client_internal.h:10
+thirdparty\valgrind.h:0
+impl\common\string_helper.h:85
+impl\profiles\category\drive\axisprofile_probe_drive.cpp:85
+impl\profiles\category\encoder\scaling_strategy_encoder.cpp:85
+impl\profiles\sercos\sercos_boot_params.h:80
+
+# TODO: unit test in future
+impl\profiles\axisprofile_job_base.cpp:50
+
+# files from motion core
+impl\provider\nodes\profiles\templates\node_state_simple.h:0

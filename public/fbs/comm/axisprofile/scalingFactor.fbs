@@ -1,0 +1,17 @@
+
+namespace comm.axisprofile.fbtypes;
+
+/// basic scaling factor data structure
+table ScalingFactor {
+
+  /// is special scaling factor activated
+  isEnabled    : bool;
+
+  /// numerator of scaling strategy
+  numerator       : uint;
+
+  /// denominator of scaling strategy
+  denominator     : uint;                      
+}
+
+root_type ScalingFactor;

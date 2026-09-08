@@ -1,0 +1,8 @@
+# coverage filter
+*/usr/include/*
+*/private/dependencies/*
+*/private/thirdParty/*
+*/private/src/thirdParty/*
+*/test/*
+*/mockup/*
+# end of filter

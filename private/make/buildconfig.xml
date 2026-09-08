@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<buildconfig xmlns="http://schemas.boschrexroth.com/buildbuddy/buildconfig.xsd">
+
+  <!--
+  ***************************************************************************************************************************************
+  Here in the global settings you can make common setup, like the script name, the base
+  paths, all the mails of the people which should receive a mail after the build process ends, etc...
+
+  hint: you can specify placeholders here and use them later on in this file with %name%.
+        this is useful if you want to quickly adapt this buildconfig to another pc or setup.
+        just change common settings here.
+  ***************************************************************************************************************************************
+  -->
+
+  <globalsettings>
+    <placeholders>
+      <ORG>com.boschrexroth</ORG>
+      <NAME>comm.axisprofile</NAME>
+      <NAME_SHORTCUT>APR</NAME_SHORTCUT>
+
+      <!-- This is the variable which points to the root of the repository. We expect private and public folder to be here. -->
+      <!-- Use this variable for all following paths and link relative to this variable -->
+      <!-- By default we use the location of buildconfig.xml to derive, where the ROOT_DIR is, but sometimes we copy the buildconfig somewhere else, so that this results in bugs. -->
+      <REPO_ROOT_DIR type="env" default="%__BUILDCONFIG_DIR__%/../..">MS_REPO_ROOT_DIR</REPO_ROOT_DIR>
+
+      <!-- version number are given through header -->
+      <VERSION_MAJOR type="regexp" source="..\..\CMakeLists.txt" regex="set\(VERSION (\d*)\.(\d*)\.(\d*)\)$">$1</VERSION_MAJOR>
+      <VERSION_MINOR type="regexp" source="..\..\CMakeLists.txt" regex="set\(VERSION (\d*)\.(\d*)\.(\d*)\)$">$2</VERSION_MINOR>
+      <VERSION_PATCH type="regexp" source="..\..\CMakeLists.txt" regex="set\(VERSION (\d*)\.(\d*)\.(\d*)\)$">$3</VERSION_PATCH>
+
+      <!-- build number is given by jenkins as env variable -->
+      <VERSION_BUILD type="env" default="99999" >BUILD_NUMBER</VERSION_BUILD>
+
+      <!-- check if we have branch name given by jenkins as env variable -->
+      <BRANCH type="env" default="xx">GIT_BRANCH</BRANCH>
+      <BRANCH type="regexp" source="placeholder://BRANCH" regex="origin\/(.*)">$1</BRANCH>           <!-- remove 'origin/' -->
+      <BRANCH type="regexp" source="placeholder://BRANCH" regex="refs\/heads\/(.*)">$1</BRANCH>      <!-- remove "refs/heads/ -->
+      <BRANCH type="regexp" source="placeholder://BRANCH" regex="/">.</BRANCH>                       <!-- replace '/' by '.'-->
+      <BRANCH type="regexp" source="placeholder://BRANCH" regex="^master"></BRANCH>                  <!-- remove 'master' -->
+      <BRANCH type="regexp" source="placeholder://BRANCH" regex="release">rc</BRANCH>                <!-- replace 'release' with 'rc'-->
+      <BRANCH type="regexp" source="placeholder://BRANCH" regex="[^0-9A-Za-z-.]" >-</BRANCH>         <!-- replace all invalid character like '_' or '$' … -->
+      <BRANCH type="regexp" source="placeholder://BRANCH" regex="(.{0,18})(.*)">$1</BRANCH>          <!-- shorten Branch if it is to long for snapcraft (max 18chars)-->
+
+      <!-- build the final version string -->
+      <VERSION>%VERSION_MAJOR%.%VERSION_MINOR%.%VERSION_PATCH%-%BRANCH%.%VERSION_BUILD%</VERSION>
+      <VERSION type="regexp" source="placeholder://VERSION" regex="-\..*"></VERSION>
+      <VERSION type="regexp" source="placeholder://VERSION" regex="-hotfix">+hotfix</VERSION>        <!-- replace '-' by '+' for hotfix branch-->
+
+      <!-- Import some variables from the environment for the buildinfo -->
+      <BUILD_URL type="env" default="">BUILD_URL</BUILD_URL>
+      <GIT_COMMIT type="env" default="">GIT_COMMIT</GIT_COMMIT>
+      <GIT_COMMITTER_NAME type="env" default="">GIT_COMMITTER_NAME</GIT_COMMITTER_NAME>
+      <GIT_URL type="env" default="">GIT_URL</GIT_URL>
+      <GIT_BRANCH type="env" default="">GIT_BRANCH</GIT_BRANCH>
+      <DOCKER_IMAGE type="env" default="">DOCKER_IMAGE</DOCKER_IMAGE>
+      <BASELOGDIR>./../log</BASELOGDIR>
+      <BASEBUILDDIR>./../generated</BASEBUILDDIR>
+
+      <!-- DEVTOOLS path -->
+      <DEVTOOLS type="env" default="missing env var devtools">DEVTOOLS</DEVTOOLS>
+    </placeholders>
+
+    <name>[BuildBuddy-%NAME%-%VERSION_MAJOR%VRS]</name>
+    <baselogpath>%BASELOGDIR%</baselogpath>
+    <baselinepath>%BASEBUILDDIR%</baselinepath>
+    <mailfrom>do_not_respond@boschrexroth.de</mailfrom>
+    <mailserver>rb-smtp-int.bosch.com</mailserver>
+    <mailinglist>
+      <recipient>jens.reckwell@boschrexroth.de</recipient>
+    </mailinglist>
+    <mailcomment>
+      <font color="red">
+        <blink>Der Build darf nur intern verwendet werden.</blink>
+      </font>
+    </mailcomment>
+    <mailattachments></mailattachments>
+  </globalsettings>
+
+  <!--
+  ***************************************************************************************************************************************
+  Here you find all the different build-items. Each build-item is a single build target or step
+  within the whole build chain. A build target can be:
+  - 'batch': a simple batch file which gets executed
+  - 'visualstudio': a Visual Studio Solution file which should be build
+  - 'ftp': a ftp transmission of file from or to a ftp server
+  ***************************************************************************************************************************************
+  -->
+
+  <builditems>
+
+    <!--
+    ***************************************************************************************************************************************
+    misc
+    ***************************************************************************************************************************************
+    -->
+
+    <builditem_batch name="reset dependencies">
+      <batchfile>reset_dependencies.bat</batchfile>
+    </builditem_batch>
+
+    <builditem_batch name="update dependencies">
+      <batchfile>update_dependencies.bat</batchfile>
+    </builditem_batch>
+
+    <builditem_batch name="vs2022 generate">
+      <batchfile>vs2022_generate.bat</batchfile>
+    </builditem_batch>
+
+    <builditem_batch name="vs2022 build">
+      <dependencies>
+        <dependency builditemname="vs2022 generate"></dependency>
+      </dependencies>
+      <batchfile>vs2022_build.bat</batchfile>
+    </builditem_batch>
+
+    <builditem_fileio name="clean all generated" type="fileio">
+      <operations>
+        <delete path="./../generated/" />
+        <delete path="./../../public/doc/" />
+        <delete path="./../../public/licenses/" />
+        <delete path="./../../public/bin/" />
+        <delete path="./../../public/lib/" />
+      </operations>
+    </builditem_fileio>
+
+    <builditem_batch name="test windows x64">
+      <batchfile>./../dependencies/apptestbuddy/public/bin/win-msvc-x64/release/appTestBuddy.exe</batchfile>
+      <workingdirectory>./../generated/test/win-msvc-x64/debug</workingdirectory>
+      <argumentlist>
+        <argument>-start</argument>
+        <argument>1_AutoTest</argument>
+        <argument>-junitxml</argument>
+        <argument>.\..\..\..\..\log\junitresult64.xml</argument>
+        <argument>-prefix</argument>
+        <argument>x64</argument>
+      </argumentlist>
+    </builditem_batch>
+
+    <builditem_batch name="test windows x64 CI">
+      <batchfile>./../dependencies/apptestbuddy/public/bin/win-msvc-x64/release/appTestBuddy.exe</batchfile>
+      <workingdirectory>./../generated/test/win-msvc-x64/debug</workingdirectory>
+      <argumentlist>
+        <argument>-start</argument>
+        <argument>1_AutoTest</argument>
+        <argument>-junitxml</argument>
+        <argument>.\..\..\..\..\log\junitresult64.xml</argument>
+        <argument>-prefix</argument>
+        <argument>x64</argument>
+        <argument>-nopictures</argument>
+      </argumentlist>
+    </builditem_batch>
+
+    <builditem_fileio name="generate buildinfo" type="fileio">
+      <operations>
+        <write  destination="./../generated/buildinfo.properties"    string="BUILDINFO_NAME = %NAME%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_ORG = %ORG%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_VERSION = %VERSION%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_DATE = %__DATE__%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_TIME = %__TIME__%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_USERNAME = %__USERNAME__%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_MACHINENAME = %__MACHINENAME__%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_BUILD_URL = %BUILD_URL%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_GIT_COMMIT = %GIT_COMMIT%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_GIT_COMMITTER_NAME = %GIT_COMMITTER_NAME%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_GIT_URL = %GIT_URL%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_GIT_BRANCH = %GIT_BRANCH%" />
+        <append destination="./../generated/buildinfo.properties"    string="&#13;&#10;BUILDINFO_DOCKER_IMAGE = %DOCKER_IMAGE%" />
+      </operations>
+    </builditem_fileio>
+
+    <builditem_batch name="analyse testlogs">
+      <batchfile>../dependencies/test.core/public/bin/analyse_testlogs.ps1</batchfile>
+      <argumentlist>
+        <argument>./../generated/buildinfo.properties</argument>
+        <argument>./../../public/test/log</argument>
+      </argumentlist>
+    </builditem_batch>
+    
+    <!--
+    ***************************************************************************************************************************************
+    licenses
+    ***************************************************************************************************************************************
+    -->
+
+    <builditem_fileio name="licenses of component" type="fileio">
+      <operations>
+        <copy source="./../../private/doc/license.txt" destination="./../../public/licenses/%NAME%/" />
+      </operations>
+    </builditem_fileio>
+    
+    <builditem_batch name="prepare FOSS licenses">
+      <batchfile>prepare_licenses.bat</batchfile>
+    </builditem_batch>
+    
+    <builditem_batch name="collect FOSS licenses" type="batch">
+      <batchfile>%DEVTOOLS%\tool_licensecopy\win\scripts\collectFossLicenses.ps1</batchfile>
+      <argumentlist>
+        <argument>-pathToCdf</argument>
+        <argument>%REPO_ROOT_DIR%</argument>
+        <argument>-pathDestination</argument>
+        <argument>%REPO_ROOT_DIR%\public\licenses</argument>
+      </argumentlist>
+      <analyzelog>true</analyzelog>
+    </builditem_batch>
+
+    <!--
+    ***************************************************************************************************************************************
+    assemble
+    ***************************************************************************************************************************************
+    -->
+
+    <builditem_fileio name="assemble all" type="fileio">
+      <operations>
+        <zip source="./../../public;./../../cdf.xml;./../../cdf.original.xml;./../../private/generated/buildinfo.properties"
+             destination="./../../private/generated/%ORG%.%NAME%-%VERSION%.zip"
+             flat="false"
+             forceAttribute="-R+A-S-H"></zip>
+      </operations>
+    </builditem_fileio>
+
+    <!-- rename the "cdf.xml" to "cdf.original.xml" (includes wildcards) and the "cdf.used.xml" to "cdf.xml" (without wildcards) -->
+    <builditem_fileio name="rename cdf files" type="fileio">
+      <operations>
+        <copy source="./../../cdf.xml" destination="./../../cdf.original.xml" />
+        <copy source="./../../cdf.used.xml" destination="./../../cdf.xml" />
+      </operations>
+    </builditem_fileio>
+
+    
+  </builditems>
+
+  <!--
+  ***************************************************************************************************************************************
+  groups allow for grouping some of the above builditems together to a group and add them to the menu bar of the
+  build buddy. this is mainly for better usability. a build of the group will build all build items of the group.
+  ***************************************************************************************************************************************
+  -->
+
+  <groups>
+    <group name="reset">
+      <groupitem>reset dependencies</groupitem>
+    </group>
+
+    <group name="update" hide="true">
+      <groupitem>update dependencies</groupitem>
+    </group>
+
+    <group name="rebuild" hide="true">
+      <groupitem>vs2022 generate</groupitem>
+      <groupitem>vs2022 build</groupitem>
+    </group>
+
+    <group name="clean" hide="true">
+      <groupitem>clean all generated</groupitem>
+    </group>
+
+    <group name="setup" hide="false">
+      <groupitem>generate buildinfo</groupitem>
+    </group>
+
+    <group name="licenses" hide="true">
+      <groupitem>prepare FOSS licenses</groupitem>
+      <groupitem>collect FOSS licenses</groupitem>
+    </group>
+
+    <group name="assemble" hide="true">
+      <groupitem>generate buildinfo</groupitem>
+      <groupitem>prepare integration test</groupitem>
+      <groupitem>analyse testlogs</groupitem>
+      <groupitem>rename cdf files</groupitem>
+      <groupitem>assemble all</groupitem>
+    </group>
+
+    <group name="test">
+      <groupitem>test windows x64</groupitem>
+    </group>
+
+    <group name="testCI">
+      <groupitem>test windows x64 CI</groupitem>
+    </group>
+
+    <group name="developer">
+      <groupitem>update</groupitem>
+      <groupitem>clean</groupitem>
+      <groupitem>setup</groupitem>
+      <groupitem>rebuild</groupitem>
+      <groupitem>licenses</groupitem>
+      <groupitem>assemble</groupitem>
+    </group>
+
+    <group name="autobuild" hide="true">
+      <groupitem>update</groupitem>
+      <groupitem>setup</groupitem>
+      <groupitem>rebuild</groupitem>
+      <groupitem>licenses</groupitem>
+      <!-- <groupitem>assemble</groupitem> -->
+    </group>
+
+  </groups>
+
+</buildconfig>

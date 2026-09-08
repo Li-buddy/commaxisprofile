@@ -1,0 +1,46 @@
+include "profile.fbs";
+include "valueMapping.fbs";
+include "profileScalingCfg.fbs";
+include "profileCategory.fbs";
+
+namespace comm.axisprofile.fbtypes;
+
+table profileConfig {
+  /// Address of the device
+  deviceAddress    : uint;
+
+  /// Datalayer address of the input telegram
+  inputBuffer      : string;
+
+  /// Datalayer address of the output telegram
+  outputBuffer     : string;              
+
+  /// Flatbuffer: Basic profile data (name, type)
+  profileBasicData : profile;             
+
+  /// Flatbuffer: Complete input value mapping
+  inputMapping     : valueMapping;        
+
+  /// Flatbuffer: Complete output value mapping
+  outputMapping    : valueMapping;        
+
+  /// scaling information for profile
+  scalingInfo      : profileScalingCfg;   
+
+  /// name of device
+  deviceName       : string;              
+
+  /// drive number
+  driveNumber      : uint8;               
+
+  /// category of current profile
+  category         : ProfileCategory; 
+
+  /// whether checksum activated
+  checksumEnabled    : bool;
+
+  /// configured EtherCAT master instance name
+  ethercatMasterName : string;
+}
+
+root_type profileConfig;

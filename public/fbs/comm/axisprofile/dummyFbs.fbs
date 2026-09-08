@@ -1,0 +1,11 @@
+namespace comm.axisprofile.fbtypes;
+
+table dummyFbs {
+  dummyByte:byte;
+  dummyStr:string;
+  dummyInt:int;
+  dummyDouble:double;
+  dummyDoublePtr:[double];
+}
+
+root_type dummyFbs;

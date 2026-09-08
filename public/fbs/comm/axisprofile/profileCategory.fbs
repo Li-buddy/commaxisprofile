@@ -1,0 +1,17 @@
+namespace comm.axisprofile.fbtypes;
+
+/// This enum must have the same structure as the internal enum 'AxisProfileCategory'
+enum CategoryOfProfile : uint {
+
+  /// drive category
+  CATEGORY_DRIVE = 1, 
+
+  /// encoder category
+  CATEGORY_ENCODER = 2,              
+}
+
+table ProfileCategory{
+  category : CategoryOfProfile = CATEGORY_DRIVE;
+}
+
+root_type ProfileCategory;

@@ -1,0 +1,28 @@
+namespace comm.axisprofile.fbtypes;
+
+// Important: This enum must have the same structure
+//            as the internal enum 'AxisProfileScalingStrategy'!
+
+enum ScalingStrategy : uint {
+  /// unknown strategy
+  UNKNOWN = 0,
+
+  /// SoE strategy read parameters from drive side
+  SOE_STANDARD,
+
+  /// default CoE strategy,read/calculate parameter via drive
+  COE_CALC_DRIVE,
+
+  /// strategy for 3rd party drive, parameters need to be set
+  /// both on control and drive side manually!!(Only for third party CoE)
+  COE_CALC_CONTROL,    
+
+  /// strategy for IO device
+  DEVICE_IO
+}
+
+table profileScalingStrategy{
+  strategy  : ScalingStrategy;
+}
+
+root_type profileScalingStrategy;

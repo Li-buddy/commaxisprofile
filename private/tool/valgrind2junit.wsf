@@ -1,0 +1,408 @@
+<package>
+  <!-- Valgrind to jUnit -->
+  <job id="valgrind2junit">
+    <script language="JScript">
+    
+      // -------------------------------------------------------------------------
+      //! print some output
+      // -------------------------------------------------------------------------
+      function Print (str)
+      {
+        WScript.Echo (str);
+      }
+      
+      // -------------------------------------------------------------------------
+      //! print error and exit
+      // -------------------------------------------------------------------------
+      function FatalError (str)
+      {
+        Print ("Fatal error:\n" + str);
+        WScript.Quit (1);
+      }
+
+      // -------------------------------------------------------------------------
+      //! Read+Parse a XML file (private)
+      // -------------------------------------------------------------------------
+      function LoadXML(fName)
+      {
+        fso = new ActiveXObject ("Scripting.FileSystemObject");
+        if (fso.FileExists(fName) == false)
+          FatalError("File '" + fName + "' doesn't exists\n");
+        
+        var xml;
+        try {
+          xml = new ActiveXObject("Msxml2.DOMDocument.6.0");
+        }
+        catch (e) 
+        {
+          FatalError("Microsoft XMLDOM not installed.\n");
+        }
+        
+        Print("load xml (" + fName + ")");
+        xml.async = false;
+        try {
+          xml.load(fName);
+        }
+        catch (e) 
+        {
+          FatalError("Can't load xml file '" + fName + "'\n");
+        }
+        if (xml.parseError.errorCode != 0) {
+          var myErr = xml.parseError;
+          FatalError("You have error " + myErr.reason);
+        }
+        xml.setProperty("SelectionLanguage", "XPath");
+        return xml;
+      }
+      
+      function saveToFile(fName, str)
+      {
+        fso = new ActiveXObject ("Scripting.FileSystemObject");
+        var file = fso.CreateTextFile(fName, true);
+        file.Write(str);
+        file.Close();
+      }
+
+      function startHTML()
+      {
+        var str = "";
+                
+        str += "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
+        str += "<html lang=\"en\">\n";
+        str += "<head>\n";
+        str += "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n";
+        str += "<title>Valgrind Report</title>\n";
+        str += "</head>\n";
+        str += "<style type=\"text/css\">\n";
+        str += ".ctable {\n";
+        str += "  border-collapse: collapse;\n";
+        str += "  width: 100%;\n";
+        str += "}\n";
+        str += ".ctable td, #ctable th {\n";
+        str += "  border: 1px solid #ddd;\n";
+        str += "  padding: 2px;\n";
+        str += "  font-family: monospace;\n";
+        str += "}\n";
+        str += ".ctable tr:nth-child(even){background-color: #f2f2f2;}\n";
+        str += ".ctable tr:hover {background-color: #ddd;}\n";
+        str += ".ctable th {\n";
+        str += "  padding-top: 12px;\n";
+        str += "  padding-bottom: 12px;\n";
+        str += "  text-align: left;\n";
+        str += "  background-color: #729FCF;\n";
+        str += "  color: white;\n";
+        str += "}\n";
+        str += "</style>\n";
+        str += "<body>\n";
+        str += "<br> <br>\n";
+        str += "<h1>Valgrind Report</h1>\n";
+        str += "<div id=\"header\">\n";
+        str += "<div id=\"div_args\">ARGS_TEXT</div>\n";
+        str += "<div id=\"div_time\">TIME_TEXT</div>\n";
+        str += "</div><br>\n";
+        str += "<table id=\"valgrind_table\" class=\"ctable\">TABLE_TEXT</table>\n";
+        str += "<div id=\"footer\"></div>\n";
+        str += "<br>\n";
+        str += "</body>\n";
+        str += "</html>\n";
+        return str;
+      }
+      
+      function getArgsText(xml)
+      {
+        var str = "";
+        str += "Running: " + toXML(xml, "//valgrindoutput/args/argv/exe");
+        return str;
+      }
+
+      function getTimeText(xml)
+      {
+        var str = "";
+        str += "Taken time: " + toXML(xml, "//valgrindoutput/status/time");
+        return str;
+      }
+      
+      function addrow(text) {
+        str  = "<td>";
+        str += text;
+        str += "</td>";
+        return str;
+      }
+      
+      function toXMLStr(str)
+      {
+        str = str.replace(/&/g,"&amp;");
+        str = str.replace(/</g,"&lt;");
+        str = str.replace(/>/g,"&gt;");
+        str = str.replace(/"/g,"&quot;");
+        str = str.replace(/'/g,"&apos;");
+        return str;
+      }
+
+      function toXML(base, path)
+      {
+        var node = base.selectSingleNode(path);
+        if (node == null)
+        {
+          return "Invalid node path: '" + path + "' ";
+        }
+        return toXMLStr(node.text);
+      }
+
+      function displayStack(xml) {
+        var isFirst = true;
+        var str = "";
+        var counter = 1;
+        while (true)
+        {
+          var node = xml.selectSingleNode("frame[" + counter + "]");
+          if (node == null)
+            return str;
+          if (isFirst)
+          {
+            str += "&emsp; at " + toXML(node, "ip") + ": " + toXML(node, "fn") + 
+              " (in " + toXML(node, "obj") + ")";
+            isFirst = false;
+          }
+          else
+          {
+            try {
+              if (node.selectSingleNode("file") == null)
+              {
+                str += "&emsp; by " + toXML(node, "ip") + ": " + toXML(node, "fn") + 
+                  " (no file available)";
+              }
+              else
+              {
+                str += "&emsp; by " + toXML(node, "ip") + ": " + toXML(node, "fn") + 
+                  " (" + toXML(node, "file") + ":" + toXML(node, "line") + ")";
+              }
+            }
+            catch (e) 
+            {
+              str += "&emsp; missing data (exception " + toXMLStr(e.message) + ")";
+            }
+          }
+          str += "<br>\n";
+          counter++;
+        }
+        return str;
+      }
+
+      function displayStackXML(xml) {
+        var isFirst = true;
+        var str = "";
+        var counter = 1;
+        while (true)
+        {
+          var node = xml.selectSingleNode("frame[" + counter + "]");
+          if (node == null)
+            return str;
+          if (isFirst)
+          {
+            str += "\tat " + toXML(node, "ip") + ": " + toXML(node, "fn") + 
+              " (in " + toXML(node, "obj") + ")";
+            isFirst = false;
+          }
+          else
+          {
+            try
+            {
+              if (node.selectSingleNode("file") == null)
+              {
+                str += "\t by " + toXML(node, "ip") + ": " + toXML(node, "fn") + 
+                  " (no file available)";
+              }
+              else
+              {
+                str += "\t by " + toXML(node, "ip") + ": " + toXML(node, "fn") + 
+                  " (" + toXML(node, "file") + ":" + toXML(node, "line") + ")";
+              }
+            }
+            catch (e) 
+            {
+              str += "\t missing data (exception " + toXMLStr(e.message) + ")";
+            }
+          }
+          str += "\n";
+          counter++;
+        }
+        return str;
+      }
+
+      function displayLocation(xml) {
+
+        var str = "";
+        var kind = xml.selectSingleNode("kind");
+        
+        if (kind.text == "MismatchedFree")
+        {
+          str += displayStack(xml.selectSingleNode("stack"))
+          str += toXML(xml, "auxwhat") + "<br>\n";
+          str += displayStack(xml.selectSingleNode("stack[2]"))
+        }
+        else
+        {
+          str += displayStack(xml.selectSingleNode("stack"))
+        }
+        
+        return str;
+      }
+      
+      function displayLocationXML(xml) {
+
+        var str = "";
+        var kind = xml.selectSingleNode("kind");
+        
+        if (kind.text == "MismatchedFree")
+        {
+          str += displayStackXML(xml.selectSingleNode("stack"))
+          str += "  " + toXML(xml, "auxwhat") + "\n";
+          str += displayStackXML(xml.selectSingleNode("stack[2]"))
+        }
+        else
+        {
+          str += displayStackXML(xml.selectSingleNode("stack"))
+        }
+        
+        return str;
+      }
+
+      function displayErrorRow(xml) {
+        var str = "";
+        
+        var node = xml.selectSingleNode("xwhat");
+        if( node == null )
+        {
+          str += addrow(toXML(xml, "what"));
+        }
+        else
+        {
+          str += addrow(toXML(node, "text"));
+        }
+        
+        str += addrow(displayLocation(xml));
+        return str;
+      }
+
+      function displayErrorRowXML(xml) {
+        var str = "--------------------------------------------------------\n  ";
+        
+        var node = xml.selectSingleNode("xwhat");
+        if( node == null )
+        {
+          str += toXML(xml, "what");
+        }
+        else
+        {
+          str += toXML(node, "text");
+        }
+        str += "\n--------------------------------------------------------\n";
+        
+        str += displayLocationXML(xml);
+        return str;
+      }
+
+      function getTableText(xml) {
+        var table = "<tr><th>Error</th><th>Location</th></tr>\n";
+        var counter = 1;        
+        while (true)
+        {
+          Print("Try to read node "+counter);
+          var xmlErrorNode = xml.selectSingleNode("//valgrindoutput/error[" + counter + "]");
+          if (xmlErrorNode == null)
+            return table;
+          table += "<tr>" + displayErrorRow(xmlErrorNode) + "</tr>";
+          counter++;
+        }
+        return table;
+      }      
+      
+      function getCurrentTime()
+      {
+        var currentdate = new Date(); 
+        var datetime = currentdate.getDate() + "."
+                    + (currentdate.getMonth()+1)  + "." 
+                    + currentdate.getFullYear() + " @ "  
+                    + currentdate.getHours() + ":"  
+                    + currentdate.getMinutes() + ":" 
+                    + currentdate.getSeconds();
+        return datetime;
+      }
+                
+      function startXML()
+      {
+        var str = "";
+        str += "<?xml-stylesheet?>\n";
+        str += "<testsuite name=\"valgrind\" timestamp=\"TIME_STAMP\" tests=\"1\" errors=\"NUMBER_OF_ERRORS\" time=\"TIME_TEXT\">\n";
+	      str += "  <testcase name=\"valgrind.memcheck.memcheck\" classname=\"valgrind.memcheck\" time=\"TIME_TEXT\">\n";
+        str += "		<system-out>\n";
+        str += "      SYSTEM_OUT\n";
+        str += "    </system-out>\n";
+        str += "    ERROR_TEXT\n";
+        str += "  </testcase>\n";
+        str += "</testsuite>\n";
+        return str;
+      }
+      
+      function getNumberOfErrors(xml)
+      {
+        var errCount = 1;        
+        while (xml.selectSingleNode("//valgrindoutput/error[" + errCount + "]") != null)
+        {
+          errCount++;
+        }
+        return (errCount-1);
+      }
+      
+      function getErrorTexts(xml)
+      {
+        var str = "";
+        var counter = 1;        
+        while (true)
+        {
+          Print("Try to read node "+counter);
+          var xmlErrorNode = xml.selectSingleNode("//valgrindoutput/error[" + counter + "]");
+          if (xmlErrorNode == null)
+            return str;
+          str += "\n" + displayErrorRowXML(xmlErrorNode) + "\n";
+          counter++;
+        }
+      }
+
+      function doWork()
+      {
+        var inputFile = WScript.arguments(0);
+        var outputHTML = WScript.arguments(1);
+        var outputXML = WScript.arguments(2);
+        
+        var xml = LoadXML(inputFile);
+        var str = startHTML();
+        str = str.replace("ARGS_TEXT", getArgsText(xml));
+        str = str.replace("TIME_TEXT", getTimeText(xml));
+        str = str.replace("TABLE_TEXT", getTableText(xml));
+        saveToFile(outputHTML, str);
+
+        str = startXML();
+        str = str.replace("TIME_STAMP", getCurrentTime());
+        str = str.replace("TIME_TEXT", getTimeText(xml));
+        str = str.replace("TIME_TEXT", getTimeText(xml));
+        var errorCnt = getNumberOfErrors(xml);
+        str = str.replace("NUMBER_OF_ERRORS", errorCnt);
+        if (errorCnt > 0)
+        {
+          str = str.replace("SYSTEM_OUT", getErrorTexts(xml));
+          str = str.replace("ERROR_TEXT", "<error message=\"You got " + errorCnt + " errors!\"/>");
+        }
+        else
+        {
+          str = str.replace("SYSTEM_OUT", "No errors found...");
+          str = str.replace("ERROR_TEXT", "");
+        }
+        saveToFile(outputXML, str);
+      }
+      
+      doWork();
+    </script>
+  </job>
+</package>

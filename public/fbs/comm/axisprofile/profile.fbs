@@ -1,0 +1,16 @@
+namespace comm.axisprofile.fbtypes;
+
+// Important: This enum must have the same structure
+//            as the internal enum 'AxisProfileType'!
+enum ProfileType : uint {
+  Unknown = 0,
+  Servodrive_over_Ethercat,
+  CANopen_over_Ethercat
+}
+
+table profile {
+  name : string;
+  type : ProfileType;
+}
+
+root_type profile;

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml-stylesheet?>
+<testsuite name="TESTSUITE" timestamp="TIME_STAMP" tests="1" errors="NUMBER_OF_ERRORS" time="TIME_TEXT">
+<testcase name="TESTNAME" classname="CLASSNAME" time="TIME_TEXT">
+<system-out>
+SYSTEM_OUT
+</system-out>
+ERROR_TEXT
+</testcase>
+</testsuite>

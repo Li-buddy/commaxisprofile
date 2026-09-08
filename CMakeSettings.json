@@ -1,0 +1,166 @@
+{
+  "environments": [
+    {
+      "remoteMachine": "127.0.0.1",
+      "remoteRootDir": "/var/tmp/${projectDirName}",
+      "remoteCmakeExecutable": "/snap/bin/cmake",
+      "remoteToolchainPath": "$DEVTOOLS/tool_cmake/addons/modulesX/Platform",
+      "localToolchainPath": "${env.DEVTOOLS}/tool_cmake/addons/modulesX/Platform",
+      "vsAdaptedBuildFolderVsNinja": "msvc-Ninja",
+      "vsAdaptedBuildFolderLinux": "msvc-Unix_Makefiles",
+      "rsyncCommand": "-c -m --progress --stats --filter=\"merge ${workspaceRoot}/private/make/rsync_filter.txt\""
+    }
+  ],
+  "configurations": [
+    {
+      "name": "_Windows-Debug-x64",
+      "generator": "Ninja",
+      "configurationType": "debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "environments": [
+        { "MSC_TARGET_NAME": "win-msvc-x64" },
+        { "MSC_CONFIG_TYPE": "debug" }
+      ],
+      "intelliSenseMode": "windows-msvc-x64",
+      "buildRoot": "${workspaceRoot}\\private\\generated\\${env.vsAdaptedBuildFolderVsNinja}\\${env.MSC_TARGET_NAME}\\${configurationType}",
+      "installRoot": "${workspaceRoot}\\public\\bin\\${env.MSC_TARGET_NAME}\\${configurationType}",
+      "cmakeCommandArgs": "-DCMAKE_TOOLCHAIN_FILE=${env.localToolchainPath}/win-msvc-x64.cmake",
+      "buildCommandArgs": "-v install",
+      "ctestCommandArgs": "",
+      "variables": []
+    },
+    {
+      "name": "_Windows-Release-x64",
+      "generator": "Ninja",
+      "configurationType": "release",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "environments": [
+        { "MSC_TARGET_NAME": "win-msvc-x64" },
+        { "MSC_CONFIG_TYPE": "release" }
+      ],
+      "intelliSenseMode": "windows-msvc-x64",
+      "buildRoot": "${workspaceRoot}\\private\\generated\\${env.vsAdaptedBuildFolderVsNinja}\\${env.MSC_TARGET_NAME}\\${configurationType}",
+      "installRoot": "${workspaceRoot}\\public\\bin\\${env.MSC_TARGET_NAME}\\${configurationType}",
+      "cmakeCommandArgs": "-DCMAKE_TOOLCHAIN_FILE=${env.localToolchainPath}/win-msvc-x64.cmake",
+      "buildCommandArgs": "-v install",
+      "ctestCommandArgs": "",
+      "variables": []
+    },
+    {
+      "name": "Linux-Debug-x64",
+      "generator": "Unix Makefiles",
+      "intelliSenseMode": "linux-gcc-x64",
+      "configurationType": "debug",
+      "inheritEnvironments": [ "linux-x64" ],
+      "cmakeExecutable": "${env.remoteCmakeExecutable}",
+      "environments": [
+        { "MSC_TARGET_NAME": "ubuntu24-gcc-x64" },
+        { "MSC_CONFIG_TYPE": "debug" }
+      ],
+      "remoteMachineName": "${env.remoteMachine}",
+      "remoteCMakeListsRoot": "${env.remoteRootDir}",
+      "remoteBuildRoot": "${env.remoteRootDir}/private/generated/${env.vsAdaptedBuildFolderLinux}/${env.MSC_TARGET_NAME}/${configurationType}",
+      "remoteInstallRoot": "${env.remoteRootDir}/public/bin/${env.MSC_TARGET_NAME}/${configurationType}",
+      "remoteCopySources": true,
+      "remoteCopySourcesOutputVerbosity": "Diagnostic",
+      "remoteCopySourcesConcurrentCopies": "10",
+      "remoteCopySourcesMethod": "rsync",
+      "rsyncCommandArgs": "${env.rsyncCommand}",
+      "cmakeCommandArgs": "-DCMAKE_TOOLCHAIN_FILE=${env.remoteToolchainPath}/linux-gcc-x64.cmake",
+      "buildCommandArgs": "-j$(nproc) VERBOSE=1",
+      "ctestCommandArgs": "",
+      "remotePostbuildCommand": "make install",
+      "remotePrebuildCommand": "",
+      "remotePreGenerateCommand": "chmod -R 0777 ${env.remoteRootDir}/private/make/*.sh; ${env.remoteRootDir}/private/make/update_dependencies.sh; chmod -R 0777 ${env.remoteRootDir}/private/dependencies/automationframework/public/bin/*",
+      "remoteCopyBuildOutput": false,
+      "variables": []
+    },
+    {
+      "name": "Linux-Release-x64",
+      "generator": "Unix Makefiles",
+      "intelliSenseMode": "linux-gcc-x64",
+      "configurationType": "release",
+      "inheritEnvironments": [ "linux-x64" ],
+      "cmakeExecutable": "${env.remoteCmakeExecutable}",
+      "environments": [
+        { "MSC_TARGET_NAME": "ubuntu24-gcc-x64" },
+        { "MSC_CONFIG_TYPE": "release" }
+      ],
+      "remoteMachineName": "${env.remoteMachine}",
+      "remoteCMakeListsRoot": "${env.remoteRootDir}",
+      "remoteBuildRoot": "${env.remoteRootDir}/private/generated/${env.vsAdaptedBuildFolderLinux}/${env.MSC_TARGET_NAME}/${configurationType}",
+      "remoteInstallRoot": "${env.remoteRootDir}/public/bin/${env.MSC_TARGET_NAME}/${configurationType}",
+      "remoteCopySources": true,
+      "remoteCopySourcesOutputVerbosity": "Diagnostic",
+      "remoteCopySourcesConcurrentCopies": "10",
+      "remoteCopySourcesMethod": "rsync",
+      "rsyncCommandArgs": "${env.rsyncCommand}",
+      "cmakeCommandArgs": "-DCMAKE_TOOLCHAIN_FILE=${env.remoteToolchainPath}/linux-gcc-x64.cmake",
+      "buildCommandArgs": "-j$(nproc) VERBOSE=1",
+      "ctestCommandArgs": "",
+      "remotePostbuildCommand": "make install",
+      "remotePrebuildCommand": "",
+      "remotePreGenerateCommand": "chmod -R 0777 ${env.remoteRootDir}/private/make/*.sh; ${env.remoteRootDir}/private/make/update_dependencies.sh; chmod -R 0777 ${env.remoteRootDir}/private/dependencies/automationframework/public/bin/*",
+      "remoteCopyBuildOutput": false,
+      "variables": []
+    },
+    {
+      "name": "Linux-Debug-aarch64",
+      "generator": "Unix Makefiles",
+      "intelliSenseMode": "linux-gcc-arm",
+      "configurationType": "debug",
+      "inheritEnvironments": [ "linux-arm" ],
+      "cmakeExecutable": "${env.remoteCmakeExecutable}",
+      "environments": [
+        { "MSC_TARGET_NAME": "ubuntu24-gcc-aarch64" },
+        { "MSC_CONFIG_TYPE": "debug" }
+      ],
+      "remoteMachineName": "${env.remoteMachine}",
+      "remoteCMakeListsRoot": "${env.remoteRootDir}",
+      "remoteBuildRoot": "${env.remoteRootDir}/private/generated/${env.vsAdaptedBuildFolderLinux}/${env.MSC_TARGET_NAME}/${configurationType}",
+      "remoteInstallRoot": "${env.remoteRootDir}/public/bin/${env.MSC_TARGET_NAME}/${configurationType}",
+      "remoteCopySources": true,
+      "remoteCopySourcesOutputVerbosity": "Diagnostic",
+      "remoteCopySourcesConcurrentCopies": "10",
+      "remoteCopySourcesMethod": "rsync",
+      "rsyncCommandArgs": "${env.rsyncCommand}",
+      "cmakeCommandArgs": "-DCMAKE_TOOLCHAIN_FILE=${env.remoteToolchainPath}/linux-gcc-aarch64.cmake",
+      "buildCommandArgs": "-j$(nproc) VERBOSE=1",
+      "ctestCommandArgs": "",
+      "remotePostbuildCommand": "make install",
+      "remotePrebuildCommand": "",
+      "remotePreGenerateCommand": "chmod -R 0777 ${env.remoteRootDir}/private/make/*.sh; ${env.remoteRootDir}/private/make/update_dependencies.sh; chmod -R 0777 ${env.remoteRootDir}/private/dependencies/automationframework/public/bin/*",
+      "remoteCopyBuildOutput": false,
+      "variables": []
+    },
+    {
+      "name": "Linux-Release-aarch64",
+      "generator": "Unix Makefiles",
+      "intelliSenseMode": "linux-gcc-arm",
+      "configurationType": "release",
+      "inheritEnvironments": [ "linux-arm" ],
+      "cmakeExecutable": "${env.remoteCmakeExecutable}",
+      "environments": [
+        { "MSC_TARGET_NAME": "ubuntu24-gcc-aarch64" },
+        { "MSC_CONFIG_TYPE": "release" }
+      ],
+      "remoteMachineName": "${env.remoteMachine}",
+      "remoteCMakeListsRoot": "${env.remoteRootDir}",
+      "remoteBuildRoot": "${env.remoteRootDir}/private/generated/${env.vsAdaptedBuildFolderLinux}/${env.MSC_TARGET_NAME}/${configurationType}",
+      "remoteInstallRoot": "${env.remoteRootDir}/public/bin/${env.MSC_TARGET_NAME}/${configurationType}",
+      "remoteCopySources": true,
+      "remoteCopySourcesOutputVerbosity": "Diagnostic",
+      "remoteCopySourcesConcurrentCopies": "10",
+      "remoteCopySourcesMethod": "rsync",
+      "rsyncCommandArgs": "${env.rsyncCommand}",
+      "cmakeCommandArgs": "-DCMAKE_TOOLCHAIN_FILE=${env.remoteToolchainPath}/linux-gcc-aarch64.cmake",
+      "buildCommandArgs": "-j$(nproc) VERBOSE=1",
+      "ctestCommandArgs": "",
+      "remotePostbuildCommand": "make install",
+      "remotePrebuildCommand": "",
+      "remotePreGenerateCommand": "chmod -R 0777 ${env.remoteRootDir}/private/make/*.sh; ${env.remoteRootDir}/private/make/update_dependencies.sh; chmod -R 0777 ${env.remoteRootDir}/private/dependencies/automationframework/public/bin/*",
+      "remoteCopyBuildOutput": false,
+      "variables": []
+    }
+  ]
+}

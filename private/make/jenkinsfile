@@ -1,0 +1,517 @@
+#!groovy Jenkinsfile
+println "GIT_BRANCH: ${env.BUILDINFO_GIT_BRANCH}"
+println "GIT_COMMIT: ${env.GIT_COMMIT}"
+println "BUILD_ID: ${env.BUILD_ID}"
+
+// needed for @Field scope annotation
+import groovy.transform.Field
+
+//
+// Pipeline Settings
+//
+
+// set default build configuration
+@Field def buildConfig = [:]
+
+// define library here
+@Field def library = ''
+
+def prepareBuildConfiguration()
+{
+  // change the testgroup to 'NoDepTest' and then back to '1_AutoTest'
+  buildConfig.testgroup = '1_AutoTest'
+  // change to true, if workspace is needed to analyze an error
+  buildConfig.keepWorkspace = false
+  buildConfig.project_name = 'comm.axisprofile'
+  buildConfig.email_recipients = ''
+  buildConfig.repo_url = "${SCM_URL_SSH_GIT}" + '/icx/' + buildConfig.project_name + '.git'
+  buildConfig.build_credentials = '6ddcbf51-9d79-4f99-a677-b172022deade'
+  buildConfig.org_basename = 'com.boschrexroth'
+  buildConfig.artifact_basename = JOB_NAME
+  buildConfig.assembly = buildConfig.org_basename + '.' + buildConfig.artifact_basename
+  buildConfig.author = ''
+  buildConfig.linux_dist = 'noble'
+  buildConfig.linux_flavor = 'flavor'
+  buildConfig.dockerImage = 'docker-automationx.lo-artifact.de.bosch.com/dc-ae-automation-x/ctrlx-builder:' + buildConfig.linux_dist
+  buildConfig.useHTMLPlots = false // if set to true plots will be added to the test reports however you need to also set the keepWorkspace to true and download the 'testResults.html' from the workspace otherwise plots are not displayed due to jenkins permissions
+}
+
+def prepareBuildEnvironment()
+{
+  // load library script
+  library = load "${env.DEVTOOLS}/jenkins/groovy/notifyStash.groovy"
+  library.prepareBuildEnvironment(buildConfig.build_credentials, buildConfig.repo_url)
+  library.dumpBuildEnvironment()
+}
+
+stage ('Prepare')
+{
+  node ('LABEL_LINUX')
+  {
+    deleteWorkspace()
+    prepareBuildConfiguration()
+    prepareBuildEnvironment()
+
+    // set buildtag to branchname + buildnumber
+    currentBuild.displayName = "#${BUILD_NUMBER} - ${buildParam.branch}"
+  }
+}
+
+pipeline{
+  // set global options
+  options {
+    // using color schema XTERM
+    ansiColor('xterm')
+  }
+  agent none
+
+  environment {
+    TEST_GROUP_JNK       = "${buildConfig.testgroup}"
+    ACTIVATE_HTML_PLOTS  = "${buildConfig.useHTMLPlots}"
+  }
+
+  stages {
+    stage('Build Targets'){
+      steps{
+        parallel (
+          'Build Linux Arch':
+          {
+            node('LABEL_LINUX')
+            {
+              sleep 5
+              resetLinux()
+
+              // build Linux
+              buildLinuxArch()
+
+              // pack to pipe
+              stashFiles('public/**', 'linuxArchPublic')
+              stashFiles('private/generated/buildlog*', 'linuxArchBuildlog')
+
+              // cleanup workspace to reduce memory consumption
+              cleanWorkspaceAfterBuild()
+            }
+          },
+          'Build Linux X64':
+          {
+            node('LABEL_LINUX')
+            {
+              resetLinux()
+
+              // build Linux
+              buildLinuxX64()
+
+              // pack to pipe
+              stashFiles('public/**', 'linuxX64Public')
+              stashFiles('private/generated/buildlog*', 'linuxX64Buildlog')
+              stashFiles('private/generated/memcheck/**', 'linuxX64Memcheck')
+              stashFiles('private/generated/*-gcc-x64/debug/html/**', 'linuxX64Coverage')
+
+              // only because test is done during build:
+              stashFiles('private/log/**', 'linuxX64Log')
+
+              // cleanup workspace to reduce memory consumption
+              cleanWorkspaceAfterBuild()
+            }
+          },
+          'Build Windows':
+          {
+            node ('LABEL_VS2022')
+            {
+              sleep 10
+              resetWindows("")
+
+              //build Windows
+              buildWindows()
+
+              // check if files are there
+              checkWindows()
+
+              //test Windows
+              testWindows()
+
+              stashFiles('public/**', 'windowsPublic')
+              stashFiles('private/log/**', 'windowsLog')
+
+              // cleanup workspace to reduce memory consumption
+              cleanWorkspaceAfterBuild()
+            }
+          }
+        )
+      }
+    }
+  }
+}
+
+stage ('Post build & Deploy')
+{
+  node ('LABEL_VS2022')
+  {
+    echo 'Deploy to MSC$'
+    resetWindows("-filter build -filter test -filter assemble")
+
+    buildConfig.email_recipients = library.get_email_recipients('MAINTAINERS.txt')
+
+    unstashFiles('windowsLog')
+    unstashFiles('windowsPublic')
+    unstashFiles('linuxX64Log')
+    unstashFiles('linuxX64Buildlog')
+    unstashFiles('linuxX64Memcheck')
+    unstashFiles('linuxX64Coverage')
+    unstashFiles('linuxX64Public')
+    unstashFiles('linuxArchBuildlog')
+    unstashFiles('linuxArchPublic')
+
+    // cppcheck
+    catchError() {
+      ansiColor('xterm') {
+        bat(script: '''
+            python private\\dependencies\\oss.cppcheck\\public\\run_cppcheck.py \
+                  public\\include private\\src \
+                  --junit=private\\log\\junit_cppcheck.xml \
+                  --force \
+                  --suppress=*:*private\\src\\thirdparty\\* \
+                  --suppress=*:*private\\src\\test\\comm.axisprofile.cpp
+            ''',
+          label: 'Run cppcheck'
+        )
+      }
+    }
+    junit(testResults: 'private/log/junit_cppcheck.xml', skipPublishingChecks: true)
+
+    ansiColor('xterm') {
+      bat '''
+        cd private\\generated\\memcheck
+        call valgrind2junit.bat
+        del valgrind2junit.*
+        move junit_memcheck.xml ..\\..\\log\\junit_memcheck.xml
+        exit /b 0     // leave build step with defined code, so jenkins does not abort
+      '''
+    }
+
+    ansiColor('xterm') {
+      bat """
+        cd private\\tool
+        call gcovCollect.bat ..\\generated\\${buildConfig.linux_flavor}-gcc-x64\\debug\\html ..\\generated\\${buildConfig.linux_flavor}-gcc-x64\\debug\\html\\index_sorted.html ..\\log\\junit_coverage.xml ..\\make\\coverage.exclude.junit
+      """
+    }
+
+    ansiColor('xterm') {
+      bat """
+        cd private\\tool
+        call warningCollect.bat ..\\generated\\buildlog_${buildConfig.linux_flavor}-gcc-aarch64_debug.txt    aarch64_debug    ..\\log\\junit_warn_aarch64_debug.xml   ..\\make\\warnings.exclude.junit
+        call warningCollect.bat ..\\generated\\buildlog_${buildConfig.linux_flavor}-gcc-aarch64_release.txt  aarch64_release  ..\\log\\junit_warn_aarch64_release.xml ..\\make\\warnings.exclude.junit
+        call warningCollect.bat ..\\generated\\buildlog_${buildConfig.linux_flavor}-gcc-x64_debug.txt        x64_debug        ..\\log\\junit_warn_x64_debug.xml       ..\\make\\warnings.exclude.junit
+        call warningCollect.bat ..\\generated\\buildlog_${buildConfig.linux_flavor}-gcc-x64_release.txt      x64_release      ..\\log\\junit_warn_x64_release.xml     ..\\make\\warnings.exclude.junit
+      """
+    }
+
+    junit 'private/log/junit*.xml'
+
+    // copy test results to public/test/log
+    ansiColor('xterm') {
+      bat '''
+        mkdir public\\test\\log
+        xcopy private\\log\\junit*.xml public\\test\\log /F /Y
+        exit /b 0
+      '''
+    }
+
+    script {
+      publishHTML([
+        allowMissing: true,
+        alwaysLinkToLastBuild: true,
+        keepAll: true,
+        reportDir: 'private\\generated\\' + buildConfig.linux_flavor + '-gcc-x64\\debug\\html\\',
+        reportFiles: 'index_sorted.html',
+        reportName: 'Code Coverage',
+        reportTitles: ''])
+
+      publishHTML([
+        allowMissing: true,
+        alwaysLinkToLastBuild: true,
+        keepAll: false,
+        reportDir: 'private\\generated\\memcheck\\',
+        reportFiles: 'index.html',
+        reportName: 'Valgrind MemCheck',
+        reportTitles: ''])
+
+      // publish TestBuddy plots HTML if available
+      if (buildConfig.useHTMLPlots) {
+        publishHTML([
+          allowMissing: true,
+          alwaysLinkToLastBuild: true,
+          keepAll: true,
+          reportDir: 'private\\log\\',
+          reportFiles: 'testResults.html',
+          reportName: 'Linux Log',
+          reportTitles: ''])
+      }
+    }
+
+  // deploy to $MSC
+  deploy()
+
+  // Cleanup workspace to reduce memory consumption
+  cleanWorkspaceAfterBuild()
+  }
+}
+
+stage ('Finish')
+{
+  node ('LABEL_MASTER')
+  {
+    //load library script
+    library.notifyRecipientsAndStash(currentBuild.currentResult, buildConfig.email_recipients)
+  }
+}
+
+
+//
+//Function definitions
+//
+
+def resetWindows(filter)
+{
+  // clean ws
+  deleteWorkspace()
+
+  // git (named...)
+  git branch: buildParam.branch, changelog: false, credentialsId: buildConfig.build_credentials, poll: false, url: buildConfig.repo_url
+
+  // Update Dependencies
+  bat """
+    cd private\\make
+    call update_dependencies.bat -nozip ${filter}
+    xcopy /Y /S ..\\dependencies\\appBuildBuddy\\public\\bin\\* bin\\
+  """
+}
+
+def resetLinux()
+{
+  // clean ws
+  deleteWorkspace()
+
+  // git (named...)
+  git branch: buildParam.branch, changelog: false, credentialsId: buildConfig.build_credentials, poll: false, url: buildConfig.repo_url
+  buildConfig.author = sh script: "git show -s --pretty=format:'%an <%ae>' ${buildParam.commitId}", returnStdout: true
+
+  sh '''
+    $DEVTOOLS/tool_nject/nject/nject.jar reset
+  '''
+}
+
+def buildLinuxArch()
+{
+  // docker voodoo
+  sh 'docker pull ' + buildConfig.dockerImage
+  env.docker_image = sh(returnStdout: true, script: "docker inspect --format='{{index .RepoDigests 0}}' ${buildConfig.dockerImage}").trim()
+  withDockerContainer(args: '--restart=always', image: buildConfig.dockerImage)
+  {
+    buildConfig.linux_flavor = sh(returnStdout: true, script: '''cd ./private/make;chmod +x ./linux_flavor.sh;./linux_flavor.sh''')
+    echo "buildConfig.linux_flavor: ${buildConfig.linux_flavor}"
+  }
+  buildConfig.linux_flavor = buildConfig.linux_flavor.trim()
+
+  withDockerContainer(args: '--restart=always', image: buildConfig.dockerImage)
+  {
+    // build
+    generateBuildinfo()
+    sh '''
+      cd ./private/make
+      chmod +x ./*.sh
+      LINUX_FLAVOR=`./linux_flavor.sh`
+      ./save_version.sh $BUILD_NUMBER $BUILDINFO_GIT_BRANCH $GIT_COMMIT
+      ./build.sh $LINUX_FLAVOR-gcc-aarch64 debug release
+      if [ $? != 0 ] ; then
+        exit 1
+      fi
+    '''
+  }
+}
+
+def buildLinuxX64()
+{
+  // docker voodoo
+  sh 'docker pull ' + buildConfig.dockerImage
+  withDockerContainer(args: '--restart=always', image: buildConfig.dockerImage)
+  {
+    // build
+    generateBuildinfo()
+    sh '''
+      cd ./private/make
+      chmod +x ./*.sh
+      LINUX_FLAVOR=`./linux_flavor.sh`
+      ./save_version.sh $BUILD_NUMBER $BUILDINFO_GIT_BRANCH $GIT_COMMIT
+      ./build.sh $LINUX_FLAVOR-gcc-x64 debug release
+      if [ $? != 0 ] ; then
+        exit 1
+      fi
+    '''
+    catchError(message: 'coverage test crashed',
+               buildResult: 'SUCCESS',
+               stageResult: 'UNSTABLE') {
+      runCoverage()
+      runMemCheck()
+    }
+  }
+}
+
+def buildWindows()
+{
+  // build
+  bat """
+    cd private\\make
+    set GIT_BRANCH=${buildParam.branch}
+    call bin\\BuildBuddy.exe -buildgroup autobuild
+  """
+}
+
+def checkWindows()
+{
+  // check if debug and release are available
+  powershell(script: 'private/make/analyse_buildresult.ps1 public/bin/win-msvc-x64',
+                     label: 'analyse buildresult')
+}
+
+def testWindows()
+{
+  // test
+  bat """
+    cd private\\make
+    set GIT_BRANCH=${buildParam.branch}
+    call bin\\BuildBuddy.exe -buildgroup testCI
+    exit /b 0     // leave build step with defined code, so jenkins does not abort
+  """
+}
+
+def generateBuildinfo()
+{
+  // Get release version from changelog.yml
+  // XXX should be replaced with groovy function readYAML if available
+
+  sh 'ls -alF'
+  def date = new Date()
+
+  writeFile file: './buildinfo.properties', text: """\
+  BUILDINFO_NAME = ${buildConfig.artifact_basename}
+  BUILDINFO_ORG = ${buildConfig.org_basename}
+  BUILDINFO_DATE = ${date.format('YYYY-MM-dd')}
+  BUILDINFO_TIME = ${date.format('HH-mm')}
+  BUILDINFO_USERNAME = KUJ7LO
+  BUILDINFO_BUILD_URL = ${BUILD_URL}
+  BUILDINFO_MACHINENAME = ${NODE_LABELS}
+  BUILDINFO_GIT_COMMIT = ${buildParam.commitId}
+  BUILDINFO_GIT_COMMITTER_NAME = ${buildConfig.author}
+  BUILDINFO_GIT_URL = ${buildConfig.repo_url}
+  BUILDINFO_GIT_BRANCH = ${buildParam.branch}
+  """
+}
+
+def deploy()
+{
+  // assemble + zip
+  bat """
+    cd private\\make
+    set GIT_BRANCH=${buildParam.branch}
+    call bin\\BuildBuddy.exe -buildgroup assemble
+  """
+
+  // deploy to $MSC
+  bat """
+      set GIT_BRANCH=${buildParam.branch}
+      IF \"%GIT_BRANCH%\" == \"master\" GOTO copyit
+      IF \"%GIT_BRANCH%\" == \"develop\" GOTO copyit
+      IF \"%GIT_BRANCH:~0,6%\" == \"hotfix\" GOTO copyit
+      IF \"%GIT_BRANCH:~0,6%\" == \"bugfix\" GOTO copyit
+      IF \"%GIT_BRANCH:~0,7%\" == \"feature\" GOTO copyit
+      IF \"%GIT_BRANCH:~0,7%\" == \"release\" GOTO copyit
+      GOTO end
+
+      :copyit
+      echo Copying artefact to build results
+      attrib private\\generated\\${buildConfig.assembly}*.zip +R
+      xcopy private\\generated\\${buildConfig.assembly}*.zip \\\\lo-edepartment\\MSC\$\\BuildResults\\${buildConfig.assembly}\\ /Y /K
+
+      :end
+  """
+}
+
+def runCoverage()
+{
+  echo 'function runCoverage with target comm_axisprofile_test_gcov'
+
+  withCredentials([usernameColonPassword(credentialsId: '22c14b1c-107f-469b-b4b4-902e75f0b75c', variable: 'TS_USER_TOKEN')])
+  {
+    catchError(message: 'coverage test crashed or teamscale upload failed',
+            buildResult: 'SUCCESS',
+            stageResult: 'UNSTABLE') {
+      sh'''
+        cd ./private/make
+        chmod +x linux_flavor.sh
+        LINUX_FLAVOR=`./linux_flavor.sh`
+        chmod +x coverage.sh
+        mkdir ../log
+        if [ "${ACTIVATE_HTML_PLOTS}" = "true" ] || [ "${ACTIVATE_HTML_PLOTS}" = "1" ] ; then
+          export MOTION_LIB_TEST_WEB_PLOTS=true
+            ./coverage.sh -t $LINUX_FLAVOR-gcc-x64 -x comm_axisprofile_test_gcov -b "$BUILDINFO_GIT_BRANCH" -c "$GIT_COMMIT" -- -group "${TEST_GROUP_JNK}" -prefix linux -junitxml ../../../../log/junitlinux.xml -htmlpath ../../../../log/testResults.html
+        else
+            ./coverage.sh -t $LINUX_FLAVOR-gcc-x64 -x comm_axisprofile_test_gcov -b "$BUILDINFO_GIT_BRANCH" -c "$GIT_COMMIT" -- -group "${TEST_GROUP_JNK}" -prefix linux -junitxml ../../../../log/junitlinux.xml -nopictures
+        fi
+      
+        if [ $? != 0 ] ; then
+          exit 1
+        fi
+        export MOTION_LIB_TEST_WEB_PLOTS="false"
+        curl -f -k -X POST -u\$TS_USER_TOKEN -Freport=@../generated/$LINUX_FLAVOR-gcc-x64/debug/coverage_filtered.info "https://lo-teamscale.de.bosch.com/api/projects/''' + buildConfig.project_name + '''/external-analysis/session/auto-create/report?format=LCOV&partition=Unit%20Tests&message=Unit%20Test%20Coverage&t=''' + buildParam.branch + ''':$(date +%s%3N)"
+      '''
+    }
+  }
+}
+
+def runMemCheck()
+{
+  sh'''
+    cd ./private/make
+    chmod +x linux_flavor.sh
+    LINUX_FLAVOR=`./linux_flavor.sh`
+    chmod +x memcheck.sh
+    mkdir -p ../log
+    ./memcheck.sh $LINUX_FLAVOR-gcc-x64 comm_axisprofile_test -group "${TEST_GROUP_JNK}"
+      if [ $? != 0 ] ; then
+        exit 1
+      fi
+  '''
+}
+
+def stashFiles(path, myName)
+{
+  println "stashing: ${myName}_${env.BUILD_ID} path: ${path}"
+  stash includes: "${path}", name: "${myName}_${env.BUILD_ID}"
+}
+
+def unstashFiles(myName)
+{
+  println "unstashing ${myName}_${env.BUILD_ID}"
+  unstash "${myName}_${env.BUILD_ID}"
+}
+
+def deleteWorkspace()
+{
+  if (!isUnix()) {
+      println ("remove read only attributes also on folders")
+      bat '''
+        attrib -R /D /S
+      '''
+  }
+  cleanWs(disableDeferredWipeout: true, deleteDirs: true)
+}
+
+def cleanWorkspaceAfterBuild()
+{
+  if(!buildConfig.keepWorkspace)
+  {
+    echo "Cleanup workspace after build"
+    deleteWorkspace()
+  }
+}

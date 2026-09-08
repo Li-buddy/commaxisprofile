@@ -1,0 +1,16 @@
+namespace comm.axisprofile.fbtypes;
+
+/// return type of requests of the current boot state
+table APRBootState {
+
+  /// text of the boot step (can be shown in an HMI)
+  text:string;
+
+  /// current boot step (starts with 0, ends with maxSteps)
+  actStep : uint;
+
+  /// number of boot steps (when actStep == maxSteps then the booting is finished)
+  maxSteps : uint;
+}
+
+root_type APRBootState;

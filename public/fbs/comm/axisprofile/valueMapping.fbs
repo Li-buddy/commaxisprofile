@@ -1,0 +1,53 @@
+namespace comm.axisprofile.fbtypes;
+
+enum variableType : byte {
+  /// unknown type
+  UNKNOWN = -1,
+
+  /// base type
+  BASE,
+
+  /// velocity type
+  VELOCITY,
+
+  /// homing type
+  HOMING,
+
+  /// probe type
+  PROBE,
+
+  /// torque/force type
+  TORQUE_FORCE,
+
+  /// safe motion
+  SAFE_MOTION,
+
+  /// user PDO
+  USER_PDO,
+
+  /// type for signal control/status word
+  SIGNAL_WORD,
+
+  /// for IO device
+  IO_DEVICE,
+}
+
+table mappingEntry {
+  /// Id-string of the mapping entry
+  valueID : string (key);
+
+  /// datalayer uri of the mapping entry
+  datalayerURI : string;
+
+  /// variable type of mapped variable
+  profileVar : variableType;  
+  
+  /// is current item is required
+  required : bool;            
+}
+
+table valueMapping {
+  mapping : [mappingEntry];
+}
+
+root_type valueMapping;

@@ -1,0 +1,36 @@
+.vs
+.vscode
+
+*.properties
+
+private/dependencies
+private/generated
+private/log
+private/make/bin
+private/make/buildbuddylog.txt
+private/src/test/unittest/configuration/files/generated
+
+public/licenses
+public/bin
+public/lib
+public/cmake
+public/doc
+public/bundle
+public/include/*.h
+public/bfbs/
+public/include/comm/axisprofile/*.h
+public/include/comm/axisprofile/datatypes
+!public/include/comm/axisprofile/bundle_version.h
+public/resources
+
+out/
+build/
+# *.orig files from git merge
+*.orig
+
+*.log
+
+# generated cdf file
+cdf.used.xml
+cdf.original.xml
+CMakePresets.json

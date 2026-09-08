@@ -1,0 +1,324 @@
+<package>
+  <!-- collect all warnings from the gcc stderr output files and create a junit.xml from it -->
+  <job id="warningCollect">
+    <script language="JScript">
+    
+      // -------------------------------------------------------------------------
+      //! print some output
+      // -------------------------------------------------------------------------
+      function Print (str)
+      {
+        WScript.Echo (str);
+      }
+      
+      // -------------------------------------------------------------------------
+      //! print error and exit
+      // -------------------------------------------------------------------------
+      function FatalError (str)
+      {
+        Print ("Fatal error:\n" + str);
+        WScript.Quit (1);
+      }
+
+      String.prototype.trim = function()
+      {
+          return this.replace(/^\s+|\s+$/g, '');
+      };
+
+      function makeStruct(names) {
+        var names = names.split(' ');
+        var count = names.length;
+        function constructor() {
+          for (var i = 0; i < count; i++) {
+            this[names[i]] = arguments[i];
+          }
+        }
+        return constructor;
+      }
+
+      // -------------------------------------------------------------------------
+      //! load a file as array of lines
+      // -------------------------------------------------------------------------
+      function LoadFile(fname)
+      {
+        var lines = new Array();
+        var file = fso.OpenTextFile(fname, 1);
+        while(!file.AtEndOfStream)
+        {
+          lines.push(file.ReadLine());
+        }
+        file.Close();
+        return lines;
+      }
+
+      // -------------------------------------------------------------------------
+      //! check if an item was already found
+      // -------------------------------------------------------------------------
+      function AlreadyFound(item, array)
+      {
+        for (n=0; n<array.length; ++n)
+        {
+          if ((item.file == array[n].file) && (item.line == array[n].line) && (item.col == array[n].col))
+          {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      // -------------------------------------------------------------------------
+      //! parse the log output file
+      // -------------------------------------------------------------------------
+      function ParseFile(lines, regExpr, filterRegExpr)
+      {
+        var array = new Array();
+        regExp = new RegExp(regExpr);
+        filterRegExp = new RegExp(filterRegExpr);
+        var files = new Array();
+        for (i=0; i<lines.length; ++i)
+        {
+          var match = regExp.exec(lines[i]);
+          if ((match != null) && !filterRegExp.test(lines[i]))
+          {
+            var Item = makeStruct("file line col msg toOutput");
+            var add = new Item(match[1], match[2], match[3], match[4], true);
+            if (!AlreadyFound(add, array))
+            {
+              Print("Found warning item (file=" + add.file + "; line=" + add.line + "; col=" + add.col + "): " + add.msg);
+              array.push(add);
+            }
+          }
+        }
+        return array;
+      }
+
+      // -------------------------------------------------------------------------
+      //! read and parse exclude file
+      // -------------------------------------------------------------------------
+      function ReadExclude(excludeFile)
+      {
+        var exclude = new Array();
+        if (excludeFile == "")
+        {
+          return exclude;
+        }
+
+        Print("Read exclude file " + excludeFile);
+        var Item = makeStruct("file line col");
+  
+        var lines = LoadFile(excludeFile);
+        for (i=0; i<lines.length; ++i)
+        {
+          var s = lines[i].trim();
+          if ((s != "") && (s.charAt(0) != "#"))
+          {
+            var data = s.split(':');
+            if ((data.length == 0) || (data.length > 3))
+            {
+              FatalError("Invalid format in file " + excludeFile + " at line " + (i+1) + ": " + s);
+            }
+            var line = -1;
+            if (data.length > 1)
+            {
+              line = data[1].trim();
+            }
+            var col = -1;
+            if (data.length > 2)
+            {
+              col = data[2].trim();
+            }
+            var add = new Item(data[0].trim(), line, col);
+            exclude.push(add);
+          }
+        }  
+        Print("Found " + exclude.length + " valid entries");
+        return exclude;
+      }
+
+      // -------------------------------------------------------------------------
+      //! remove excluded findings
+      // -------------------------------------------------------------------------
+      function RemoveExcluded(array, exclude)
+      {
+        for (i=0; i<array.length; ++i)
+        {
+          for (a=0; a<exclude.length; ++a)
+          {
+            if (exclude.line < 0)
+            {
+              if (exclude[a].file == array[i].file)
+              {
+                array[i].toOutput = false;
+                Print("Remove because excluded file (" + array[i].file + ":" + array[i].line + ":" + array[i].col + ":" + array[i].msg);
+              }
+            }
+            else
+            {
+              if (exclude.col < 0)
+              {
+                if ((exclude[a].file == array[i].file) && (exclude[a].line == array[i].line))
+                {
+                  array[i].toOutput = false;
+                  Print("Remove because excluded file/line (" + array[i].file + ":" + array[i].line + ":" + array[i].col + ":" + array[i].msg);
+                }
+              }
+              else
+              {
+                if ((exclude[a].file == array[i].file) && (exclude[a].line == array[i].line) && (exclude[a].col == array[i].col))
+                {
+                  array[i].toOutput = false;
+                  Print("Remove because excluded file/line/col (" + array[i].file + ":" + array[i].line + ":" + array[i].col + ":" + array[i].msg);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // -------------------------------------------------------------------------
+      //! count number of errors (filtered)
+      // -------------------------------------------------------------------------
+      function findErrors(array)
+      {
+        var cnt = 0;
+        for (i=0; i<array.length; ++i)
+        {
+          if (array[i].toOutput)
+          {
+            cnt++;
+          }
+        }
+        return cnt;
+      }
+
+      // -------------------------------------------------------------------------
+      //! replace a special XML characters in the string and returns this
+      // -------------------------------------------------------------------------
+      function getXMLString(input)
+      {
+        var str = input;
+        str = str.replace(/&/g, "&amp;");
+        str = str.replace(/</g, "&lt;");
+        str = str.replace(/>/g, "&gt;");
+        str = str.replace(/"/g, "&quot;");
+        str = str.replace(/'/g, "&apos;");
+        return str;
+      }
+
+      // -------------------------------------------------------------------------
+      //! get the text of all findings
+      // -------------------------------------------------------------------------
+      function getLogTexts(array, showAll)
+      {
+        var str = "";
+        for (i=0; i<array.length; ++i)
+        {
+          if (showAll || array[i].toOutput)
+          {
+            str += "\n" + array[i].file + ":" + array[i].line + ":" + array[i].col + ": " + getXMLString(array[i].msg);
+            if (showAll && !array[i].toOutput)
+            {
+              str += " -&gt; excluded";
+            }
+          }
+        }
+        return str;
+      }
+
+      // -------------------------------------------------------------------------
+      //! get an int as string with two digits
+      // -------------------------------------------------------------------------
+      function getTwoDigitsString(input)
+      {
+        var res = input.toString();
+        if (input < 10)
+        {
+          res = "0" + res;
+        }
+        return res;
+      }
+
+      // -------------------------------------------------------------------------
+      //! get current time as string
+      // -------------------------------------------------------------------------
+      function getCurrentTime()
+      {
+        var currentdate = new Date(); 
+        var datetime = currentdate.getFullYear() + "-" + getTwoDigitsString(currentdate.getMonth()+1) + "-" + getTwoDigitsString(currentdate.getDate()) + "T"
+                    + getTwoDigitsString(currentdate.getHours()) + ":"  
+                    + getTwoDigitsString(currentdate.getMinutes()) + ":" 
+                    + getTwoDigitsString(currentdate.getSeconds());
+        return datetime;
+      }
+
+      // -------------------------------------------------------------------------
+      //! load a file as single string
+      // -------------------------------------------------------------------------
+      function LoadFileBulk(fname)
+      {
+        var file = fso.OpenTextFile(fname, 1);
+        var text = file.ReadAll();
+        file.Close();
+        return text;
+      }
+      function saveToFile(fName, str)
+      {
+        var file = fso.CreateTextFile(fName, true);
+        file.Write(str);
+        file.Close();
+      }
+
+      function WriteJUnit(outputFile, array, name)
+      {
+        var str = LoadFileBulk("templates/junit.xml");
+        str = str.replace("TESTSUITE", "linux");
+        str = str.replace("CLASSNAME", "linux.warnings");
+        str = str.replace("TESTNAME", "linux.warnings." + name);
+        str = str.replace("TIME_STAMP", getCurrentTime());
+        str = str.replace("TIME_TEXT", "Taken time: 1");
+        str = str.replace("TIME_TEXT", "Taken time: 1");
+        var errorCnt = findErrors(array);
+        str = str.replace("NUMBER_OF_ERRORS", errorCnt);
+        if (errorCnt > 0)
+        {
+          str = str.replace("SYSTEM_OUT", "\nTestLog:\n---------\n" + getLogTexts(array, true));
+          str = str.replace("ERROR_TEXT", "\n\t<error message=\"" + getLogTexts(array, false)+ "\"/>");
+        }
+        else
+        {
+          str = str.replace("SYSTEM_OUT", getLogTexts(array, true) + "\n\nNo errors found...");
+          str = str.replace("ERROR_TEXT", "");
+        }
+        saveToFile(outputFile, str);
+      }
+      
+
+      function doWork()
+      {
+        var regExp = "/.*(\\/private\\/src\\/.*|\\/public\\/.*):(\\d+):(\\d+):\\s*warning:\\s*(.*)";
+        var filterRegExp = "/.*private\\/dependencies\\/";
+      
+        var inputFile = WScript.arguments(0);
+        var name = WScript.arguments(1);
+        var outputFile = WScript.arguments(2);
+        var excludeFile = "";
+        if (WScript.arguments.length > 3)
+        {
+          excludeFile = WScript.arguments(3);
+        }
+        fso = new ActiveXObject ("Scripting.FileSystemObject");
+
+        var lines = LoadFile(inputFile);
+        var array = ParseFile(lines, regExp, filterRegExp);
+        var exclude = ReadExclude(excludeFile);
+        RemoveExcluded(array, exclude);
+
+        Print("Write JUnit output");
+        array.sort(function (a, b) { if (a.file < b.file) return -1; else return 1; } );
+        WriteJUnit(outputFile, array, name);
+      }
+      
+      doWork();
+    </script>
+  </job>
+</package>

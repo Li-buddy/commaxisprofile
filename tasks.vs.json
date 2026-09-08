@@ -1,0 +1,180 @@
+{
+  "version": "0.2.1",
+  "remoteHwTarget_IP": "192.168.6.42",
+  "remoteHwTarget_Login": "boschrexroth",
+  "remoteBuildHost_IP": "127.0.0.1",
+  "tasks": [
+    //
+    // remote tasks regarding HW target aarch64 @ remoteHwTarget_IP
+    //
+    {
+      // using this task requires a ssh key on host VM and the authorization of this key on target "~/.ssh/authorized_keys"
+      "taskName": "Update bundle on target",
+      "appliesTo": "aarch64.tasks",
+      "type": "remote",
+      "contextType": "custom",
+      "command": "scp ./com.boschrexroth.comm.axisprofile.zip ${remoteHwTarget_Login}@${remoteHwTarget_IP}:/var/tmp/${projectDirName}/public/bundle/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}; echo Update bundle done!",
+      "remoteMachineName": "${remoteBuildHost_IP}",
+      "remoteWorkingDirectory": "/var/tmp/${projectDirName}/public/bundle/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}"
+    },
+    {
+      // using this task requires a ssh key on host VM and the authorization of this key on target "~/.ssh/authorized_keys"
+      "taskName": "Update 'indralogic' on target",
+      "appliesTo": "aarch64.tasks",
+      "type": "remote",
+      "contextType": "custom",
+      "command": "scp ./indralogic.zip ${remoteHwTarget_Login}@${remoteHwTarget_IP}:/var/tmp/${projectDirName}/public/bundle/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}; echo Udate indralogic done!",
+      "remoteMachineName": "${remoteBuildHost_IP}",
+      "remoteWorkingDirectory": "/var/tmp/${projectDirName}/public/bundle/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}"
+    },
+    {
+      // using this task requires a ssh key on host VM and the authorization of this key on target "~/.ssh/authorized_keys"
+      "taskName": "Download ControlX to target",
+      "appliesTo": "aarch64.tasks",
+      "type": "remote",
+      "contextType": "custom",
+      "command": "chmod -R 0777 ./download.sh; ./download.sh ${remoteHwTarget_Login} ${remoteHwTarget_IP} /var/tmp/${projectDirName}; echo Download ControlX done!",
+      "remoteMachineName": "${remoteBuildHost_IP}",
+      "remoteWorkingDirectory": "/var/tmp/${projectDirName}/private/make"
+    },
+    {
+      "taskName": "Remove ControlX working directory because project switching",
+      "appliesTo": "aarch64.tasks",
+      "type": "remote",
+      "contextType": "custom",
+      "command": "rm -rf snap/; echo Remove ControlX working directory done!",
+      "remoteMachineName": "${remoteHwTarget_IP}",
+      "remoteWorkingDirectory": "~"
+    },
+    //
+    // remote tasks regarding docker container @ remoteBuildHost_IP
+    //
+    {
+      "taskName": "Enable attach to process",
+      "appliesTo": "localhost.tasks",
+      "type": "remote",
+      "contextType": "custom",
+      "command": "echo '${remoteHwTarget_Login}' | sudo -S echo 0| sudo tee /proc/sys/kernel/yama/ptrace_scope",
+      "remoteMachineName": "${remoteBuildHost_IP}",
+      "remoteWorkingDirectory": "/var/tmp/${projectDirName}"
+    },
+    {
+      "taskName": "Remove ControlX working directory because project switching",
+      "appliesTo": "localhost.tasks",
+      "type": "remote",
+      "contextType": "custom",
+      "command": "rm -rf snap/; echo Remove ControlX working directory done!",
+      "remoteMachineName": "${remoteBuildHost_IP}",
+      "remoteWorkingDirectory": "~"
+    },
+    {
+      "taskName": "Remove useless rsync folder",
+      "appliesTo": "localhost.tasks",
+      "type": "remote",
+      "contextType": "custom",
+      "command": "chmod -R 0777 ./cleanup_rsync_folder.sh; ./cleanup_rsync_folder.sh; echo Remove useless rsync folder done!",
+      "remoteMachineName": "${remoteBuildHost_IP}",
+      "remoteWorkingDirectory": "/var/tmp/${projectDirName}/private/make"
+    },
+    {
+      "taskName": "Code coverage generate",
+      "appliesTo": "localhost.tasks",
+      "type": "default",
+      "contextType": "custom",
+      "command": "${env.COMSPEC}",
+      "args": [
+        " \"${env.ProgramW6432}\\git\\bin\\bash.exe\" -c \"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 22222 builder@localhost 'cd /var/tmp/${projectDirName}/private/make/; pwd; ./coverage.sh msvc-Unix_Makefiles/linux-gcc-x64 comm_axisprofile_test -group AutoTest -prefix linux -junitxml ../../../../log/junitlinux.xml'; scp -rp -o LogLevel=VERBOSE -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P 22222 builder@localhost:/var/tmp/${projectDirName}/private/generated/msvc-Unix_Makefiles/${env.MSC_TARGET_NAME}/${env.MSC_CONFIG_TYPE}/html ./private/generated/; echo -~- code coverage copy done -~-; \""
+      ]
+    },
+    //
+    // pre-build tasks
+    //
+    {
+      "taskName": "Update dependencies again before build",
+      "appliesTo": "vs_build.tasks",
+      "type": "command",
+      "command": "${env.COMSPEC}",
+      "args": [ "${workspaceRoot}\\private\\make\\zip_dependencies.bat" ]
+    },
+    //
+    // M4 compiler tasks
+    //
+    {
+      "taskName": "m4 Compiler Interfaces (WIN)",
+      "appliesTo": "*_itf.m4",
+      "type": "command",
+      "command": "${env.COMSPEC}",
+      "args": [ "${workspaceRoot}\\private\\make\\build_itf.bat ${file}" ]
+    },
+    {
+      "taskName": "m4 Compiler Dependencies (WIN)",
+      "appliesTo": "*_dep.m4",
+      "type": "command",
+      "command": "${env.COMSPEC}",
+      "args": [ "${workspaceRoot}\\private\\make\\build_dep.bat ${file}" ]
+    },
+    //
+    // fbs compiler tasks
+    //
+    {
+      "taskName": "fbs flattbuffers (WIN)",
+      "appliesTo": "*.fbs",
+      "type": "command",
+      "command": "${env.COMSPEC}",
+      "args": [ "${workspaceRoot}\\private\\make\\build_fbs.bat ${file}" ]
+    },
+    //
+    // run batch
+    //
+    {
+      "taskName": "Run batch",
+      "appliesTo": "*.bat",
+      "type": "command",
+      "command": "${env.COMSPEC}",
+      "args": [ "call ${file}" ]
+    },
+    //
+    // special tasks
+    //
+    {
+      "taskName": "Clean sync DB (WIN)",
+      "appliesTo": "special.tasks",
+      "type": "command",
+      "command": "${env.COMSPEC}",
+      "args": [
+        "rmdir /S /Q ${workspaceRoot}\\.vs"
+      ]
+    },
+    //
+    // common tasks
+    //
+    {
+      "taskName": "Echo project name (hash)",
+      "appliesTo": "CMakeLists.txt,*.json",
+      "type": "command",
+      "command": "${env.COMSPEC}",
+      "args": [
+        "echo ${projectDirName}"
+      ]
+    },
+    //
+    // cpp check
+    //
+    {
+      "taskLabel": "cppcheck",
+      "appliesTo": "/*",
+      "type": "launch",
+      "command": "${env.COMSPEC}",
+      "workingDirectory": "${workspaceRoot}",
+      "args": [
+        "private\\dependencies\\oss.cppcheck\\public\\run_cppcheck.bat",
+        "--force",
+        "--suppress=*:*private\\src\\thirdparty\\*",
+        "--suppress=*:*private\\src\\test\\comm.axisprofile.cpp",
+        "-q",
+        "${workspaceRoot}/public/include",
+        "${workspaceRoot}/private/src"
+      ]
+    }
+  ]
+}

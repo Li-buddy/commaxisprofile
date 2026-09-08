@@ -1,0 +1,17 @@
+namespace comm.axisprofile.fbtypes;
+
+// Important: This enum must have the same structure
+//            as the internal enum 'AxisProfileDeviceScalingType'!
+
+enum deviceScalingType : int {
+  UNDEFINED = -1,           // undefined
+  ROTARY = 0,               // rotational
+  PERCENTAGE = 1,           // percentage
+  LINEAR = 2,               // linear
+}
+
+table profileDeviceScalingType{
+  scalingType  : deviceScalingType;
+}
+
+root_type profileDeviceScalingType;
