@@ -381,14 +381,12 @@ const ScalingFactor& CanopenProfile::getVelocityFactorCfg() const
 std::vector<std::unique_ptr<IJobObj>> CanopenProfile::onGetJobList()
 {
   std::vector<std::unique_ptr<IJobObj>> jobs;
-  jobs.reserve(6);
+  jobs.reserve(4);
 
   jobs.emplace_back(std::make_unique<CanopenJobReset>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<CanopenJobHoming>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<CanopenJobDeviceParam>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<CanopenJobSetAbsPos>(m_profileBasicInfo, m_sharingHandler));
-  jobs.emplace_back(std::make_unique<CanopenJobGetOpMode>(m_profileBasicInfo, m_sharingHandler));
-  jobs.emplace_back(std::make_unique<CanopenJobSetOpMode>(m_profileBasicInfo, m_sharingHandler));
 
   return jobs;
 }

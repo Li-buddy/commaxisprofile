@@ -95,6 +95,12 @@ namespace comm::axisprofile
   /// @return  Member variable 'm_operationMode' of the handle is returned.
   extern "C" AxisProfileOperationMode AXISPROFILE_getOperationModeMock(void* handle);
 
+  /// @brief Mockup of method AXISPROFILE_readOperationMode().
+  /// @param[in]   handle          Interface handle (use class AxisProfileStatusControlMockHandle)
+  /// @param[out]  operationMode   Read operation mode from handle
+  /// @return  Member variable 'm_returnValue' of the handle is returned.
+  extern "C" AxisProfileResult AXISPROFILE_readOperationModeMock(void* handle, AxisProfileOperationMode& operationMode);
+
   /// @brief Mockup of method AXISPROFILE_checkPowerMode().
   /// @param[in]   handle      Interface handle (use class AxisProfileStatusControlMockHandle)
   /// @param[in]   powerMode   Power mode that will be compared with 'm_powerMode' of the handle

@@ -64,6 +64,7 @@ namespace comm::axisprofile
     bool cyclicStandStillCheck() const final;
     bool checkOperationModeSupported(const AxisProfileOperationMode opMode, OpModeErrorInfo& errorInfo) final;
     AxisProfileOperationMode getOperationMode() const final;
+    AxisProfileResult readOperationMode(AxisProfileOperationMode& operationMode) final;
     bool isDeviceFollowsControl() const final;
     bool deviceHasWarning() const final;
     ReadyToOperate checkReadyToOperate() final;

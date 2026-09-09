@@ -65,6 +65,12 @@ extern "C" bool AXISPROFILE_checkOperationModeSupported(void* handle, const comm
 /// @return      Return value is the actual operation mode.   
 extern "C" comm::axisprofile::AxisProfileOperationMode AXISPROFILE_getOperationMode(void *handle);
 
+/// @brief This method reads the actual operation mode of the device.
+/// @param[in]   handle          Handle of the interface
+/// @param[out]  operationMode   Read operation mode
+/// @return      Return value indicating success, pending state or error.
+extern "C" comm::axisprofile::AxisProfileResult AXISPROFILE_readOperationMode(void *handle, comm::axisprofile::AxisProfileOperationMode& operationMode);
+
 /// @brief This method checks if the given power mode equals the power mode of the device.
 /// @param[in]   handle      Handle of the interface
 /// @param[in]   powerMode   Power mode which will be checked

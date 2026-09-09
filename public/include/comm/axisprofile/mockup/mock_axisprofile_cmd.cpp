@@ -58,23 +58,6 @@ extern "C" CmdStatusInDevice AXISPROFILE_getCmdStatusInDeviceMock(void* handle, 
   return (mock) ? mock->m_cmdStatusInDevice : CmdStatusInDevice::DEVICE_UNKNOWN;
 }
 
-extern "C" AxisProfileOperationMode AXISPROFILE_getOperationModeMockCmd(void* handle)
-{
-  const AxisProfileCmdMockHandle* mock = static_cast<AxisProfileCmdMockHandle*>(handle);
-  return (mock) ? mock->m_operationMode : AxisProfileOperationMode::UNDEFINED;
-}
-
-extern "C" AxisProfileResult AXISPROFILE_setOperationModeMockCmd(void* handle, const AxisProfileOperationMode opMode)
-{
-  AxisProfileCmdMockHandle* mock = static_cast<AxisProfileCmdMockHandle*>(handle);
-  if (mock)
-  {
-    mock->m_operationMode = opMode;
-    return mock->m_retValue;
-  }
-  return AxisProfileResult::ERR_INVALID_ARGUMENT;
-}
-
 extern "C" AxisProfileResult AXISPROFILE_clearDeviceErrorMockCmd(void* handle, CmdType& /*cmdType*/)
 {
   const AxisProfileCmdMockHandle* mock = static_cast<AxisProfileCmdMockHandle*>(handle);

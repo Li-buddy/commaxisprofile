@@ -133,7 +133,7 @@ bool CanopenStatusControlDrive::checkOperationModeSupported(const AxisProfileOpe
   }
   return opModeSupported;
 }
-#include<iostream>
+
 AxisProfileOperationMode CanopenStatusControlDrive::getOperationMode() const
 {
   AxisProfileOperationMode result;
@@ -146,6 +146,13 @@ AxisProfileOperationMode CanopenStatusControlDrive::getOperationMode() const
   { 
     result = m_setAndCheckOpModeState.checkedOpMode;
   }
+  return result;
+}
+
+AxisProfileResult CanopenStatusControlDrive::readOperationMode(AxisProfileOperationMode& operationMode)
+{
+  const AxisProfileResult result = checkOperationMode();
+  operationMode = getOperationMode();
   return result;
 }
 

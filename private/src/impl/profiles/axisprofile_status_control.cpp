@@ -47,6 +47,7 @@ AxisProfileStatusControl::AxisProfileStatusControl(ProfileBasicInfo& profileBasi
   m_cInterface.checkOperationMode = AXISPROFILE_checkOperationMode;
   m_cInterface.checkOperationModeSupported = AXISPROFILE_checkOperationModeSupported;
   m_cInterface.getOperationMode = AXISPROFILE_getOperationMode;
+  m_cInterface.readOperationMode = AXISPROFILE_readOperationMode;
   m_cInterface.checkPowerMode = AXISPROFILE_checkPowerMode;
   m_cInterface.getPowerMode = AXISPROFILE_getPowerMode;
   m_cInterface.checkError = AXISPROFILE_checkError;

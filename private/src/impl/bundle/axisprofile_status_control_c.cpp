@@ -67,6 +67,13 @@ extern "C" comm::axisprofile::AxisProfileOperationMode AXISPROFILE_getOperationM
   return statusControlInterface->getOperationMode();
 }
 
+extern "C" comm::axisprofile::AxisProfileResult AXISPROFILE_readOperationMode(void* handle, comm::axisprofile::AxisProfileOperationMode& operationMode)
+{
+  IAxisProfileStatusControl* statusControlInterface = static_cast<IAxisProfileStatusControl*>(handle);
+  RETURN_HANDLE_INVALIDE(statusControlInterface, AxisProfileResult::ERR_EXEC_NULL, "read operation mode");
+  return statusControlInterface->readOperationMode(operationMode);
+}
+
 extern "C" bool AXISPROFILE_checkPowerMode(void* handle, const comm::axisprofile::AxisProfilePowerMode powerMode)
 {
   const IAxisProfileStatusControl* statusControlInterface = static_cast<IAxisProfileStatusControl*>(handle);

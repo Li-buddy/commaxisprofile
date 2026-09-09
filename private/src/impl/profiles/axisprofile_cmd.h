@@ -67,8 +67,6 @@ namespace comm::axisprofile
     AxisProfileResult abortCmd(CmdType cmdType) final;
     AxisProfileResult startCmd(CmdType cmdType, IContainer* agr = nullptr);
     CmdStatusInDevice getCmdStatusInDevice(CmdType cmdType) final;
-    AxisProfileOperationMode getOperationMode() final;
-    AxisProfileResult setOperationMode(const AxisProfileOperationMode opMode) final;
 
     // command invokers
     AxisProfileResult clearDeviceError(CmdType& cmdType) final;

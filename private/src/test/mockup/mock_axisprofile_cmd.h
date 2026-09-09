@@ -51,8 +51,6 @@ namespace test
     ::comm::axisprofile::AxisProfileResult resetCmd(::comm::axisprofile::CmdType /*cmdType*/) override { return m_returnValue; }
     ::comm::axisprofile::AxisProfileResult abortCmd(::comm::axisprofile::CmdType /*cmdType*/) override { return m_returnValue; }
     ::comm::axisprofile::CmdStatusInDevice getCmdStatusInDevice(::comm::axisprofile::CmdType /*cmdType*/) override { return m_cmdStatusInDevice; }
-    ::comm::axisprofile::AxisProfileOperationMode getOperationMode() override { return m_operationMode; }
-    ::comm::axisprofile::AxisProfileResult setOperationMode(const ::comm::axisprofile::AxisProfileOperationMode opMode) override { m_operationMode = opMode; return m_returnValue; }
     ::comm::axisprofile::AxisProfileResult clearDeviceError(::comm::axisprofile::CmdType& /*cmdType*/) override { return m_returnValue; }
     ::comm::axisprofile::AxisProfileResult clearDeviceError2() override { return m_returnValue; }
     ::comm::axisprofile::AxisProfileResult setAbsolutePosition(double /*newPos*/, ::comm::axisprofile::AxisProfileEncoder /*encoder*/, ::comm::axisprofile::CmdType& /*cmdType*/) override { return m_returnValue; }
@@ -68,7 +66,6 @@ namespace test
     IAxisProfileCmdC* m_cmdCInterface = nullptr; ///< Pointer to the command C-Interface
     ::comm::axisprofile::CmdState m_cmdState = ::comm::axisprofile::CmdState::STATE_UNKNOWN;                ///< State of the command
     ::comm::axisprofile::CmdStatusInDevice m_cmdStatusInDevice = ::comm::axisprofile::CmdStatusInDevice::DEVICE_NOT_SET; ///< Status of command in device
-    ::comm::axisprofile::AxisProfileOperationMode m_operationMode = ::comm::axisprofile::AxisProfileOperationMode::UNDEFINED; ///< Operation mode
     ::comm::axisprofile::AxisProfileResult m_returnValue = ::comm::axisprofile::AxisProfileResult::STS_OK;  ///< Result of member functions
   };
 }

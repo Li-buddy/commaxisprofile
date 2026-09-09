@@ -54,6 +54,7 @@ namespace comm::axisprofile
     ~AxisProfileStatusControlDrive() noexcept override = default;
 
     bool checkOperationMode(const AxisProfileOperationMode opMode) const final;
+    AxisProfileResult readOperationMode(AxisProfileOperationMode& operationMode) override;
     AxisProfilePowerMode getPowerMode() const final;
     bool checkPowerMode(const AxisProfilePowerMode powerMode) const final;   
 

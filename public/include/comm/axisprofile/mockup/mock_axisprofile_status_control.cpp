@@ -66,6 +66,18 @@ extern "C" AxisProfileOperationMode AXISPROFILE_getOperationModeMock(void* handl
   return (mock) ? mock->m_operationMode : AxisProfileOperationMode::UNDEFINED;
 }
 
+extern "C" AxisProfileResult AXISPROFILE_readOperationModeMock(void* handle, AxisProfileOperationMode& operationMode)
+{
+  const AxisProfileStatusControlMockHandle* mock = static_cast<AxisProfileStatusControlMockHandle*>(handle);
+  if (!mock)
+  {
+    operationMode = AxisProfileOperationMode::UNDEFINED;
+    return AxisProfileResult::ERR_INVALID_ARGUMENT;
+  }
+  operationMode = mock->m_operationMode;
+  return mock->m_returnValue;
+}
+
 extern "C" bool AXISPROFILE_checkPowerModeMock(void* /*handle*/, const AxisProfilePowerMode /*powerMode*/)
 {
   return true;

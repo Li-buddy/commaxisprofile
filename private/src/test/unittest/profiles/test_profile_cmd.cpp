@@ -4,7 +4,6 @@
 #include "mockup/mock_profile_trace.h"
 #include "mockup/mock_job_mgr.h"
 #include "mockup/mock_axisprofile_category.h"
-#include "mockup/mock_axisprofile_status_control.h"
 #include "profiles/data_sharing/sharing_handler.h"
 #include "test_profile_cmd.h"
 
@@ -69,21 +68,11 @@ HRESULT TestProfileCmd::testErrCaseOfCmdHanlding()
   auto cmdStatusInDevice = m_testCmd->getCmdStatusInDevice(CmdType::CLEAR_DEV_ERR);
   LOG_TEST_RESULT(cmdStatusInDevice, L"\nGet an unexpected result!", CmdStatusInDevice::DEVICE_UNKNOWN);
 
-  log(L"\n  Error should happen at getOperationMode...");
-  //auto operationMode = m_testCmd->getOperationMode();
-  //LOG_TEST_RESULT(operationMode, L"\nGet an unexpected result!", AxisProfileOperationMode::UNDEFINED);
-
-  log(L"\n  Error should happen at setOperationMode...");
-  aprRes = m_testCmd->setOperationMode(AxisProfileOperationMode::POSITIONING);
-  LOG_TEST_RESULT(aprRes, L"\nGet an unexpected result!", AxisProfileResult::ERR_EXEC_NULL);
-
   log(L"\nError case when shareHandle is exit...");
   log(L"\nCreate and set share handler and job manager...");
   auto sharingHandler = AxisProfileSharingHandler(&profileInfo.m_profileTrace);
   test::MockJobMgr mockJobMgr;
-  test::MockAxisProfileStatusControl mockStatusControl;
   sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_JOB_MGR, &mockJobMgr);
-  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_STATUSCONTROL, &mockStatusControl);
   m_testCmd->setSharingHandler(&sharingHandler);
 
   log(L"\n  Error when job manger can't send a new command...");
@@ -155,14 +144,6 @@ HRESULT TestProfileCmd::testNormalCaseOfCmdHandling()
   mockJobMgr.m_jobObj.m_objState = CmdState::STATE_ACTIVE;
   auto cmdStatusInDevcie = m_testCmd->getCmdStatusInDevice(CmdType::CLEAR_DEV_ERR);
   LOG_TEST_RESULT(cmdStatusInDevcie, L"\nGet an unexpected result!", expCmdStatusInDevice);
-
-  log(L"\n  Everything works fine in setOperationMode...");
-  aprRes = m_testCmd->setOperationMode(AxisProfileOperationMode::VELOCITY);
-  //LOG_TEST_RESULT(aprRes, L"\nGet an unexpected result!", AxisProfileResult::STS_OK);
-
-  log(L"\n  Everything works fine in getOperationMode...");
-  //auto operationMode = m_testCmd->getOperationMode();
-  //LOG_TEST_RESULT(operationMode, L"\nGet an unexpected result!", AxisProfileOperationMode::VELOCITY);
 
   return S_OK;
 }
