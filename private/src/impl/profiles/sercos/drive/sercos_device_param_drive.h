@@ -7,15 +7,17 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2021-2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
-/// All rights reserved in the event of the grant of a patent, utility model or design.  
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
+#include "comm/ethercat/master/fbs/parameter_generated.h"
 #include "job_object/i_job_obj.h"
 #include "profiles/axisprofile_param_helper.h"
 #include "profiles/category/drive/axisprofile_device_param_drive.h"
+#include "profiles/i_device_boot_param_snapshot.h"
 #include "profiles/sercos/cmd_jobs/sercos_job_device_param.h"
 #include "profiles/sercos/sercos_defs.h"
 
@@ -32,7 +34,7 @@ namespace comm::axisprofile::sercos
   // ---------------------------------------------------------------------------
   // Declaration of symbolic constants
   // ---------------------------------------------------------------------------
-      
+
   // Multi brake of bit control
   constexpr std::uint16_t SERCOS_MULTI_BRAKE_LIGHT_ERROR         = 0x0001;    ///< Sercos multi brake with light error.
   constexpr std::uint16_t SERCOS_MULTI_BRAKE_FIELDBUS_ERROR      = 0x0004;    ///< Sercos multi brake with fieldbus error.
@@ -45,7 +47,7 @@ namespace comm::axisprofile::sercos
   constexpr std::uint16_t BRAKE_REACTION_VALUE_40                = 0x0040;    ///< The token of emergency stop.
   constexpr std::uint16_t VALUE_BIT_0_TO_BIT3                    = 0x000F;    ///< Get the token of bit0-bit3.
   constexpr std::uint16_t VALUE_BIT_4_TO_BIT7                    = 0x00F0;    ///< Get the token of bit4-bit7.
-      
+
   // ---------------------------------------------------------------------------
   // Declaration of macros
   // ---------------------------------------------------------------------------
@@ -80,9 +82,9 @@ namespace comm::axisprofile::sercos
   {
     std::uint16_t m_multiBrakeDelaySupport{};                 ///< P-0-0117   (Multi brake support)
     std::uint16_t m_controlUnitReactionTimeLightError{};      ///< P-0-0117.1 (Control unit reaction time F2/3)
-    std::uint16_t m_controlUnitReactionTimeCriticalError{};   ///< P-0-0117.2 (Control unit reaction time F4/6/7)    
+    std::uint16_t m_controlUnitReactionTimeCriticalError{};   ///< P-0-0117.2 (Control unit reaction time F4/6/7)
     std::uint16_t m_controlUnitReactionBestDeceleration{};    ///< P-0-0119   (Best possible deceleration)
-    std::int32_t m_emergencyBrakeDeceleration{};              ///< S-0-0429   (Emergency brake deceleration)       
+    std::int32_t m_emergencyBrakeDeceleration{};              ///< S-0-0429   (Emergency brake deceleration)
     std::int32_t m_driveHaltAccelerationBipolar{};            ///< S-0-0372   (Drive halt acceleration bipolar)
     std::int32_t m_bipolarAccelerationLimitValue{};           ///< S-0-0138   (Bipolar acceleration limit value)
     std::int32_t m_bipolarJerkLimit{};                        ///< S-0-0349   (Bipolar jerk limit)
@@ -95,7 +97,7 @@ namespace comm::axisprofile::sercos
   {
   public: // methods
 
-    /// @brief Constructor        
+    /// @brief Constructor
     /// @param[in]   profileBasicInfo   Pointer to the Profile Basic Information
     /// @param[in]   at                 Pointer to the acknowledge data
     /// @param[in]   mdt                Pointer to the master data telegram
@@ -179,7 +181,7 @@ namespace comm::axisprofile::sercos
 
     /// @brief This method sets the IDNs of the parameters that are used to generate the checksum.
     /// @note Important, the method can only be used in booting thread of axisprofile
-    /// @param[in]  idnList  IDN list of checksum parameter 
+    /// @param[in]  idnList  IDN list of checksum parameter
     /// @return     Return value indicating success or error.
     AxisProfileResult writeChecksumIdnListToDevice(const std::vector<std::uint16_t>& idnList);
 
@@ -188,6 +190,15 @@ namespace comm::axisprofile::sercos
     /// @param[out]  idnList  IDN list of checksum parameter
     /// @return     Return value indicating success or error.
     AxisProfileResult readChecksumIdnListFromDevice(std::vector<std::uint16_t>& idnList);
+
+    /// @brief get the parameter's value using the param snaphot.
+    /// @param[in] idn SoE IDN.
+    /// @param[out] bufPtr Raw target buffer.
+    /// @param[in] bufLen Raw target buffer size.
+    /// @param[in] elementFlag SoE element flag of the parameter value/maxValue access.
+    /// @return Return value indicating success or error.
+    AxisProfileResult getParameterValueFromSnaphot(std::uint16_t idn, std::uint8_t* bufPtr, std::size_t bufLen,
+                        comm::ethercat::master::fbs::ElementFlags elementFlag = comm::ethercat::master::fbs::ElementFlags::ElementFlags_value);
 
   private: // data
 

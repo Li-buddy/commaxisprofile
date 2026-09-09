@@ -80,7 +80,6 @@ namespace comm::axisprofile::sercos
     bool cyclicStandStillCheck() const final;
     bool checkOperationModeSupported(const AxisProfileOperationMode opMode, OpModeErrorInfo& errorInfo) final;
     AxisProfileOperationMode getOperationMode() const final;
-    AxisProfileResult readOperationMode(AxisProfileOperationMode& operationMode) override;
     AxisProfileResult analyzeStatusWord() final;
     bool isDeviceFollowsControl() const final;
     bool deviceHasWarning() const final {return m_sercosStatusWord.m_warningInC2D;}

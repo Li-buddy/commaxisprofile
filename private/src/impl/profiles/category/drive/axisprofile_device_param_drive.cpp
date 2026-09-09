@@ -17,6 +17,7 @@
 #include "common/string_helper.h"
 #include "diagnosis/dia.h"
 #include "helper/device_id_helper.h"
+#include "profiles/i_device_boot_param_snapshot.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -42,6 +43,22 @@ using namespace comm::axisprofile;
 AxisProfileDeviceParamDrive::AxisProfileDeviceParamDrive(ProfileBasicInfo& profileBasicInfo, const AcknowledgeTelegram* at, MasterDataTelegram* mdt)
   :AxisProfileDeviceParam(profileBasicInfo), m_telegramAT(at), m_telegramMDT(mdt)
 {
+}
+
+AxisProfileResult AxisProfileDeviceParamDrive::booting()
+{
+  getDeviceInformation(); // calculate software version before using checksum parameter
+
+  bool isNodeChecksumEnable = m_sharingHandler->getPropertyIF()->isChecksumEnabled();
+  m_needReadBootParams = isNodeChecksumEnable ? checkNeedReadBootParams() : true;
+  APR_TRACE_MESSAGE("%s, m_needReadBootParams: %d, node checksumEnable:%d", m_profileBasicInfo.m_profileTrace.createTraceMsg(), m_needReadBootParams, isNodeChecksumEnable);
+
+  return AxisProfileDeviceParam::booting();
+}
+
+bool AxisProfileDeviceParamDrive::isNeedReadBootParams() const
+{
+  return m_needReadBootParams;
 }
 
 AxisProfileDeviceParamDrive::~AxisProfileDeviceParamDrive() noexcept
@@ -200,11 +217,20 @@ bool AxisProfileDeviceParamDrive::checkNeedReadBootParams()
     return true;
   }
 
-  bool checksumValueDiff = (m_checksum != checkSum);
+  IDeviceBootParamSnapshot* snapshotIF = m_sharingHandler->getBootParamSnapshotIF();
+  if (!snapshotIF)
+  {
+    APR_TRACE_WARNING("%s, boot parameter snapshot interface not found", m_profileBasicInfo.m_profileTrace.createTraceMsg());
+    return true;
+  }
+
+  BootParamSnapshot snapshot = snapshotIF->getBootParamSnapshot();
+  bool checksumValueDiff = (snapshot.checksumValue != checkSum);
   if (checksumValueDiff)
   {
-    APR_TRACE_MESSAGE("%s, update the checksum value:0x%X -> 0x%X", m_profileBasicInfo.m_profileTrace.createTraceMsg(), m_checksum, checkSum);
-    m_checksum = checkSum;
+    APR_TRACE_MESSAGE("%s, update the checksum value:0x%X -> 0x%X", m_profileBasicInfo.m_profileTrace.createTraceMsg(), snapshot.checksumValue, checkSum);
+    snapshot.checksumValue = checkSum;
+    snapshotIF->setBootParamSnapshot(snapshot);
     //return true;
   }
   APR_TRACE_MESSAGE("%s, whether the checksum value changed: %d", m_profileBasicInfo.m_profileTrace.createTraceMsg(), checksumValueDiff);

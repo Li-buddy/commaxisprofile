@@ -52,12 +52,6 @@ bool AxisProfileStatusControlDrive::checkOperationMode(const AxisProfileOperatio
   return (opMode == getOperationMode());
 }
 
-AxisProfileResult AxisProfileStatusControlDrive::readOperationMode(AxisProfileOperationMode& operationMode)
-{
-  operationMode = getOperationMode();
-  return AxisProfileResult::STS_OK;
-}
-
 bool AxisProfileStatusControlDrive::checkPowerMode(const AxisProfilePowerMode powerMode) const
 {
   return (m_actualPowerMode == powerMode) ? true : false;

@@ -120,15 +120,6 @@ AxisProfileResult AxisProfileDeviceParam::getOutputEffectiveDelay(double& delay)
 
 AxisProfileResult AxisProfileDeviceParam::booting()
 {
-  getDeviceInformation(); // calculate software version before using checksum parameter
-  
-  bool isNodeChecksumEnable = m_sharingHandler->getPropertyIF()->isChecksumEnabled();
-  m_needReadBootParams = isNodeChecksumEnable ? (checkNeedReadBootParams() || m_firstBootup) : true;
-  APR_TRACE_MESSAGE("%s, m_firstBootup: %d, m_needReadBootParams: %d, node checksumEnable:%d",
-                    m_profileBasicInfo.m_profileTrace.createTraceMsg(), m_firstBootup, m_needReadBootParams, isNodeChecksumEnable);
-
-  m_firstBootup = false;
-
   loadBootingTasks();
   AxisProfileResult result {AxisProfileResult::STS_OK};
   for (auto const& method : m_initDeviceParam)
@@ -154,16 +145,6 @@ AxisProfileResult AxisProfileDeviceParam::getRateTorqueForce(double& rateTorqueF
   const IScaling* scaling = m_sharingHandler->getScalingIF();
   rateTorqueForce = scaling->getRateTorqueForce();
   return AxisProfileResult::STS_OK;
-}
-
-bool AxisProfileDeviceParam::isNeedReadBootParams() const
-{
-  return m_needReadBootParams;
-}
-
-std::uint32_t AxisProfileDeviceParam::getCheckSumValue() const
-{
-  return m_checksum;
 }
 
 AxisProfileResult AxisProfileDeviceParam::checkAxisHomed(bool& homed)

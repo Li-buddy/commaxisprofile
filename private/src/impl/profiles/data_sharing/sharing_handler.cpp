@@ -6,8 +6,8 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2018 - 2025 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
-/// All rights reserved in the event of the grant of a patent, utility model or design.  
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// All rights reserved in the event of the grant of a patent, utility model or design.
 
 
 // ---------------------------------------------------------------------------
@@ -16,6 +16,7 @@
 #include "profiles/profile_trace.h"
 #include "sharing_handler.h"
 #include "profiles/category/category_adapter.h"
+#include "profiles/i_device_boot_param_snapshot.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -128,4 +129,9 @@ IAxisProfilePropertyInternal* AxisProfileSharingHandler::getPropertyIF() const
 IAxisProfileCmdInternal* AxisProfileSharingHandler::getCmdIF() const
 {
   return getInternalITF<IAxisProfileCmdInternal* const>(SharingInterfaceType::ITF_TYPE_CMD);
+}
+
+IDeviceBootParamSnapshot* AxisProfileSharingHandler::getBootParamSnapshotIF() const
+{
+  return getInternalITF<IDeviceBootParamSnapshot* const>(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT);
 }

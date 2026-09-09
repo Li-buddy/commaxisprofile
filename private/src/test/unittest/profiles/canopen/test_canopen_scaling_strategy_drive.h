@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 #include "comm/axisprofile/defines/axisprofile_statusdefs.h"
 #include "mockup/external_bundles/ethercat_master/mock_ethercat_master_nodes.h"
+#include "profiles/canopen/canopen_boot_param_snapshot.h"
 #include "profiles/canopen/drive/canopen_scaling_strategy_drive.h"
 #include "profiles/data_sharing/sharing_handler.h"
 #include "profiles/scaling/scaling_strategy.h"
@@ -15,9 +16,11 @@
 
 // Mockups
 #include "mockup/external_bundles/mock_datalayer_client.h"
+#include "mockup/mock_axisprofile_device_param.h"
 #include "mockup/mock_axisprofile_mapping_handler.h"
 #include "mockup/mock_fieldbus_adapter_coe.h"
 #include "mockup/mock_profile_trace.h"
+#include "mockup/mock_scaling_drive_device_param.h"
 
 using namespace comm::axisprofile;
 using namespace comm::axisprofile::canopen;
@@ -73,7 +76,9 @@ private: // data
   std::shared_ptr<test::MockDatalayerClient>                   m_mockClient{};            ///< mock client
   std::shared_ptr<test::MockEthercatMasterSDORequestNodeCoE>   m_sdoRequestNodeMockCoE{}; ///< SDO request node ptr
   std::unique_ptr<ScalingStrategyCoEDrive>                     m_testObject{};            ///< the tested class object
+  std::unique_ptr<CanopenBootParamSnapshot>                    m_bootParamSnapshot {};    ///< boot parameter snapshot reader
   std::unique_ptr<test::MockAxisProfileMappingHandler>         m_pMappingHandlerMockup {};///< pointer to mapping handler
+  std::unique_ptr<AxisProfileDeviceParamDrive>                 m_deviceParamMockup {};    ///< pointer to device parameter interface
   std::unique_ptr<CategoryAdapterDrive>                        m_mockCategory {};         ///< 
   std::unique_ptr<AxisProfileSharingHandler>                   m_sharingHandler {};      ///< pointer to sharing handler
 

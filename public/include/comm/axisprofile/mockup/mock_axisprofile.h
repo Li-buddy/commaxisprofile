@@ -101,7 +101,6 @@ namespace comm::axisprofile
       m_profileStatusControlMock.checkOperationMode = AXISPROFILE_checkOperationModeMock;
       m_profileStatusControlMock.checkOperationModeSupported = AXISPROFILE_checkOperationModeSupportedMock;
       m_profileStatusControlMock.getOperationMode = AXISPROFILE_getOperationModeMock;
-      m_profileStatusControlMock.readOperationMode = AXISPROFILE_readOperationModeMock;
       m_profileStatusControlMock.checkPowerMode = AXISPROFILE_checkPowerModeMock;
       m_profileStatusControlMock.getPowerMode = AXISPROFILE_getPowerModeMock;
       m_profileStatusControlMock.checkError = AXISPROFILE_checkErrorMock;

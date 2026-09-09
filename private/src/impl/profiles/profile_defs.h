@@ -8,8 +8,8 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2018 - 2025 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
-/// All rights reserved in the event of the grant of a patent, utility model or design.  
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
 // Include Files
@@ -56,8 +56,9 @@ namespace comm::axisprofile
     ITF_TYPE_JOB_MGR,           ///< job manager interface
     ITF_TYPE_CATEGORY,          ///< category interface
     ITF_TYPE_PROPERTY,          ///< property interface
+    ITF_TYPE_BOOTPARAMSNAPSHOT, ///< boot parameter snapshot interface
 
-    ITF_TYPE_MAX = ITF_TYPE_PROPERTY,  ///< maximum value, helper for loop
+    ITF_TYPE_MAX = ITF_TYPE_BOOTPARAMSNAPSHOT,  ///< maximum value, helper for loop
   };
   /// @brief The capacity of the interface type
   constexpr std::uint16_t SHARE_ITF_TYPE_CNT = static_cast<std::uint16_t>(SharingInterfaceType::ITF_TYPE_MAX) + 1;
@@ -85,7 +86,7 @@ namespace comm::axisprofile
     bool available {true};                  ///< check if the target item is available
     const char* message {};                 ///< message only present when not available
 
-    /// @brief Constructor 
+    /// @brief Constructor
     AvailabilityInfo() = default;
 
     /// @brief Constructor
@@ -103,7 +104,7 @@ namespace comm::axisprofile
   };
 
   /// @brief This structure contain operation mode available information for all profile, which will be used from booting config to status control
-  typedef struct OpModeAvailInfo  
+  typedef struct OpModeAvailInfo
   {
     AvailabilityInfo positionAvail; ///< Check if position mode is available
     AvailabilityInfo velocityAvail; ///< Check if position mode is available
@@ -174,8 +175,8 @@ namespace comm::axisprofile
     bool m_torqueForce;           ///< Check if actual torque/force is assigned
     bool m_torqueForceLimSts;     ///< Check if actual torque/force limit status is assigned
     bool m_opModeDisplay;         ///< Check if actual operation mode display is assigned
-    bool m_safetySelection;       ///< Check if actual Safety function selection data has been assigned. 
-    bool m_safetyStatus;          ///< Check if actual Safety function status data has been assigned. 
+    bool m_safetySelection;       ///< Check if actual Safety function selection data has been assigned.
+    bool m_safetyStatus;          ///< Check if actual Safety function status data has been assigned.
     UserPDOAssignInfo m_userPDOs; ///< flags of whether user PDOs are assigned
     bool m_signalStatusWord;      ///< flag to indicate whether signal status word is assigned.
     bool m_isInReference;         ///< flag to indicate whether in reference state is assigned.
@@ -183,10 +184,10 @@ namespace comm::axisprofile
 
     /// @brief Constructor using a single value
     explicit ProfileInputAssignedInfo(bool assigned)
-      : m_statusWord(assigned), m_position(assigned), m_velocity(assigned), m_diagcode(assigned), m_switchRef(assigned), 
-        m_switchPosLim(assigned), m_switchNegLim(assigned), m_probe1PosEdg(assigned), m_probe1NegEdg(assigned), 
-        m_probe1Active(assigned), m_probe1PosLat(assigned), m_probe1NegLat(assigned), m_probe1PosDif(assigned), 
-        m_probe1MakFal(assigned), m_probe2PosEdg(assigned), m_probe2NegEdg(assigned), m_probe2Active(assigned), 
+      : m_statusWord(assigned), m_position(assigned), m_velocity(assigned), m_diagcode(assigned), m_switchRef(assigned),
+        m_switchPosLim(assigned), m_switchNegLim(assigned), m_probe1PosEdg(assigned), m_probe1NegEdg(assigned),
+        m_probe1Active(assigned), m_probe1PosLat(assigned), m_probe1NegLat(assigned), m_probe1PosDif(assigned),
+        m_probe1MakFal(assigned), m_probe2PosEdg(assigned), m_probe2NegEdg(assigned), m_probe2Active(assigned),
         m_probe2PosLat(assigned), m_probe2NegLat(assigned), m_probe2PosDif(assigned), m_probe2MakFal(assigned),
         m_torqueForce(assigned), m_torqueForceLimSts(assigned), m_opModeDisplay(assigned), m_safetySelection(assigned),
         m_safetyStatus(assigned), m_userPDOs(assigned), m_signalStatusWord(assigned), m_isInReference(assigned),
@@ -211,7 +212,7 @@ namespace comm::axisprofile
     bool m_signalControlWord;      ///< flag to indicate whether signal status word is assigned.
 
     /// @brief Constructor using a single value
-    explicit ProfileOutputAssignedInfo(bool assigned): m_controlWord(assigned), m_position(assigned), m_velocity(assigned), 
+    explicit ProfileOutputAssignedInfo(bool assigned): m_controlWord(assigned), m_position(assigned), m_velocity(assigned),
                                                        m_torqueForce(assigned), m_torqueVelLimHigh(assigned), m_torqueVelLimLow(assigned),
                                                        m_opMode(assigned), m_userPDOs(assigned), m_setReference(assigned), m_referenceOffset(assigned),
                                                        m_signalControlWord(assigned) 
@@ -225,7 +226,7 @@ namespace comm::axisprofile
     ProfileInputAssignedInfo m_input;
     ProfileOutputAssignedInfo m_output;
 
-    /// @brief Constructor 
+    /// @brief Constructor
     ProfileAssignedInfo(bool inputAssigned, bool outputAssigned): m_input(inputAssigned), m_output(outputAssigned)
     {};
 
@@ -268,7 +269,7 @@ namespace comm::axisprofile
   /// @param[in]   deviceSerie   The device series
   /// @return      The converted device series in string
   inline const char* deviceSerieToString(DeviceSeries deviceSerie)
-  { 
+  {
     switch (deviceSerie)
     {
       case DeviceSeries::INDRADRIVE:         return "IndraDrive";

@@ -97,13 +97,6 @@ AxisProfileOperationMode AxisProfileStatusControlEncoder::getOperationMode() con
   return AxisProfileOperationMode::UNDEFINED;
 }
 
-AxisProfileResult AxisProfileStatusControlEncoder::readOperationMode(AxisProfileOperationMode& operationMode)
-{
-  operationMode = AxisProfileOperationMode::UNDEFINED;
-  rejectCmdDiagnosis("readOperationMode");
-  return AxisProfileResult::ERR_NOT_SUPPORTED;
-}
-
 bool AxisProfileStatusControlEncoder::isDeviceFollowsControl() const
 {
   rejectCmdDiagnosis("isDeviceFollowsControl");

@@ -75,12 +75,6 @@ namespace comm::axisprofile
     /// @return         Return value is the actual operation mode.   
     virtual AxisProfileOperationMode getOperationMode() const = 0;
 
-    /// @brief  This method reads the actual operation mode of the device.
-    ///
-    /// @param[out]     operationMode   Read operation mode from device.
-    /// @return         Return value indicating success, pending state or error.
-    virtual AxisProfileResult readOperationMode(AxisProfileOperationMode& operationMode) = 0;
-
     /// @brief  This method checks if the given power mode equals the power mode of the device.
     /// @param[in]      powerMode    Power mode which will be checked
     ///

@@ -153,16 +153,6 @@ void AxisProfileDeviceParamEncoder::rejectCmdDiagnosis(const char* cmdNameInfo) 
                      m_profileBasicInfo.m_profileName.c_str());
 }
 
-bool AxisProfileDeviceParamEncoder::checkNeedReadBootParams()
-{
-  return true;
-}
-
-AxisProfileResult AxisProfileDeviceParamEncoder::getDeviceInformation()
-{
-  return AxisProfileResult::STS_OK;
-}
-
 AxisProfileResult AxisProfileDeviceParamEncoder::getChecksumIdnList(std::vector<std::string>& /*idnStrListRet*/) const
 {
   rejectCmdDiagnosis("getChecksumIdnList");

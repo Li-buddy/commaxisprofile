@@ -75,15 +75,24 @@ namespace comm::axisprofile
     /// @brief Destructor
     virtual ~AxisProfileDeviceParamDrive() noexcept override;
 
+    AxisProfileResult booting() final;
+    bool isNeedReadBootParams() const;
+
   protected: //methods
 
-    bool checkNeedReadBootParams() override final;
+    /// @brief Get some device information during startup.
+    /// @return Return value indicating success or error.
+    virtual AxisProfileResult getDeviceInformation() = 0;
 
     /// @brief This method indicate whether the checksum idn list parameters in drive has been modified,
     ///        namely whether the idn list in drive is different to the default booting idn list.
     ///        When the value not same, update the default booting idn list to drive
     /// @return  Return value indicating whether the checksum idn list parameters in drive is different to the default booting idn list.
     bool virtual checkBootIdnListModified() = 0;
+
+    /// @brief Check whether drive boot parameters need to be read.
+    /// @return True when drive boot parameters need to be read.
+    bool checkNeedReadBootParams();
 
     /// @brief This method check if homed state can be access via cyclic way.
     /// @return if can be accessed, return the homed state via reference,
@@ -124,6 +133,7 @@ namespace comm::axisprofile
 
     RequestStatemachine requestState {};       ///< Request state machine for async command
     DeviceCfgData m_deviceCfgData;             ///< Data of device configuration
+    bool m_needReadBootParams {true};          ///< Whether drive boot parameters need to be read
 
     bool m_brakeDelySupport {false};                                             ///< Check if the device support this function
     BrakeDelayInfo m_brakeDelayInfo {};                                          ///< The structure contain the parameter of delay activated and delay time

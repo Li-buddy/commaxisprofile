@@ -27,7 +27,6 @@
 /// <TR><TD id="st_e"> getDriveHaltMode                     </TD><TD> 1.0.0             </TD><TD>       </TD></TR>
 /// <TR><TD id="st_e"> deviceHasWarning                     </TD><TD> 1.0.0             </TD><TD>       </TD></TR>
 /// <TR><TD id="st_e"> checkReadyToOperate                  </TD><TD> 1.0.0             </TD><TD>       </TD></TR>
-/// <TR><TD id="st_e"> readOperationMode                    </TD><TD> 1.0.0             </TD><TD>       </TD></TR>
 /// </TABLE>
 
 #include "comm/axisprofile/defines/axisprofile_statusdefs.h"
@@ -53,9 +52,6 @@ extern "C" {
     bool(*checkOperationMode)(void* handle, const ::comm::axisprofile::AxisProfileOperationMode opMode);
 
     /// @brief This function get acutal operation mode
-    /// Note: for SoE, this interface return current operation mode
-    ///       for CoE with cyclic operation data configuration, this interface return current operation mode
-    ///       for CoE without cyclic operation data configuration, return the cached operation mode.
     ///
     /// @param[in]  handle          Handle of the interface
     /// @return The actual operation mode
@@ -146,19 +142,6 @@ extern "C" {
     /// @param[in]  handle          Handle of the interface
     /// @return The acutal 'ready to operation'
     ::comm::axisprofile::ReadyToOperate(*checkReadyToOperate)(void *handle);
-
-    /// @brief This function reads actual operation mode from the device
-    /// Note: for SoE, this interface return current operation mode
-    ///       for CoE with cyclic operation data configuration, this interface return current operation mode
-    ///       for CoE without cyclic operation data configuration, this interface will return operation mode via async parameter access.
-    /// Note: this interface can be async, maybe need more than one cycle,
-    ///       guarantees a newly acquired or newly confirmed operation-mode value when it returns STS_OK.
-    ///       It may return STS_PENDING until the refresh operation completes.
-    /// 
-    /// @param[in]  handle          Handle of the interface
-    /// @param[out] operationMode   The read operation mode
-    /// @return                     Status of the function call: STS_OK, STS_PENDING or an error code on failure.
-    ::comm::axisprofile::AxisProfileResult(*readOperationMode)(void* handle, ::comm::axisprofile::AxisProfileOperationMode& operationMode);
 
     void *reserved[100];  ///< reservation
   } IAxisProfileStatusControlC;

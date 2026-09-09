@@ -119,6 +119,13 @@ namespace comm::axisprofile::canopen
     /// @return      Return value indicating success or error.
     AxisProfileResult getDeviceParamJobObj();
 
+    /// @brief Read one CoE boot parameter from snapshot cache first, then drive.
+    /// @param[in] objEntry CoE object entry.
+    /// @param[out] bufPtr Raw target buffer.
+    /// @param[in] bufLen Raw target buffer size.
+    /// @return Return value indicating success or error.
+    AxisProfileResult getParameterValueFromSnapshot(const ObjectDirEntry& objEntry, std::uint8_t* bufPtr, std::size_t bufLen);
+
     AxisProfileResult readChecksumValueFromDevice(std::uint32_t& checkSum) override final;
 
     /// @brief This method sets the IDNs of the parameters that are used to generate the checksum.

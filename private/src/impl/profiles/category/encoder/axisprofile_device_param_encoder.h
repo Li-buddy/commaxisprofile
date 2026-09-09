@@ -88,8 +88,6 @@ namespace comm::axisprofile
     AxisProfileResult checkAndSetModulo(double modValue, std::string& dynErrTxt) final;
     
     AxisProfileResult checkStandstill(bool& standStill) final;
-    bool checkNeedReadBootParams() final;
-    AxisProfileResult getDeviceInformation() final;
     AxisProfileResult checkAxisHomed(bool& homed) final;
     SignalFuncHandler* getSignalFuncHandler() final;
 
