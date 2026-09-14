@@ -8,6 +8,8 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "canopen_job_base.h"
+#include "axisprofile_internal_defs.h"
+#include "profiles/profile_defs.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -23,7 +25,9 @@ namespace comm::axisprofile::canopen
     /// @param[in] profileInfo    Reference to the Profile Basic Information
     /// @param[in] shareHandle    Pointer to the sharing handler
     explicit CanopenJobSetOpMode(ProfileBasicInfo& profileInfo,
-                                 IAxisProfileSharingHandler* shareHandle = nullptr);
+                                 IAxisProfileSharingHandler* shareHandle = nullptr,
+                                 const AcknowledgeTelegram* telegramAt = nullptr,
+                                 MasterDataTelegram* telegramMdt = nullptr);
 
     /// @brief Destructor
     virtual ~CanopenJobSetOpMode() noexcept override = default;
@@ -43,6 +47,21 @@ namespace comm::axisprofile::canopen
 
   private: // data
 
+    bool checkOpModeAvailable(AvailabilityInfo supported, bool assignedInput, bool assignedOutput,
+                              OpModeErrorInfo& errorInfo) const;
+    bool checkOperationModeSupported(AxisProfileOperationMode opMode, OpModeErrorInfo& errorInfo) const;
+    AxisProfileResult determineCanopenOpMode(AxisProfileOperationMode opMode, std::uint8_t& mode) const;
+    AxisProfileResult writeModeToPdo();
+    AxisProfileResult writeModeBySdo();
+    AxisProfileResult verifyOperationMode();
+
     AxisProfileOperationMode m_requestedOpMode {AxisProfileOperationMode::UNDEFINED};  ///< Requested operation mode
+    std::uint8_t m_requestedCiaMode {};                                                ///< Converted CiA-402 mode
+    std::uint8_t m_feedbackCiaMode {};                                                 ///< Mode read back from the drive
+    bool m_outputModeMapped {false};                                                    ///< True when operation mode is PDO-mapped
+    AsyncCommandStatemachine m_readOpModeReq {};                                       ///< Async read state
+    AsyncCommandStatemachine m_writeOpModeReq {};                                      ///< Async write state
+    const AcknowledgeTelegram* m_telegramAT {};                                        ///< AT telegram
+    MasterDataTelegram* m_telegramMDT {};                                              ///< MDT telegram
   };
 }
