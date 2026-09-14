@@ -5,6 +5,7 @@
 #include "profiles/data_sharing/sharing_handler.h"
 #include "profiles/profile_trace.h"
 #include "profiles/canopen/drive/canopen_device_param_drive.h"
+#include "profiles/canopen/canopen_boot_param_snapshot.h"
 
 //Mockups
 #include "helper/flatbuffers_helper_coe.h"
@@ -81,8 +82,12 @@ HRESULT TestCanopenDeviceParam::testFirmwareInfo()
   canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, &atData, &mdtData};
 
   test::MockAxisProfileProperty property {};
+  canopen::CanopenBootParamSnapshot bootParamSnapshot {profileBasicInfo};
+
   AxisProfileSharingHandler shareHandler {&profileTraceMockup};
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
   testClass.setSharingHandler(&shareHandler);
 
   property.setDeviceSeries(DeviceSeries::CTRLXDRIVE);
@@ -318,13 +323,14 @@ HRESULT TestCanopenDeviceParam::testChecksum()
 
   log(L"\nReadChecksumIdnList test, normal case, return default idn list...");
   mockClient.m_returnValue = comm::datalayer::DlResult::DL_OK;
-  mockFieldbusAdapter.m_fbsHelper.writeParam(canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex, canopen::COE_BOOT_PARAM_LIST);
+  const auto canopenBootParamList = canopen::getCanopenBootParamList();
+  mockFieldbusAdapter.m_fbsHelper.writeParam(canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex, canopenBootParamList);
   mockFieldbusAdapter.m_fbsHelper.generateSDOResponseFlatbuffer(&idnListVar, canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex);
   mockClient.m_callbackVariant = idnListVar;
   idnList.clear();
   res = testClass.readChecksumIdnListFromDevice(idnList);
   RETURN_TEST_RESULT(res, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
-  RETURN_TEST_RESULT_ANY(idnList.size() == canopen::COE_BOOT_PARAM_LIST.size(), L"\nUnexpected return value.");
+  RETURN_TEST_RESULT_ANY(idnList.size() == canopenBootParamList.size(), L"\nUnexpected return value.");
   RETURN_TEST_RESULT_ANY(!testClass.checkBootIdnListModified(), L"\nUnexpected return value.");
   RETURN_TEST_RESULT(testClass.getChecksumIdnList(idnStrList), L"\nUnexpected return value.", AxisProfileResult::STS_OK);
 
@@ -372,8 +378,10 @@ HRESULT TestCanopenDeviceParam::testCheckNeedReadBootParams()
   test::MockAxisProfileTrace profileTraceMockup {};
   AxisProfileSharingHandler shareHandler {&profileTraceMockup};
   test::MockAxisProfileProperty property {};
+  canopen::CanopenBootParamSnapshot bootParamSnapshot {profileBasicInfo};
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
 
   log(L"\nCheckBootIdnListModified test, drive not support...");
   property.setDeviceSeries(DeviceSeries::CTRLXDRIVE);
@@ -406,7 +414,7 @@ HRESULT TestCanopenDeviceParam::testCheckNeedReadBootParams()
   mockClient.resetClient();
   mockFieldbusAdapter.m_fbsHelper.generateSDOResponseFlatbuffer(&var, canopen::CHECKSUM_VALUE.index, canopen::CHECKSUM_VALUE.subIndex);
   mockClient.m_vecCallBackVariant.push_back(var);
-  mockFieldbusAdapter.m_fbsHelper.writeParam(canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex, canopen::COE_BOOT_PARAM_LIST);
+  mockFieldbusAdapter.m_fbsHelper.writeParam(canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex, canopen::getCanopenBootParamList());
   mockFieldbusAdapter.m_fbsHelper.generateSDOResponseFlatbuffer(&idnListVar, canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex);
   mockClient.m_vecCallBackVariant.push_back(idnListVar);
   RETURN_TEST_RESULT(testClass.checkNeedReadBootParams(), L"\nUnexpected return value.", false);
@@ -452,7 +460,7 @@ HRESULT TestCanopenDeviceParam::testLoadBootingTasks()
   canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, nullptr, nullptr};
   testClass.m_needReadBootParams = false;
   testClass.loadBootingTasks();
-  LOG_TEST_RESULT(testClass.m_initDeviceParam.size(), L"\nUnexpected return value", 5);
+  LOG_TEST_RESULT(testClass.m_initDeviceParam.size(), L"\nUnexpected return value", 8);
 
   return S_OK;
 }
@@ -548,11 +556,18 @@ HRESULT TestCanopenDeviceParam::testReadEncoderTypes()
   test::MockAxisProfileTrace profileTraceMockup {};
   AxisProfileSharingHandler shareHandler {&profileTraceMockup};
   test::MockAxisProfileProperty property {};
-  property.setDeviceSeries(DeviceSeries::KNOWN_GENERAL_3RD_DRIVE);
+  canopen::CanopenBootParamSnapshot bootParamSnapshot {profileBasicInfo};
+
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
+
+  property.setDeviceSeries(DeviceSeries::KNOWN_GENERAL_3RD_DRIVE);
   AxisProfileResult res = testClass.readEncoderTypes();
   LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::STS_OK);
 
+  property.setDeviceSeries(DeviceSeries::CTRLXDRIVE);
+  res = testClass.readEncoderTypes();
+  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::STS_OK);
   return S_OK;
 }

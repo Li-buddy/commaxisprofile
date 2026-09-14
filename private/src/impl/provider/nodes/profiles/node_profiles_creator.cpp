@@ -29,6 +29,7 @@
 #include "state/node_profiles_device_offset.h"
 #include "state/node_profiles_checksum_value.h"
 #include "state/node_profiles_checksum_list.h"
+#include "state/node_profiles_boot_params.h"
 #include "cfg/node_profiles_config.h"
 #include "cfg/node_profiles_set_uri.h"
 #include "cfg/node_profiles_basicData.h"
@@ -112,10 +113,11 @@ void NodeProfilesCreator::addNodes(ProviderMgr* mgr)
   mgr->addNode(NodeTree.APR_PROFILES_CFG_BASICDATA,                  new NodeProfilesBasicData(mgr));                         ///< axisprofile/profiles/[name]/cfg/profileBasicData
   mgr->addNode(NodeTree.APR_PROFILES_CFG_DRIVENUMBER,                new NodeCfgSimple<std::uint8_t, IAxisProfileInternal, comm::axisprofile::AxisProfileResult>    ///< axisprofile/profiles/[name]/cfg/drive-number
                (mgr, &IAxisProfileInternal::getDriveNumber, &IAxisProfileInternal::setDriveNumber,
-                {"Used for situations where multiple axes correspond to a single address. If there is only one address corresponding to one axis, the default value is 0. Otherwise, add 1 in sequence", ""}));                 
+                {"Used for situations where multiple axes correspond to a single address. If there is only one address corresponding to one axis, the default value is 0. Otherwise, add 1 in sequence", ""}));
   mgr->addNode(NodeTree.APR_PROFILES_CFG_CATEGORY,                   new NodeProfilesCategory(mgr));                          ///< axisprofile/profiles/[name]/cfg/profile-category
   mgr->addNode(NodeTree.APR_PROFILES_CFG_USE_CHECKSUM,               new NodeProfilesUseChecksum(mgr));                       ///< axisprofile/profiles/[name]/cfg/device-app-data/use-checksum
   mgr->addNode(NodeTree.APR_PROFILES_CFG_ETHERCAT,                   new NodeProfilesEtherCATMasterName(mgr));                ///< axisprofile/profiles/[name]/cfg/ethercat-master-name
+  mgr->addNode(NodeTree.APR_PROFILES_CFG_BOOTPARAMS,                 new NodeProfilesBootParams(mgr));                        ///< axisprofile/profiles/[name]/cfg/boot-params
 
   // ---------------------------------
   // ----------   scaling  -----------
@@ -137,5 +139,5 @@ void NodeProfilesCreator::addNodes(ProviderMgr* mgr)
                 {"the profile is activated or deactivated", ""}));                                                            ///< axisprofile/profiles/[name]/state/activated
   mgr->addNode(NodeTree.APR_PROFILES_CHECKSUM_VALUE,                 new NodeProfilesChecksumValue(mgr));                     ///< axisprofile/profiles/[name]/state/device-app-data/checksum-value
   mgr->addNode(NodeTree.APR_PROFILES_CHECKSUM_IDN_LIST,              new NodeProfilesChecksumList(mgr));                      ///< axisprofile/profiles/[name]/state/device-app-data/checksum-idn-list
-  
+
 }

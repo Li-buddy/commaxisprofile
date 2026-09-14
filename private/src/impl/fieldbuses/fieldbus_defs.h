@@ -100,7 +100,10 @@ namespace comm::axisprofile
 
   /// @brief This struct contains all basic information for a fieldbus parameter requests.
   ///        Note: Currently this struct is empty but it will be useful when we support more fieldbuses.
-  struct ParamReqDataBase {};
+  struct ParamReqDataBase
+  {
+    virtual ~ParamReqDataBase() noexcept = default;
+  };
 
   /// @brief This struct contains data request of EtherCAT devices.
   struct ParamReqDataECat : public ParamReqDataBase

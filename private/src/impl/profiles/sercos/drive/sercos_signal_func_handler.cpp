@@ -11,11 +11,12 @@
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
-#include "sercos_signal_func_handler.h"
 #include "comm/ethercat/master/fbs/parameter_generated.h"
-#include "fieldbuses/fieldbus_helper.h"
-#include "profiles/sercos/sercos_defs.h"
 #include "diagnosis/dia.h"
+#include "fieldbuses/fieldbus_helper.h"
+#include "profiles/i_device_boot_param_snapshot.h"
+#include "profiles/sercos/sercos_defs.h"
+#include "sercos_signal_func_handler.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces

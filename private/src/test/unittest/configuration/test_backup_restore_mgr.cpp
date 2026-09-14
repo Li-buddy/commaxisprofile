@@ -3,8 +3,11 @@
 
 #include "provider/provider_helper.h"
 #include "provider/nodes/profiles/cfg/node_profiles_config.h"
+#include "provider/nodes/profiles/state/node_profiles_boot_params.h"
 #include "comm/datalayer/persistence_param_generated.h"
 #include "comm/axisprofile/datatypes/dummyFbs_generated.h"
+
+#include "mockup/mock_axisprofile.h"
 
 using namespace comm::axisprofile;
 
@@ -68,15 +71,8 @@ TestBackupRestoreManager::~TestBackupRestoreManager(void)
 //
 // Test
 
-HRESULT TestBackupRestoreManager::doTest()
+HRESULT TestBackupRestoreManager::doInit()
 {
-  log(L"\n\n----------------------------------------------------------------");
-  log(L"\n Test the backup/restore manager of the axis profile bundle");
-  log(L"\n----------------------------------------------------------------\n");
-
-  log(L"\n");
-  if (m_datalayerProvider) { delete m_datalayerProvider;  m_datalayerProvider = nullptr; }
-  if (m_profilesConfigNode) { delete m_profilesConfigNode; m_profilesConfigNode = nullptr; }
   m_testDatalayerSystem.start();
   m_mockAxisProfileCmp.addDataLayer(m_testDatalayerSystem.factory());
   comm::datalayer::PersistenceHelper* persistenceHelper = new comm::datalayer::PersistenceHelper(&m_testDatalayerSystem);
@@ -87,11 +83,7 @@ HRESULT TestBackupRestoreManager::doTest()
   HRESULT hresult = determinePathToProfileConfigBfbsFile();
   if (FAILED(hresult))
   {
-    error(L"\nCould not get path to profile configuration flatbuffer Bfbs file. Aborting test...");
-    if (m_datalayerProvider) { delete m_datalayerProvider;  m_datalayerProvider = nullptr; }
-    if (m_profilesConfigNode) { delete m_profilesConfigNode; m_profilesConfigNode = nullptr; }
-    m_testDatalayerSystem.stop();
-    if (persistenceHelper) { delete persistenceHelper; persistenceHelper = nullptr; }
+    error(L"\nCould not get path to profile configuration flatbuffer Bfbs file. Aborting test...");  
     return E_FAIL;
   }
 
@@ -101,15 +93,35 @@ HRESULT TestBackupRestoreManager::doTest()
   hresult = determinePathToTestConfigFolder();
   if (FAILED(hresult))
   {
-    error(L"\nCould not get test configuration files. Aborting test...");
-    if (m_datalayerProvider) { delete m_datalayerProvider;  m_datalayerProvider = nullptr; }
-    if (m_profilesConfigNode) { delete m_profilesConfigNode; m_profilesConfigNode = nullptr; }
-    m_testDatalayerSystem.stop();
-    if (persistenceHelper) { delete persistenceHelper; persistenceHelper = nullptr; }
+    error(L"\nCould not get test configuration files. Aborting test..."); 
     return E_FAIL;
   }
+  return S_OK;
+}
 
-  hresult |= testErrorsNullptr();
+HRESULT TestBackupRestoreManager::doEnd()
+{
+  m_mockAxisProfileCmp.getAxisProfileManager()->deleteAxisProfile(m_testProfileName.c_str());
+  if (m_datalayerProvider)  { delete m_datalayerProvider;  m_datalayerProvider  = nullptr; }
+  if (m_profilesConfigNode) { delete m_profilesConfigNode; m_profilesConfigNode = nullptr; }
+  if (m_bootParamNode) { delete m_bootParamNode; m_bootParamNode = nullptr; }
+
+  comm::datalayer::PersistenceHelper* persistenceHelper = m_mockAxisProfileCmp.getPersistenceHelperCppItf();
+  if (persistenceHelper) { delete persistenceHelper; persistenceHelper = nullptr; }
+  if (m_backupMgr) {delete m_backupMgr; m_backupMgr = nullptr;}
+  m_testDatalayerSystem.stop();
+  return S_OK;
+}
+
+HRESULT TestBackupRestoreManager::doTest()
+{
+  log(L"\n\n----------------------------------------------------------------");
+  log(L"\n Test the backup/restore manager of the axis profile bundle");
+  log(L"\n----------------------------------------------------------------\n");
+
+  log(L"\n");
+
+  HRESULT hresult = testErrorsNullptr();
   hresult |= testLoadErrors();
   hresult |= testSaveErrors();
   hresult |= testloadSystemCfgErrors();
@@ -119,20 +131,12 @@ HRESULT TestBackupRestoreManager::doTest()
   hresult |= testloadSystemCfg();
   hresult |= testMakePersistent();
 
-  m_mockAxisProfileCmp.getAxisProfileManager()->deleteAxisProfile(m_testProfileName.c_str());
-  if (m_datalayerProvider)  { delete m_datalayerProvider;  m_datalayerProvider  = nullptr; }
-  if (m_profilesConfigNode) { delete m_profilesConfigNode; m_profilesConfigNode = nullptr; }
-
-
-  if (persistenceHelper) { delete persistenceHelper; persistenceHelper = nullptr; }
-  if (m_backupMgr) {delete m_backupMgr; m_backupMgr = nullptr;}
-  m_testDatalayerSystem.stop();
   return hresult;
 }
 
 HRESULT TestBackupRestoreManager::testLoadErrors()
 {
-  log(L"\n<b>----- Test all possible errors of method load() -----</b>");
+  log(L"\n<b>----- Test all possible errors of method loadCfg() -----</b>");
 
   HRESULT result = configureTestEnvironment();
   if (FAILED(result))
@@ -144,8 +148,8 @@ HRESULT TestBackupRestoreManager::testLoadErrors()
   comm::datalayer::IClient* datalayerClient = m_testDatalayerSystem.factory()->createClient();
   BackupRestoreMgr testClassLoadErrors(m_mockAxisProfileCmp.getAxisProfileManager(), datalayerClient, m_mockAxisProfileCmp.getPersistenceHelper());
 
-  log(L"\nCall load() and simulate error when reading metadata.");
-  AxisProfileResult aprResult = testClassLoadErrors.load(m_testProfileName.c_str(), "testURI", "dummyJsonFilePath");
+  log(L"\nCall loadCfg() and simulate error when reading metadata(not register metadata type).");
+  AxisProfileResult aprResult = testClassLoadErrors.loadCfg(m_testProfileName.c_str(), "dummyJsonFilePath");
   if (aprResult != AxisProfileResult::ERR_DATALAYER_READ_METADATA)
   {
     error(L"\nWrong return code! Expected: 'ERR_DATALAYER_READ_METADATA' Actual: 0x%08X", aprResult);
@@ -158,42 +162,42 @@ HRESULT TestBackupRestoreManager::testLoadErrors()
     return E_FAIL;
   }
 
-  log(L"\nCall load() and simulate error that JSon file does not exist.");
-  aprResult = testClassLoadErrors.load(m_testProfileName.c_str(), "testURI", "dummyJsonFilePath");
+  log(L"\nCall loadCfg() and simulate error that JSon file does not exist.");
+  aprResult = testClassLoadErrors.loadCfg(m_testProfileName.c_str(), "dummyJsonFilePath");
   if (aprResult != AxisProfileResult::ERR_DATALAYER_PERSISTENCE)
   {
     error(L"\nWrong return code! Expected: 'ERR_DATALAYER_PERSISTENCE' Actual: 0x%08X", aprResult);
     return E_FAIL;
   }
 
-  log(L"\nCall load() and simulate syntax error in Json configuration file.");
+  log(L"\nCall loadCfg() and simulate syntax error in Json configuration file.");
   std::string datalayerAddress = provider::NodeTree.APR_PROFILES_CFG;
   datalayerAddress.replace(datalayerAddress.find("*"), 1, m_testProfileName.c_str());
   std::string pathJsonFileSyntaxError = m_configFolderPath + "/incorrect/config_syntax_error.json";
-  aprResult = testClassLoadErrors.load(m_testProfileName, datalayerAddress, pathJsonFileSyntaxError);
+  aprResult = testClassLoadErrors.loadCfg(m_testProfileName, pathJsonFileSyntaxError);
   if (aprResult != AxisProfileResult::ERR_DATALAYER_PERSISTENCE)
   {
     error(L"\nWrong return code! Expected: 'ERR_DATALAYER_PERSISTENCE' Actual: 0x%08X", aprResult);
     return E_FAIL;
   }
 
-  log(L"\nCall load() and simulate error because of Json configuration file with missing data.");
+  log(L"\nCall loadCfg() and simulate error because of Json configuration file with missing data.");
   std::string pathJsonFileMissingData = m_configFolderPath + "/incorrect/config_wrong_data.json";
-  aprResult = testClassLoadErrors.load(m_testProfileName, datalayerAddress, pathJsonFileMissingData);
+  aprResult = testClassLoadErrors.loadCfg(m_testProfileName, pathJsonFileMissingData);
   if (aprResult != AxisProfileResult::ERR_DATALAYER_WRONG_TYPE)
   {
     error(L"\nWrong return code! Expected: 'ERR_DATALAYER_WRONG_TYPE' Actual: 0x%08X", aprResult);
     return E_FAIL;
   }
 
-  log(L"\nCall load() and simulate error when trying to create a new profile.");
+  log(L"\nCall loadCfg() and simulate error when trying to create a new profile.");
   static_cast<test::MockAxisProfileManager*>(m_mockAxisProfileCmp.getAxisProfileManager())->m_returnValue = AxisProfileResult::ERR_NOK;
   std::string validConfigFilePath = m_configFolderPath + "/correct/testProfile.json";
-  aprResult = testClassLoadErrors.load(m_testProfileName, datalayerAddress, validConfigFilePath);
+  aprResult = testClassLoadErrors.loadCfg(m_testProfileName, validConfigFilePath);
   const IAxisProfile* testProfile = m_mockAxisProfileCmp.getAxisProfileManager()->getProfileByName(m_testProfileName.c_str());
   if (testProfile)
   {
-    error(L"\nCall of method load() created the profile but was expected to fail!!");
+    error(L"\nCall of method loadCfg() created the profile but was expected to fail!!");
     return E_FAIL;
   }
   static_cast<test::MockAxisProfileManager*>(m_mockAxisProfileCmp.getAxisProfileManager())->m_returnValue = AxisProfileResult::STS_OK;
@@ -224,7 +228,7 @@ HRESULT TestBackupRestoreManager::testSaveErrors()
   BackupRestoreMgr testClassSaveErrors(m_mockAxisProfileCmp.getAxisProfileManager(), datalayerClient, m_mockAxisProfileCmp.getPersistenceHelper());
 
   log(L"\nCall save() for a profile that does not exist.");
-  AxisProfileResult aprResult = testClassSaveErrors.save(m_testProfileName.c_str(), "testURI", {});
+  AxisProfileResult aprResult = testClassSaveErrors.save(m_testProfileName.c_str(), {});
   if (aprResult != AxisProfileResult::ERR_PROFILE_NOT_FOUND)
   {
     error(L"\nWrong return code! Expected: 'ERR_PROFILE_NOT_FOUND' Actual: 0x%08X", aprResult);
@@ -235,7 +239,7 @@ HRESULT TestBackupRestoreManager::testSaveErrors()
   m_mockAxisProfileCmp.getAxisProfileManager()->createAxisProfile(AxisProfileType::SERVODRIVE_OVER_ETHERCAT, m_testProfileName);
 
   log(L"\nCall save() and simulate error from persistence helper.");
-  aprResult = testClassSaveErrors.save(m_testProfileName.c_str(), "testURI", {});
+  aprResult = testClassSaveErrors.save(m_testProfileName.c_str(), {});
   if (aprResult != AxisProfileResult::ERR_DATALAYER_PERSISTENCE)
   {
     error(L"\nWrong return code! Expected: 'ERR_DATALAYER_PERSISTENCE' Actual: 0x%08X", aprResult);
@@ -249,9 +253,7 @@ HRESULT TestBackupRestoreManager::testSaveErrors()
   }
 
   log(L"\nCall save() and simulate error that target file path is inaccessible.");
-  std::string datalayerAddress = provider::NodeTree.APR_PROFILES_CFG;
-  datalayerAddress.replace(datalayerAddress.find("*"), 1, m_testProfileName.c_str());
-  aprResult = testClassSaveErrors.save(m_testProfileName.c_str(), datalayerAddress.c_str(), "/this/path/generates/an/error");
+  aprResult = testClassSaveErrors.save(m_testProfileName.c_str(), "/this/path/generates/an/error");
   if (aprResult != AxisProfileResult::ERR_DATALAYER_PERSISTENCE)
   {
     error(L"\nWrong return code! Expected: 'ERR_DATALAYER_PERSISTENCE' Actual: 0x%08X", aprResult);
@@ -369,7 +371,7 @@ HRESULT TestBackupRestoreManager::testErrorsNullptr()
 
   for (std::uint8_t index = 0; index < 4; index++)
   {
-    bool testCases[4]{}; // [0] = load(), [1] = save(), [2] = loadSystemCfg(), [3] = saveSystemCfg()
+    bool testCases[4]{}; // [0] = loadCfg(), [1] = save(), [2] = loadSystemCfg(), [3] = saveSystemCfg()
     AxisProfileResult expectedResult;
     comm::datalayer::IClient* dlClient = nullptr;
     const PersistenceHelperItf* persistenceHelper = nullptr;
@@ -379,7 +381,7 @@ HRESULT TestBackupRestoreManager::testErrorsNullptr()
     switch (index)
     {
     case 0:
-      testCases[0] = true;  // Call load()
+      testCases[0] = true;  // Call loadCfg()
       testCases[1] = true;  // Call save()
       testCases[3] = true;  // Call saveSystemCfg()
       expectedResult = AxisProfileResult::ERR_EXEC_NULL;
@@ -389,7 +391,7 @@ HRESULT TestBackupRestoreManager::testErrorsNullptr()
       persistenceHelper = m_mockAxisProfileCmp.getPersistenceHelper();
       break;
     case 1:
-      testCases[0] = true;  // Call load()
+      testCases[0] = true;  // Call loadCfg()
       testCases[1] = true;  // Call save()
       expectedResult = AxisProfileResult::ERR_EXEC_NULL;
       missingClassName = "DatalayerClient";
@@ -398,7 +400,7 @@ HRESULT TestBackupRestoreManager::testErrorsNullptr()
       persistenceHelper = m_mockAxisProfileCmp.getPersistenceHelper();
       break;
     case 2:
-      testCases[0] = true; // Call load()
+      testCases[0] = true; // Call loadCfg()
       testCases[1] = true; // Call save()
       testCases[2] = true; // Call loadSystemCfg()
       testCases[3] = true; // Call saveSystemCfg()
@@ -409,7 +411,7 @@ HRESULT TestBackupRestoreManager::testErrorsNullptr()
       dlClient = m_testDatalayerSystem.factory()->createClient();
       break;
     case 3:
-      testCases[0] = true; // Call load()
+      testCases[0] = true; // Call loadCfg()
       testCases[1] = true; // Call save()
       expectedResult = AxisProfileResult::ERR_INVALID_ARGUMENT;
       missingClassName = "argument";
@@ -424,8 +426,8 @@ HRESULT TestBackupRestoreManager::testErrorsNullptr()
 
     if (testCases[0])
     {
-      log(L"\nCall load() with missing %ls.", test::StringHelper::utf8ToWide(missingClassName).c_str());
-      AxisProfileResult retVal = testClassNullptr.load({}, {}, {});
+      log(L"\nCall loadCfg() with missing %ls.", test::StringHelper::utf8ToWide(missingClassName).c_str());
+      AxisProfileResult retVal = testClassNullptr.loadCfg({}, {});
       if (retVal != expectedResult)
       {
         error(L"\nWrong return code! Expected: 0x%08X Actual: 0x%08X", expectedResult, retVal);
@@ -435,7 +437,7 @@ HRESULT TestBackupRestoreManager::testErrorsNullptr()
     if (testCases[1])
     {
       log(L"\nCall save() with missing %ls.", test::StringHelper::utf8ToWide(missingClassName).c_str());
-      AxisProfileResult retVal = testClassNullptr.save({}, {}, {});
+      AxisProfileResult retVal = testClassNullptr.save({}, {});
       if (retVal != expectedResult)
       {
         error(L"\nWrong return code! Expected: 0x%08X Actual: 0x%08X", expectedResult, retVal);
@@ -525,10 +527,16 @@ HRESULT TestBackupRestoreManager::testClass()
   }
 
   log(L"\nCall save() when everything is OK.");
-  std::string datalayerAddress = provider::NodeTree.APR_PROFILES_CFG;
-  datalayerAddress.replace(datalayerAddress.find("*"), 1, m_testProfileName.c_str());
   std::string generatedFilePath = m_configFolderPath + "/generated/myConfigFile.json";
-  retVal = testClass.save(m_testProfileName.c_str(), datalayerAddress.c_str(), generatedFilePath.c_str());
+  retVal = testClass.save(m_testProfileName.c_str(), generatedFilePath.c_str());
+  if (retVal != AxisProfileResult::STS_OK)
+  {
+    error(L"\nMethod should succeed but received error code: 0x%08X", retVal);
+    return E_FAIL;
+  }
+
+  log(L"\nCall load() return OK, although the invalid boot params data.");
+  retVal = testClass.load(m_testProfileName.c_str(), generatedFilePath.c_str());
   if (retVal != AxisProfileResult::STS_OK)
   {
     error(L"\nMethod should succeed but received error code: 0x%08X", retVal);
@@ -538,9 +546,9 @@ HRESULT TestBackupRestoreManager::testClass()
   log(L"\nDelete profile with name '%ls' again.", test::StringHelper::utf8ToWide(m_testProfileName).c_str());
   m_mockAxisProfileCmp.getAxisProfileManager()->deleteAxisProfile(m_testProfileName.c_str());
 
-  log(L"\nCall load() when everything is OK (profile should be created!).");
+  log(L"\nCall loadCfg() when everything is OK (profile should be created!).");
   std::string validConfigFilePath = m_configFolderPath + "/correct/testProfile.json";
-  retVal = testClass.load(m_testProfileName.c_str(), datalayerAddress.c_str(), validConfigFilePath.c_str());
+  retVal = testClass.load(m_testProfileName.c_str(), validConfigFilePath.c_str());
   if (retVal != AxisProfileResult::STS_OK)
   {
     error(L"\nMethod should succeed but received error code: 0x%08X", retVal);
@@ -550,7 +558,7 @@ HRESULT TestBackupRestoreManager::testClass()
   const IAxisProfile* testProfile = m_mockAxisProfileCmp.getAxisProfileManager()->getProfileByName(m_testProfileName.c_str());
   if (!testProfile)
   {
-    error(L"\nThe method load() did not create the requested profile!");
+    error(L"\nThe method loadCfg() did not create the requested profile!");
     return E_FAIL;
   }
 
@@ -614,11 +622,16 @@ HRESULT TestBackupRestoreManager::configureTestEnvironment()
   {
     m_profilesConfigNode = new provider::NodeProfilesConfig(m_mockAxisProfileCmp.getProviderManager());
   }
+  if (!m_bootParamNode)
+  {
+    m_bootParamNode = new provider::NodeProfilesBootParams(m_mockAxisProfileCmp.getProviderManager());
+  }
 
   m_datalayerProvider->start();
   m_mockAxisProfileCmp.addDataLayer(m_testDatalayerSystem.factory());
 
-  if (comm::datalayer::STATUS_FAILED(m_datalayerProvider->registerNode(provider::NodeTree.APR_PROFILES_CFG.c_str(), m_profilesConfigNode)))
+  if (comm::datalayer::STATUS_FAILED(m_datalayerProvider->registerNode(provider::NodeTree.APR_PROFILES_CFG.c_str(), m_profilesConfigNode))/* ||
+      comm::datalayer::STATUS_FAILED(m_datalayerProvider->registerNode(provider::NodeTree.APR_PROFILES_CFG_BOOTPARAMS.c_str(), m_bootParamNode))*/)
   {
     error(L"\nCould not register profile configuration node.");
     return E_FAIL;
@@ -630,8 +643,10 @@ HRESULT TestBackupRestoreManager::configureTestEnvironment()
 HRESULT TestBackupRestoreManager::registerProfileConfigurationType()
 {
   log(L"\nRegister profile configuration type at the datalayer");
-  comm::datalayer::DlResult dlresult = m_datalayerProvider->registerType(m_profilesConfigNodeTypeAddress, m_configBfbsPath);
-  if (comm::datalayer::STATUS_FAILED(dlresult))
+  comm::datalayer::DlResult configResult = m_datalayerProvider->registerType(m_profilesConfigNodeTypeAddress, m_configBfbsPath);
+  comm::datalayer::DlResult bootParamResult = m_datalayerProvider->registerType(m_profilesBootParamTypeAddress, m_bootParamBfbsPath);
+  
+  if (comm::datalayer::STATUS_FAILED(configResult) || comm::datalayer::STATUS_FAILED(bootParamResult))
   {
     error(L"\nCould not register type at datalayer!");
     return E_FAIL;
@@ -657,17 +672,19 @@ HRESULT TestBackupRestoreManager::resetTestEnvironment(comm::datalayer::IClient*
   std::string configNodeAddress = provider::NodeTree.APR_PROFILES_CFG;
   for (std::uint8_t idx = 0; idx < nodeList.getCount(); idx++)
   {
-    if (m_profilesConfigNodeTypeAddress.compare(convActData[idx]))
+    if (m_profilesConfigNodeTypeAddress.compare(convActData[idx]) == 0 ||
+        m_profilesBootParamTypeAddress.compare(convActData[idx]) == 0)
     {
-      if (comm::datalayer::STATUS_FAILED(m_datalayerProvider->unregisterType(m_profilesConfigNodeTypeAddress)))
+      if (comm::datalayer::STATUS_FAILED(m_datalayerProvider->unregisterType(convActData[idx])))
       {
         error(L"\nCould not unregister profile configuration type.");
         return E_FAIL;
       }
     }
-    if (configNodeAddress.compare(convActData[idx]))
+    if (configNodeAddress.compare(convActData[idx]) == 0 ||
+        provider::NodeTree.APR_PROFILES_CFG_BOOTPARAMS.compare(convActData[idx]) == 0)
     {
-      if (comm::datalayer::STATUS_FAILED(m_datalayerProvider->unregisterNode(configNodeAddress)))
+      if (comm::datalayer::STATUS_FAILED(m_datalayerProvider->unregisterNode(convActData[idx])))
       {
         error(L"\nCould not unregister profile configuration node.");
         return E_FAIL;
@@ -720,14 +737,17 @@ HRESULT TestBackupRestoreManager::determinePathToProfileConfigBfbsFile()
   }
 
   path.erase((path.begin() + findPos), path.end());
-  path += "public/bfbs/comm/axisprofile/profileConfig.bfbs";
+  std::string configPath = path + "public/bfbs/comm/axisprofile/profileConfig.bfbs";
+  std::string bootParamPath = path + "public/bfbs/comm/axisprofile/deviceParamSnapshot.bfbs";
 
-  if (!m_mockAxisProfileCmp.getPersistenceHelperCppItf()->fileExists(path.c_str()))
+  if (!m_mockAxisProfileCmp.getPersistenceHelperCppItf()->fileExists(configPath) ||
+      !m_mockAxisProfileCmp.getPersistenceHelperCppItf()->fileExists(bootParamPath))
   {
     return E_FAIL;
   }
 
-  m_configBfbsPath = path;
+  m_configBfbsPath = configPath;
+  m_bootParamBfbsPath = bootParamPath;
   return S_OK;
 }
 
@@ -985,8 +1005,7 @@ HRESULT TestBackupRestoreManager::testMakePersistent()
     return E_FAIL;
   }
 
-  result = resetTestEnvironment(datalayerClient);
-  if (FAILED(result))
+  if (FAILED(resetTestEnvironment(datalayerClient)))
   {
     return E_FAIL;
   }

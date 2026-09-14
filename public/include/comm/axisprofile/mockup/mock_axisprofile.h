@@ -159,8 +159,6 @@ namespace comm::axisprofile
       m_profileCmdMock.resetCmd = AXISPROFILE_resetCmdMock;
       m_profileCmdMock.abortCmd = AXISPROFILE_abortCmdMock;
       m_profileCmdMock.getCmdStatusInDevice = AXISPROFILE_getCmdStatusInDeviceMock;
-      m_profileCmdMock.getOperationMode = AXISPROFILE_getOperationModeMockCmd;
-      m_profileCmdMock.setOperationMode = AXISPROFILE_setOperationModeMockCmd;
       m_profileCmdMock.clearDeviceError = AXISPROFILE_clearDeviceErrorMockCmd;
       m_profileCmdMock.clearDeviceError2 = AXISPROFILE_clearDeviceError2MockCmd;
       m_profileCmdMock.setAbsolutePosition = AXISPROFILE_setAbsolutePositionMockCmd;

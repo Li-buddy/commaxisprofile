@@ -101,7 +101,7 @@ void NodeBackupRestore::doOperation(comm::axisprofile::IBackupRestoreMgr* backup
                                     // cppcheck-suppress passedByValue
                                     const std::string& profileName,
                                     // cppcheck-suppress passedByValue
-                                    const std::string& dlCfgURI,
+                                    const std::string& /*dlCfgURI*/,
                                     // cppcheck-suppress passedByValue
                                     const std::string& workPath, const ResponseCallback &callback)
 {
@@ -110,10 +110,10 @@ void NodeBackupRestore::doOperation(comm::axisprofile::IBackupRestoreMgr* backup
   switch ( operation )
   {
   case SaveLoadOperation::SAVE_SINGLE_PROFILE:
-    backupRestoreResult = backupRestoreMgr->save(profileName, dlCfgURI, workPath);
+    backupRestoreResult = backupRestoreMgr->save(profileName, workPath);
     break;
   case SaveLoadOperation::LOAD_SINGLE_PROFILE:
-    backupRestoreResult = backupRestoreMgr->load(profileName, dlCfgURI, workPath);
+    backupRestoreResult = backupRestoreMgr->load(profileName, workPath);
     break;
   case SaveLoadOperation::SAVE_ALL:
     backupRestoreResult = backupRestoreMgr->saveSystemCfg(workPath);

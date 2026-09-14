@@ -22,6 +22,7 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "provider/nodes/profiles/cfg/node_profiles_config.h"
+#include "boot_param_backup_restore_mgr.h"
 #include "backup_restore_mgr.h"
 #include "common/debug_trace.h"
 #include "provider/provider_helper.h"
@@ -58,6 +59,7 @@ using namespace comm::axisprofile;
 // ---------------------------------------------------------------------------
 BackupRestoreMgr::BackupRestoreMgr(IAxisProfileManagerInternal *const profileMgr, comm::datalayer::IClient *const dlClient, const PersistenceHelperItf *persistenceHelper)
     : m_profileManager(profileMgr), m_dlClient(dlClient), m_persistenceHelper(persistenceHelper)
+    , m_bootParamBackupRestoreMgr(std::make_unique<BootParamBackupRestoreMgr>(profileMgr, persistenceHelper))
     , m_typeAddress(provider::ProviderHelper::getTypeString(provider::NodeTree.APR_PROFILES_CFG))
 {
 }
@@ -67,7 +69,7 @@ BackupRestoreMgr::~BackupRestoreMgr()
   delete m_dlClient;
 }
 
-AxisProfileResult BackupRestoreMgr::load(const std::string &profileName, const std::string &dlCfgUri, const std::string &filePath)
+AxisProfileResult BackupRestoreMgr::validateParam(const std::string& profileName) const
 {
   if (!m_persistenceHelper || !m_dlClient || !m_profileManager)
   {
@@ -75,38 +77,53 @@ AxisProfileResult BackupRestoreMgr::load(const std::string &profileName, const s
     return AxisProfileResult::ERR_EXEC_NULL;
   }
 
-  if (profileName.empty() || dlCfgUri.empty())
+  if (profileName.empty())
   {
     APR_TRACE_ERROR("Invalid argument! %s", MSG_ABORT_LOAD_CFG.c_str());
     return AxisProfileResult::ERR_INVALID_ARGUMENT;
   }
 
-  // Get file path from where the configuration will be loaded
-  std::string workPath{};
-  determineWorkPath(filePath, profileName, workPath);
+  return AxisProfileResult::STS_OK;
+}
 
-  APR_TRACE_MESSAGE("Load single profile config: Name: %s  FilePath %s  URI: %s", profileName.c_str(), workPath.c_str(), dlCfgUri.c_str());
-
-  // Read metadata of the configuration node
-  comm::datalayer::Variant metaData;
-  comm::datalayer::DlResult dlResult = m_dlClient->readSync(m_typeAddress, &metaData);
-  if (comm::datalayer::STATUS_FAILED(dlResult))
+AxisProfileResult BackupRestoreMgr::load(const std::string& profileName, const std::string& filePath)
+{
+  std::string fileNamePath = filePath.empty() ? m_bundleSubfolder + profileName + ".json" : filePath;
+  AxisProfileResult loadCfgResult = loadCfg(profileName, fileNamePath);
+  if (aprStatusFailed(loadCfgResult))
   {
-    APR_TRACE_ERROR("Could not read metadata! DlError: %s. %s", dlResult.toString(), MSG_ABORT_LOAD_CFG.c_str());
-    return AxisProfileResult::ERR_DATALAYER_READ_METADATA;
+    APR_TRACE_ERROR("Could not load data of profile %s, path:%s", profileName.c_str(), fileNamePath.c_str());
+    return loadCfgResult;
   }
 
-  // Load file data
-  comm::datalayer::Variant data;
-  dlResult = static_cast<comm::datalayer::DlResult::Value>(m_persistenceHelper->loadData(m_persistenceHelper->handle, workPath, metaData, data));
-  if (comm::datalayer::STATUS_FAILED(dlResult))
+  std::string dirPath = filePath.empty() ? m_bundleSubfolder : getDirPathFromPath(filePath);
+  std::string bootParamFilePath = makeBootParamsFilePath(dirPath + "/boot_params/", profileName);
+  if (aprStatusFailed(loadBootParams(profileName, bootParamFilePath)))
   {
-    PersistenceDetailDiag detailDiag;
-    m_persistenceHelper->getLastError(m_persistenceHelper->handle, detailDiag);
-    Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BACKUPRESTORE_LOAD_FAILED, __FILE__, __FUNCTION__, __LINE__,
-                       "Could not read file from path: %s, DlError: %s, Detail: %s", workPath.c_str(), dlResult.toString(), detailDiag.detailDiag.c_str());
-    return AxisProfileResult::ERR_DATALAYER_PERSISTENCE;
+    APR_TRACE_ERROR("Could not load boot params of profile %s, path:%s", profileName.c_str(), bootParamFilePath.c_str());
   }
+
+  return AxisProfileResult::STS_OK;
+}
+
+AxisProfileResult BackupRestoreMgr::loadCfg(const std::string &profileName, const std::string &filePath)
+{
+  AxisProfileResult ret = validateParam(profileName);
+  if(aprStatusFailed(ret))
+  {
+    return ret;
+  }
+  std::string dlCfgUri = replaceWildCardWithProfileName(provider::NodeTree.APR_PROFILES_CFG, profileName); 
+
+  std::string workPath = filePath.empty() ? m_bundleSubfolder + profileName + ".json" : filePath;
+  APR_TRACE_MESSAGE("Load single profile config: Name:%s, filePath:%s, loadPath:%s, URI:%s", profileName.c_str(), filePath.c_str(), workPath.c_str(), dlCfgUri.c_str());
+
+  comm::datalayer::Variant data{};
+  AxisProfileResult readResult = readCfgDataFromFile(workPath, data);
+  if (aprStatusFailed(readResult))
+  {
+    return readResult;
+  } 
 
   // If the profile does not exist we have to create it
   const IAxisProfile *profile = m_profileManager->getProfileByName(profileName.c_str());
@@ -130,7 +147,7 @@ AxisProfileResult BackupRestoreMgr::load(const std::string &profileName, const s
     }
   }
 
-  dlResult = m_dlClient->writeSync(dlCfgUri, &data);
+  comm::datalayer::DlResult dlResult = m_dlClient->writeSync(dlCfgUri, &data);
   if (comm::datalayer::STATUS_FAILED(dlResult))
   {
     m_profileManager->deleteAxisProfile(profileName.c_str());
@@ -141,26 +158,17 @@ AxisProfileResult BackupRestoreMgr::load(const std::string &profileName, const s
   return AxisProfileResult::STS_OK;
 }
 
-AxisProfileResult BackupRestoreMgr::save(const std::string &profileName, const std::string &dlCfgUri, const std::string &filePath)
+AxisProfileResult BackupRestoreMgr::saveCfg(const std::string &profileName, const std::string &filePath)
 {
-  if (!m_persistenceHelper || !m_dlClient || !m_profileManager)
+  AxisProfileResult ret = validateParam(profileName);
+  if (aprStatusFailed(ret))
   {
-    APR_TRACE_ERROR("Null-Pointer detected! %s", MSG_ABORT_SAVE_CFG.c_str());
-    return AxisProfileResult::ERR_EXEC_NULL;
+    return ret;
   }
 
-  if (profileName.empty() || dlCfgUri.empty())
-  {
-    APR_TRACE_ERROR("Invalid argument! %s", MSG_ABORT_SAVE_CFG.c_str());
-    return AxisProfileResult::ERR_INVALID_ARGUMENT;
-  }
+  std::string dlCfgUri = replaceWildCardWithProfileName(provider::NodeTree.APR_PROFILES_CFG, profileName);
 
-  // Get file path where the configuration will be stored
-  std::string workPath{};
-  determineWorkPath(filePath, profileName, workPath);
-
-  APR_TRACE_MESSAGE("Save single profile config: Name: %s  FilePath %s  URI: %s", profileName.c_str(), workPath.c_str(), dlCfgUri.c_str());
-
+  APR_TRACE_MESSAGE("Save single profile config: Name:%s, savePath:%s, URI:%s", profileName.c_str(), filePath.c_str(), dlCfgUri.c_str());
   const IAxisProfile *profile = m_profileManager->getProfileByName(profileName.c_str());
   if (!profile)
   {
@@ -170,11 +178,11 @@ AxisProfileResult BackupRestoreMgr::save(const std::string &profileName, const s
 
   // Save data to file
   // comm::datalayer::Variant data;
-  comm::datalayer::DlResult dlResult = static_cast<comm::datalayer::DlResult::Value>(m_persistenceHelper->saveDataaddress(m_persistenceHelper->handle, dlCfgUri, workPath));
+  comm::datalayer::DlResult dlResult = static_cast<comm::datalayer::DlResult::Value>(m_persistenceHelper->saveDataaddress(m_persistenceHelper->handle, dlCfgUri, filePath));
   if (comm::datalayer::STATUS_FAILED(dlResult))
   {
     Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BACKUPRESTORE_SAVE_FAILED, __FILE__, __FUNCTION__, __LINE__,
-                       "Could not save profile %s to path: %s, DlError: %s", profileName.c_str(),workPath.c_str(), dlResult.toString());
+                       "Could not save profile %s to path: %s, DlError: %s", profileName.c_str(), filePath.c_str(), dlResult.toString());
     return AxisProfileResult::ERR_DATALAYER_PERSISTENCE;
   }
 
@@ -271,20 +279,24 @@ AxisProfileResult BackupRestoreMgr::queryCfgLoad(const std::string &folderPath, 
   }
   std::sort(foundFiles.begin(), foundFiles.end());
 
-  std::vector<FileInformation> filesInfo{};   /// the information of all the profile about to be loaded
+  std::vector<std::string> newProfiles{};
   for (auto const &file : foundFiles)
   {
-    FileInformation fileInfo{};
-    getFileInfoFromPath(file, fileInfo);
-    filesInfo.emplace_back(fileInfo);
+    std::string profileName = getFileNameFromPath(file);
+    if (profileName.empty())
+    {
+      APR_TRACE_WARNING("Skip file with empty profile name: %s", file.c_str());
+      continue;
+    }
+    newProfiles.emplace_back(profileName);
   }
-  if (newOrDeletedObjectsAvailable(filesInfo))
+  if (newOrDeletedObjectsAvailable(newProfiles))
   {
     Dia::sendDiagnosis(MAIN_DIAG_DIAGNOSTICS_F0_QUERY_LOAD, DETAILED_DIAG_BACKUPRESTORE_LOAD_NOT_IN_CONFIG, __FILE__, __FUNCTION__, __LINE__, "Requires object creation/deletion during query config load process.");
     APR_TRACE_ERROR("object creation/deletion needs config state...");
     return AxisProfileResult::ERR_NOT_IN_CONFIG_STATE;
   }
-  if (!checkChangedData(loadId, filesInfo))
+  if (!checkChangedData(loadId, foundFiles))
   {
     Dia::sendDiagnosis(MAIN_DIAG_DIAGNOSTICS_F0_QUERY_LOAD, DETAILED_DIAG_BACKUPRESTORE_LOAD_NOT_IN_CONFIG, __FILE__, __FUNCTION__, __LINE__, "Requires configuration data changes during query config load process.");
     return AxisProfileResult::ERR_NOT_IN_CONFIG_STATE;
@@ -304,9 +316,7 @@ AxisProfileResult BackupRestoreMgr::saveSystemCfg(const std::string &folderPath)
   }
 
   // Get folder path where the files should be stored
-  std::string workPath{};
-  determineWorkPath(folderPath, {}, workPath);
-
+  std::string workPath = folderPath.empty() ? m_bundleSubfolder : makeFolderPath(folderPath);
   return executeCfgSave(workPath, "");
 }
 
@@ -346,46 +356,27 @@ AxisProfileResult BackupRestoreMgr::saveSystemCfg(const comm::datalayer::Variant
   return executeCfgSave(absolutePath, id);
 }
 
-AxisProfileResult BackupRestoreMgr::getFileInfoFromPath(std::string const &filePath, FileInformation &fileInfo) const
+std::string BackupRestoreMgr::replaceWildCardWithProfileName(std::string const& str, std::string const& profileName)
 {
-  // Get profile name from file path
-  std::string profileName{};
-  getFileNameFromPath(filePath, profileName);
-
-  // Get specific datalayer config node URI for this profile
-  std::string uri(provider::NodeTree.APR_PROFILES_CFG);
-
+  std::string uri(str);
   uri.replace(uri.find("*"), 1, profileName);
-
-  if (filePath.empty() || profileName.empty() || uri.empty())
-  {
-    APR_TRACE_ERROR("Could not extract information from file path!");
-    return AxisProfileResult::ERR_NOK;
-  }
-
-  // Write file data
-  fileInfo.m_profileName = profileName;
-  fileInfo.m_dlURI = uri;
-  fileInfo.m_path = filePath;
-
-  return AxisProfileResult::STS_OK;
+  return uri;
 }
 
-AxisProfileResult BackupRestoreMgr::getFileNameFromPath(const std::string &filePath, std::string &name) const
+size_t BackupRestoreMgr::findPathSeparator(const std::string& filePath) const
 {
-  std::string buffer(filePath);
-
-  // Remove everything from the beginning to the last '/' if necessary
-  size_t pos = buffer.rfind("/");
+  size_t pos = filePath.rfind("/");
   if (pos == std::string::npos)
   {
-    pos = buffer.rfind("\\");
+    pos = filePath.rfind("\\");
   }
+  return pos;
+}
 
-  if (pos != std::string::npos)
-  {
-    buffer.erase(0, (pos + 1));
-  }
+std::string BackupRestoreMgr::getFileNameFromPath(const std::string &filePath) const
+{
+  size_t pos = findPathSeparator(filePath);
+  std::string buffer = (pos != std::string::npos) ? filePath.substr(pos + 1) : filePath;
 
   // Remove the file extension (.json) if necessary
   pos = buffer.rfind(".");
@@ -394,35 +385,29 @@ AxisProfileResult BackupRestoreMgr::getFileNameFromPath(const std::string &fileP
     buffer.erase(pos, (buffer.length() - pos));
   }
 
-  name = buffer;
-  return AxisProfileResult::STS_OK;
+  return buffer;
 }
 
-void BackupRestoreMgr::determineWorkPath(const std::string &data, const std::string &profileName, std::string &path) const
+std::string BackupRestoreMgr::getDirPathFromPath(const std::string& filePath) const
 {
-  // If a path has been passed to the function, just convert and return
-  if (!data.empty())
-  {
-    if (profileName.empty())
-    {
-      // In case of a folder path we need to ensure, that the last character is a slash
-      path = ((data.back() == '/') || (data.back() == '\\')) ? data : data + '/';
-    }
-    else
-    {
-      path = data;
-    }
-    return;
-  }
+  size_t pos = findPathSeparator(filePath);
+  return (pos != std::string::npos) ? filePath.substr(0, pos) : std::string {};
+}
 
-  // If no path has been passed to the function, use default and add "<profileName>.json" if necessary
-  std::string buffer = m_bundleSubfolder;
-  if (!profileName.empty())
+std::string BackupRestoreMgr::makeFolderPath(const std::string &path)
+{
+  std::string folderPath(path);
+  if (!folderPath.empty())
   {
-    buffer += profileName + ".json";
+    // In case of a folder path we need to ensure, that the last character is a slash
+    folderPath = ((folderPath.back() == '/') || (folderPath.back() == '\\')) ? folderPath : folderPath + '/';
   }
+  return folderPath;
+}
 
-  path = buffer;
+std::string BackupRestoreMgr::makeBootParamsFilePath(const std::string &folderPath, const std::string &profileName)
+{
+  return makeFolderPath(folderPath) + profileName + "_bootparams.json";
 }
 
 AxisProfileResult BackupRestoreMgr::executeCfgSave(const std::string &folderPath, const std::string &/* loadId */)
@@ -441,12 +426,8 @@ AxisProfileResult BackupRestoreMgr::executeCfgSave(const std::string &folderPath
   AxisProfileResult returnValue = profileNames.empty() ? AxisProfileResult::STS_NO_PROFILES_EXIST : AxisProfileResult::STS_OK;
   for (const auto &name : profileNames)
   {
-    std::string configDatalayerPath(provider::NodeTree.APR_PROFILES_CFG);
-    configDatalayerPath.replace(configDatalayerPath.find("*"), 1, name.c_str());
-    std::string configFilePath = folderPath + name + ".json";
-
-    // Save current profile data
-    AxisProfileResult saveProfileResult = save(name, configDatalayerPath, configFilePath);
+    std::string configFilePath = folderPath + name + ".json";    
+    AxisProfileResult saveProfileResult = saveCfg(name, configFilePath); // Save current profile data
     if (aprStatusFailed(saveProfileResult))
     {
       APR_TRACE_ERROR("Could not save data of profile %s!", name.c_str());
@@ -461,9 +442,8 @@ AxisProfileResult BackupRestoreMgr::executeCfgSave(const std::string &folderPath
 AxisProfileResult BackupRestoreMgr::executeCfgLoad(const std::string &folderPath, const std::string &loadId)
 {
   // Get folder path from where the files should be loaded
-  std::string workPath{};
-  determineWorkPath(folderPath, {}, workPath);
-  APR_TRACE_MESSAGE("Path of configuration files: %s", folderPath.c_str());
+  std::string workPath = folderPath.empty() ? m_bundleSubfolder : makeFolderPath(folderPath);
+  APR_TRACE_MESSAGE("Path of configuration files: %s, workPath:%s", folderPath.c_str(), workPath.c_str());
 
   // Get all configuration files (*.json)
   std::vector<std::string> foundFiles;
@@ -489,23 +469,20 @@ AxisProfileResult BackupRestoreMgr::executeCfgLoad(const std::string &folderPath
 
   for (const auto &filePath : foundFiles)
   {
-    APR_TRACE_MESSAGE("Load file: %s", filePath.c_str());
+    std::string profileName = getFileNameFromPath(filePath);
+    APR_TRACE_MESSAGE("Load file: %s, profileName:%s", filePath.c_str(), profileName.c_str());
 
-    // Get information (profile name, datalayer config URI) from path
-    FileInformation fileInfo{};
-    if (aprStatusFailed(getFileInfoFromPath(filePath, fileInfo)))
+    if (profileName.empty())
     {
-      returnValue = AxisProfileResult::ERR_INVALID_ARGUMENT;
+      APR_TRACE_WARNING("Load file, but the profileName is empty. filePath: %s", filePath.c_str());
+      continue;
     }
-    else
+
+    AxisProfileResult loadRes = load(profileName, filePath);
+    if (aprStatusFailed(loadRes))
     {
-      // Load file configuration
-      AxisProfileResult loadResult = load(fileInfo.m_profileName, fileInfo.m_dlURI, fileInfo.m_path);
-      if (aprStatusFailed(loadResult))
-      {
-        APR_TRACE_ERROR("Could not load configuration file %s!", filePath.c_str());
-        returnValue = loadResult;
-      }
+      APR_TRACE_ERROR("Could not load configuration file %s. ret:%d", filePath.c_str(), loadRes);
+      returnValue = loadRes;
     }
   }
   return returnValue;
@@ -538,7 +515,7 @@ AxisProfileResult BackupRestoreMgr::getAvailableFiles(const std::string &folderP
   return returnValue;
 }
 
-bool BackupRestoreMgr::newOrDeletedObjectsAvailable(std::vector<FileInformation> const &filesInfo)
+bool BackupRestoreMgr::newOrDeletedObjectsAvailable(const std::vector<std::string>& newProfilesFromFiles)
 {
   // Store current profiles from system before loading the configuration (vec1)
 
@@ -547,11 +524,7 @@ bool BackupRestoreMgr::newOrDeletedObjectsAvailable(std::vector<FileInformation>
   std::sort(actProfiles.begin(), actProfiles.end());
 
   // All profiles in the new configuration (vec2)
-  std::vector<std::string> newProfiles{};
-  for (auto const &fileName : filesInfo)
-  {
-    newProfiles.push_back(fileName.m_profileName);
-  }
+  std::vector<std::string> newProfiles = newProfilesFromFiles;
   std::sort(newProfiles.begin(), newProfiles.end());
 
   // The needless objects that will be deleted (vec3 = vec1 - vec2)
@@ -569,31 +542,26 @@ bool BackupRestoreMgr::newOrDeletedObjectsAvailable(std::vector<FileInformation>
   return false;
 }
 
-bool BackupRestoreMgr::checkChangedData(const std::string &loadId, std::vector<FileInformation> &filesInformation)
+bool BackupRestoreMgr::checkChangedData(const std::string &loadId, const std::vector<std::string>& filePaths)
 {
-  for (auto &fileInfo : filesInformation)
+  for (const auto& filePath : filePaths)
   {
-    // Read metadata of the configuration node
-    comm::datalayer::Variant metaData{};
-    comm::datalayer::DlResult dlResult = m_dlClient->readSync(m_typeAddress, &metaData);
-    if (comm::datalayer::STATUS_FAILED(dlResult))
+    std::string profileName = getFileNameFromPath(filePath);
+    if (profileName.empty())
     {
-      APR_TRACE_ERROR("Could not read meta data, DlResult: %s [%s]", dlResult.toString(), loadId.c_str());
+      APR_TRACE_ERROR("Could not extract profile name from file path: %s [%s]", filePath.c_str(), loadId.c_str());
       return false;
     }
-    // Read file data
-    comm::datalayer::Variant data{};
-    dlResult = static_cast<comm::datalayer::DlResult::Value>(m_persistenceHelper->loadData(m_persistenceHelper->handle, fileInfo.m_path, metaData, data));
-    if (comm::datalayer::STATUS_FAILED(dlResult))
-    {
-      PersistenceDetailDiag detailDiag;
-      m_persistenceHelper->getLastError(m_persistenceHelper->handle, detailDiag);
-      Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BACKUPRESTORE_LOAD_FAILED, __FILE__, __FUNCTION__, __LINE__,
-                         "Could not read file from path: %s, DlError: %s, Detail: %s [%s]", fileInfo.m_path.c_str(), dlResult.toString(), detailDiag.detailDiag.c_str(), loadId.c_str());
+    std::string dlUri = replaceWildCardWithProfileName(provider::NodeTree.APR_PROFILES_CFG, profileName);
 
+    comm::datalayer::Variant data{};
+    AxisProfileResult readResult = readCfgDataFromFile(filePath, data);
+    if (aprStatusFailed(readResult))
+    {
+      APR_TRACE_ERROR("Could not read cfg data, ret:%d, load id:[%s]", readResult, loadId.c_str());
       return false;
     }
-    if (!checkConfigData(fileInfo, &data))
+    if (!checkConfigData(dlUri, &data))
     {
       //TRACE
       APR_TRACE_ERROR("The given configuration is not valid in state 'Running'.");
@@ -601,6 +569,29 @@ bool BackupRestoreMgr::checkChangedData(const std::string &loadId, std::vector<F
     }
   }
   return true;
+}
+
+AxisProfileResult BackupRestoreMgr::readCfgDataFromFile(const std::string& filePath, comm::datalayer::Variant& data)
+{
+  comm::datalayer::Variant metaData{};
+  comm::datalayer::DlResult dlResult = m_dlClient->readSync(m_typeAddress, &metaData);
+  if (comm::datalayer::STATUS_FAILED(dlResult))
+  {
+    APR_TRACE_ERROR("Could not read metadata! %s", MSG_ABORT_LOAD_CFG.c_str());
+    return AxisProfileResult::ERR_DATALAYER_READ_METADATA;
+  }
+
+  dlResult = static_cast<comm::datalayer::DlResult::Value>(m_persistenceHelper->loadData(m_persistenceHelper->handle, filePath, metaData, data));
+  if (comm::datalayer::STATUS_FAILED(dlResult))
+  {
+    PersistenceDetailDiag detailDiag;
+    m_persistenceHelper->getLastError(m_persistenceHelper->handle, detailDiag);
+    Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BACKUPRESTORE_LOAD_FAILED, __FILE__, __FUNCTION__, __LINE__,
+                       "Could not read file from path: %s, DlError: %s, Detail: %s", filePath.c_str(), dlResult.toString(), detailDiag.detailDiag.c_str());
+    return AxisProfileResult::ERR_DATALAYER_PERSISTENCE;
+  }
+
+  return AxisProfileResult::STS_OK;
 }
 
 AxisProfileResult BackupRestoreMgr::extractPersistenceData(const comm::datalayer::PersistenceParam *paramFb, std::string &configPath, std::string &id, std::string &phase)
@@ -626,10 +617,10 @@ AxisProfileResult BackupRestoreMgr::extractPersistenceData(const comm::datalayer
   return AxisProfileResult::STS_OK;
 }
 
-bool BackupRestoreMgr::checkConfigData(FileInformation fileInformation, comm::datalayer::Variant *cfgData)
+bool BackupRestoreMgr::checkConfigData(const std::string& dlUri, comm::datalayer::Variant *cfgData)
 {
   comm::datalayer::Variant actData{};
-  comm::datalayer::DlResult dlResult = m_dlClient->readSync(fileInformation.m_dlURI, &actData);
+  comm::datalayer::DlResult dlResult = m_dlClient->readSync(dlUri, &actData);
 
   if (comm::datalayer::STATUS_FAILED(dlResult))
   {
@@ -939,12 +930,10 @@ AxisProfileResult BackupRestoreMgr::exeMakePersistentCfgSave(const std::string& 
 {
   AxisProfileResult returnValue {AxisProfileResult::STS_OK};
   // Iterate over all profiles and generate the configuration files
-  std::string configDatalayerPath(provider::NodeTree.APR_PROFILES_CFG);
-  configDatalayerPath.replace(configDatalayerPath.find("*"), 1, axisprofileName.c_str());
   std::string configFilePath = folderPath + axisprofileName + ".json";
 
   // Save current profile data
-  AxisProfileResult saveProfileResult = save(axisprofileName, configDatalayerPath, configFilePath);
+  AxisProfileResult saveProfileResult = saveCfg(axisprofileName, configFilePath);
   if (aprStatusFailed(saveProfileResult))
   {
     APR_TRACE_ERROR("Could not save data of profile %s!", axisprofileName.c_str());
@@ -953,4 +942,34 @@ AxisProfileResult BackupRestoreMgr::exeMakePersistentCfgSave(const std::string& 
 
   APR_TRACE_MESSAGE("Saving the system configuration finished!");
   return returnValue;
+}
+
+AxisProfileResult BackupRestoreMgr::save(const std::string& profileName, const std::string& filePath)
+{
+  std::string fileNamePath = filePath.empty() ? m_bundleSubfolder + profileName + ".json" : filePath;
+  AxisProfileResult saveCfgResult = saveCfg(profileName, fileNamePath);
+  if (aprStatusFailed(saveCfgResult))
+  {
+    APR_TRACE_ERROR("Could not save data of profile %s, path:%s", profileName.c_str(), fileNamePath.c_str());
+    return saveCfgResult;
+  }
+
+  std::string dirPath = filePath.empty() ? m_bundleSubfolder : getDirPathFromPath(filePath);
+  std::string bootParamFilePath = makeBootParamsFilePath(dirPath + "/boot_params/", profileName);
+  if (aprStatusFailed(saveBootParam(profileName, bootParamFilePath)))
+  {
+    APR_TRACE_ERROR("Could not save boot params of profile %s, path:%s", profileName.c_str(), bootParamFilePath.c_str());
+  }
+
+  return AxisProfileResult::STS_OK;
+}
+
+AxisProfileResult BackupRestoreMgr::loadBootParams(const std::string& profileName, const std::string& filePath)
+{
+  return m_bootParamBackupRestoreMgr->loadBootParams(profileName, filePath);
+}
+
+AxisProfileResult BackupRestoreMgr::saveBootParam(const std::string &profileName, const std::string &filePath)
+{
+  return m_bootParamBackupRestoreMgr->saveBootParam(profileName, filePath);
 }

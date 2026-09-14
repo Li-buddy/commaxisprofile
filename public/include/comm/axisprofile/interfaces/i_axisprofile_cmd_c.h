@@ -30,8 +30,6 @@
 /// <TR><TD id="st_e">    setAbsolutePosition         </TD><TD> 1.2.0             </TD><TD>       </TD></TR>
 /// <TR><TD id="st_e">    referencingAxis             </TD><TD> 1.2.0             </TD><TD>       </TD></TR>
 /// <TR><TD id="st_e">    fixedStop                   </TD><TD> 1.2.0             </TD><TD>       </TD></TR>
-/// <TR><TD id="st_e">    getOperationMode            </TD><TD> 1.3.0             </TD><TD>       </TD></TR>
-/// <TR><TD id="st_e">    setOperationMode            </TD><TD> 1.3.0             </TD><TD>       </TD></TR>
 /// </TABLE>
 
 #include "comm/axisprofile/defines/axisprofile_statusdefs.h"
@@ -131,20 +129,7 @@ extern "C" {
     /// @return Status of the function call, STS_OK or an error code on failure
     ::comm::axisprofile::AxisProfileResult(*setNewReferenceWithoutMovement)(void* handle, double newPos, ::comm::axisprofile::AxisProfileEncoder encoder, ::comm::axisprofile::RefMode refMode, ::comm::axisprofile::CmdType& cmdType);
 
-    /// @brief Get actual operation mode
-    ///
-    /// @param[in]  handle        pointer to the instantiated object
-    /// @return The actual operation mode
-    ::comm::axisprofile::AxisProfileOperationMode(*getOperationMode)(void* handle);
-
-    /// @brief Set the given operation mode to the device
-    ///
-    /// @param[in]  handle        pointer to the instantiated object
-    /// @param[in]  opMode        The operation mode to be set
-    /// @return Status of the function call, STS_OK or an error code on failure
-    ::comm::axisprofile::AxisProfileResult(*setOperationMode)(void* handle, const ::comm::axisprofile::AxisProfileOperationMode opMode);
-
-    void* reserved[97];  ///< reservation
+    void* reserved[99];  ///< reservation
   } IAxisProfileCmdC;
 
 #ifdef __cplusplus

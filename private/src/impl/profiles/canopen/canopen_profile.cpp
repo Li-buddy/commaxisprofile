@@ -13,6 +13,7 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "canopen_cmd.h"
+#include "canopen_boot_param_snapshot.h"
 #include "canopen_profile.h"
 #include "drive/canopen_status_control_drive.h"
 #include "helper/datalayer_helper.h"
@@ -52,14 +53,18 @@ CanopenProfile::CanopenProfile(const std::string& profileName, const NetworkTech
   // Create SercosCmd
   m_cmdIf = new CanopenCmd(m_profileBasicInfo);
 
+  // Create boot parameter snapshot interface
+  m_bootParamSnapshotInterface = new CanopenBootParamSnapshot(m_profileBasicInfo);
+
   // create profile category object
   m_profileCategory = new DriveCategoryAdapterCoE(m_profileBasicInfo, &m_telegramAT, &m_telegramMDT);
 
   // Create sharing handler class
   m_profileCategory->registerSharingITFs(m_sharingHandler);
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY,      m_profileCategory);
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_PARAMACCESS,   m_paramAccess);
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CMD,           m_cmdIf);
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY,          m_profileCategory);
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_PARAMACCESS,       m_paramAccess);
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CMD,               m_cmdIf);
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, m_bootParamSnapshotInterface);
 
   // add init methods
   loadInitMethod();
@@ -381,14 +386,12 @@ const ScalingFactor& CanopenProfile::getVelocityFactorCfg() const
 std::vector<std::unique_ptr<IJobObj>> CanopenProfile::onGetJobList()
 {
   std::vector<std::unique_ptr<IJobObj>> jobs;
-  jobs.reserve(6);
+  jobs.reserve(4);
 
   jobs.emplace_back(std::make_unique<CanopenJobReset>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<CanopenJobHoming>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<CanopenJobDeviceParam>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<CanopenJobSetAbsPos>(m_profileBasicInfo, m_sharingHandler));
-  jobs.emplace_back(std::make_unique<CanopenJobGetOpMode>(m_profileBasicInfo, m_sharingHandler));
-  jobs.emplace_back(std::make_unique<CanopenJobSetOpMode>(m_profileBasicInfo, m_sharingHandler));
 
   return jobs;
 }

@@ -431,8 +431,8 @@ HRESULT TestFieldbusAdapter::testReadSlaveDcCfgInfo()
 HRESULT TestFieldbusAdapter::testParamListConversion()
 {
   HRESULT hResult = S_OK;
-  std::vector<std::uint8_t> dummyBuff {};
-  dummyBuff.resize(LIST_BUFF_DEFAULT_SIZE);
+  std::vector<std::uint8_t> dummyBuff {};  
+  dummyBuff.resize(64);
 
   log(L"\n<b>Test of rawToParamList</b>");
   std::vector<std::uint16_t> outList {};

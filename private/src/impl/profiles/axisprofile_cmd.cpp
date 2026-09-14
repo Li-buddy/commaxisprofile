@@ -15,9 +15,7 @@
 #include "bundle/axisprofile_cmd_c.h"
 #include "profiles/job_mgr/i_job_mgr.h"
 #include "profiles/axisprofile_job_base.h"
-#include <iostream>
 
-#include "canopen/cmd_jobs/canopen_job_getopmode.h"
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -48,8 +46,6 @@ AxisProfileCmd::AxisProfileCmd(ProfileBasicInfo& profileInfo)
   m_cItf.resetCmd = AXISPROFILE_resetCmd;
   m_cItf.abortCmd = AXISPROFILE_abortCmd;
   m_cItf.getCmdStatusInDevice = AXISPROFILE_getCmdStatusInDevice;
-  m_cItf.getOperationMode = AXISPROFILE_getOperationModeCmd;
-  m_cItf.setOperationMode = AXISPROFILE_setOperationModeCmd;
   m_cItf.clearDeviceError = AXISPROFILE_clearDeviceErrorCmd;
   m_cItf.clearDeviceError2 = AXISPROFILE_clearDeviceError2Cmd;
   m_cItf.setAbsolutePosition = AXISPROFILE_setAbsolutePositionCmd;
@@ -126,101 +122,6 @@ AxisProfileResult AxisProfileCmd::startCmd(CmdType cmdType, IContainer* agr)
 
   APR_TRACE_MESSAGE("%s; command %s started", m_profileInfo.m_profileTrace.createTraceMsg(), cmdTypeToString(cmdType));
   return AxisProfileResult::STS_OK;
-}
-
-AxisProfileOperationMode AxisProfileCmd::getOperationMode()
-{
-  std::cout << "AxisProfileCmd::getOperationMode" << std::endl;
-  if (!m_shareHandle)
-  {
-    return AxisProfileOperationMode::UNDEFINED;
-  }
-
-  // temporary keep using original version for SOE
-  if (m_shareHandle->getPropertyIF()->getProfileType() == AxisProfileType::SERVODRIVE_OVER_ETHERCAT)
-  {
-    if (!m_shareHandle->getStatusControlIF())
-    {
-      return AxisProfileOperationMode::UNDEFINED;
-    }
-    return m_shareHandle->getStatusControlIF()->getOperationMode();
-  }
-
-  // use new async query model for CoE
-  if (!m_shareHandle->getJobMgrIF())
-  {
-    return AxisProfileOperationMode::UNDEFINED;
-  }
-
-  auto cmdType = CmdType::GET_OP_MODE;
-  const CmdState state = getCmdState(cmdType);
-
-  if (state == CmdState::STATE_IDLE)
-  {
-    std::cout << "////////////start command here////////////////" << std::endl;
-    auto result = startCmd(cmdType);
-    return aprStatusFailed(result) ? AxisProfileOperationMode::UNDEFINED : AxisProfileOperationMode::OPMODE_PENDING;
-  }
-
-  if (state == CmdState::STATE_ACTIVE || state == CmdState::STATE_ABORTING)
-  {
-    auto jobObj = m_shareHandle->getJobMgrIF()->getJobObj(getJob(cmdType));
-    if (!jobObj) return AxisProfileOperationMode::UNDEFINED;
-    auto ptr = static_cast<canopen::CanopenJobGetOpMode*>(jobObj);
-
-    auto opModeData = JobDataOperationMode::safeCast(ptr->getModeData());
-    if (!opModeData) return AxisProfileOperationMode::UNDEFINED;
-
-    auto mode = opModeData->get();
-    std::cout << "opModeData : "<<axisProfileOpModeToString(mode) << std::endl;
-    // one-shot read finished: release command for next reentrant call
-
-    CmdStatusInDevice cmdStatusInDev = getCmdStatusInDevice(cmdType);
-
-    if (cmdStatusInDev == CmdStatusInDevice::DEVICE_COMPLETED)
-    {
-      std::cout << "abort cmd while it already complete" << std::endl;
-      (void)abortCmd(cmdType); // transition ACTIVE -> ABORTING -> IDLE in next cycles
-    }
-    std::cout << "return mode : "<<axisProfileOpModeToString(mode) << std::endl;
-    return mode;
-  }
-
-  if (state == CmdState::STATE_ACTIVATING )
-  {
-    return AxisProfileOperationMode::OPMODE_PENDING;
-  }
-
-  if (state == CmdState::STATE_ERROR)
-  {
-    return AxisProfileOperationMode::UNDEFINED;
-  }
-
-  return AxisProfileOperationMode::UNDEFINED; // missing fallback today
-}
-
-AxisProfileResult AxisProfileCmd::setOperationMode(const AxisProfileOperationMode opMode)
-{
-  if (!m_shareHandle)
-  {
-    return AxisProfileResult::ERR_EXEC_NULL;
-  }
-
-  // temporary keep using original version for SOE
-  if (m_shareHandle->getPropertyIF()->getProfileType() == AxisProfileType::SERVODRIVE_OVER_ETHERCAT)
-  {
-    if (!m_shareHandle->getStatusControlIF())
-    {
-      return AxisProfileResult::ERR_EXEC_NULL;
-    }
-    return m_shareHandle->getStatusControlIF()->setOperationMode(opMode);
-  }
-
-  // use new for CoE
-  /*ArgSetOperationMode arg(opMode);
-  CmdType cmdType = CmdType::SET_OP_MODE;
-  return startCmd(cmdType, &arg);*/
-  return m_shareHandle->getStatusControlIF()->setOperationMode(opMode);
 }
 
 CmdStatusInDevice AxisProfileCmd::getCmdStatusInDevice(CmdType cmdType)

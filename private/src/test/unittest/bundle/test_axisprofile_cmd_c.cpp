@@ -99,24 +99,6 @@ HRESULT TestAxisprofileCmdC::testCmdHandling()
   actStatus = AXISPROFILE_getCmdStatusInDevice(nullptr, CmdType::CLEAR_DEV_ERR);
   RETURN_TEST_RESULT(actStatus, L"\nUnexpected state", CmdStatusInDevice::DEVICE_UNKNOWN);
 
-  log(L"\n\tTest success case of AXISPROFILE_getOperationModeCmd...");
-  mockCmd->m_operationMode = AxisProfileOperationMode::VELOCITY;
-  auto actOperationMode = AXISPROFILE_getOperationModeCmd(mockCmd.get());
-  RETURN_TEST_RESULT(actOperationMode, L"\nUnexpected operation mode", mockCmd->m_operationMode);
-
-  log(L"\n\tTest nullptr handle case of AXISPROFILE_getOperationModeCmd...");
-  actOperationMode = AXISPROFILE_getOperationModeCmd(nullptr);
-  RETURN_TEST_RESULT(actOperationMode, L"\nUnexpected operation mode", AxisProfileOperationMode::UNDEFINED);
-
-  log(L"\n\tTest success case of AXISPROFILE_setOperationModeCmd...");
-  AxisProfileResult operationModeResult = AXISPROFILE_setOperationModeCmd(mockCmd.get(), AxisProfileOperationMode::POSITIONING);
-  LOG_TEST_RESULT(operationModeResult, L"\nUnexpected return value!", AxisProfileResult::STS_OK);
-  RETURN_TEST_RESULT(mockCmd->m_operationMode, L"\nUnexpected operation mode", AxisProfileOperationMode::POSITIONING);
-
-  log(L"\n\tTest nullptr handle case of AXISPROFILE_setOperationModeCmd...");
-  operationModeResult = AXISPROFILE_setOperationModeCmd(nullptr, AxisProfileOperationMode::POSITIONING);
-  LOG_TEST_RESULT(operationModeResult, L"\nUnexpected return value!", AxisProfileResult::ERR_EXEC_NULL);
-
   /// @brief Test case structure
   struct TestCase
   {

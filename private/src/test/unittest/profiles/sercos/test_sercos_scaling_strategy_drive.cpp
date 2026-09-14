@@ -5,9 +5,11 @@
 #include "mockup/mock_axisprofile_property.h"
 #include "mockup/mock_fieldbus_adapter_soe.h"
 #include "mockup/mock_profile_trace.h"
+#include "mockup/mock_scaling_drive_device_param.h"
 #include "profiles/category/drive/drive_category_adapter_soe.h"
 #include "profiles/data_sharing/sharing_handler.h"
 #include "profiles/scaling/unit_defs.h"
+#include "profiles/sercos/sercos_boot_param_snapshot.h"
 #include "profiles/sercos/sercos_defs.h"
 #include "test_sercos_scaling_strategy_drive.h"
 
@@ -78,13 +80,13 @@ HRESULT TestScalingStrategySoEDrive::testCalcPosScalingLSBWeight()
   ProfileBasicInfo profileBasicInfo;
   profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
   profileBasicInfo.m_profileName = m_profileName;
-
   profileBasicInfo.m_deviceAddress = deviceAddress;
 
   sercos::ScalingStrategySoEDrive testClass{profileBasicInfo};
   AxisProfileSharingHandler sHandler(&mockProfileTrace);
-  test::MockAxisProfileDeviceParam testDeviceParam {};
+  test::MockScalingDriveDeviceParam testDeviceParam {profileBasicInfo};
   test::MockAxisProfileProperty property {};
+
   sHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_SCALING, &testClass);
   sHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testDeviceParam);
   sHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
@@ -95,6 +97,7 @@ HRESULT TestScalingStrategySoEDrive::testCalcPosScalingLSBWeight()
 
   // add assign item
   test::MockAxisProfileTrace profileTraceMockup {};
+  comm::axisprofile::sercos::SercosBootParamSnapshot bootParamSnapshot {profileBasicInfo};
   test::MockAxisProfileMappingHandler mappingHandlerMockup {};
   //mock for position
   auto& assign = mappingHandlerMockup.getProfileAssignedInfo();
@@ -109,6 +112,7 @@ HRESULT TestScalingStrategySoEDrive::testCalcPosScalingLSBWeight()
   sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY, mockCategory.get());
   sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testDeviceParam);
   sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
 
   log(L"\n\n<b>Call calcScalingLSBWeights() and simulate error in the fieldbus adapter.</b>");
   mockFieldbusAdapter.m_returnValue = AxisProfileResult::ERR_FIELDBUS;
@@ -205,14 +209,19 @@ HRESULT TestScalingStrategySoEDrive::testCalcVelScalingLSBWeight()
   // add assign item
   test::MockAxisProfileTrace profileTraceMockup {};
   test::MockAxisProfileMappingHandler mappingHandlerMockup {};
+  test::MockScalingDriveDeviceParam testDeviceParam {profileBasicInfo};
   //mock for position
   auto& assign = mappingHandlerMockup.getProfileAssignedInfo();
   assign.m_input.m_velocity = true;
+  assign.m_output.m_velocity = true;
   mappingHandlerMockup.setReturnValue(assign);
 
+  comm::axisprofile::sercos::SercosBootParamSnapshot bootParamSnapshot {profileBasicInfo};
   AxisProfileSharingHandler sharingHandler(&profileTraceMockup);
   sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_SCALING, &testClass);
   sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappingHandlerMockup);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testDeviceParam);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
 
   log(L"\n\n<b>Call calcScalingLSBWeights() and simulate error in the fieldbus adapter.</b>");
   mockFieldbusAdapter.m_returnValue = AxisProfileResult::ERR_FIELDBUS;
@@ -300,15 +309,19 @@ HRESULT TestScalingStrategySoEDrive::testCalcTorqueScalingLSBWeight()
   // add assign item
   test::MockAxisProfileTrace profileTraceMockup {};
   test::MockAxisProfileMappingHandler mappingHandlerMockup {};
+  test::MockScalingDriveDeviceParam testDeviceParam {profileBasicInfo};
   //mock for position
   auto& assign = mappingHandlerMockup.getProfileAssignedInfo();
   assign.m_input.m_torqueForce = true;
   assign.m_input.m_position = true;
   mappingHandlerMockup.setReturnValue(assign);
 
+  comm::axisprofile::sercos::SercosBootParamSnapshot bootParamSnapshot {profileBasicInfo};
   AxisProfileSharingHandler sharingHandler(&profileTraceMockup);
   sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_SCALING, &testClass);
   sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappingHandlerMockup);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testDeviceParam);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
 
   log(L"\n\n<b>Call calcScalingLSBWeights() and simulate error in the fieldbus adapter.</b>");
   mockFieldbusAdapter.m_returnValue = AxisProfileResult::ERR_FIELDBUS;
@@ -397,10 +410,16 @@ HRESULT TestScalingStrategySoEDrive::testCalcAccScalingLSBWeight()
   ProfileBasicInfo profileBasicInfo;
   profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
   profileBasicInfo.m_profileName = m_profileName;
-
   profileBasicInfo.m_deviceAddress = deviceAddress;
 
+
   sercos::ScalingStrategySoEDrive testClass{profileBasicInfo};
+  comm::axisprofile::sercos::SercosBootParamSnapshot bootParamSnapshot {profileBasicInfo};
+  test::MockScalingDriveDeviceParam testDeviceParam {profileBasicInfo};
+  AxisProfileSharingHandler sharingHandler(&mockProfileTrace);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_SCALING, &testClass);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testDeviceParam);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
 
   log(L"\n\n<b>Call calcScalingLSBWeights() and simulate error in the fieldbus adapter.</b>");
   mockFieldbusAdapter.m_returnValue = AxisProfileResult::ERR_FIELDBUS;
@@ -491,7 +510,7 @@ HRESULT TestScalingStrategySoEDrive::testModulo() const
   ProfileBasicInfo profileBasicInfo;
   sercos::ScalingStrategySoEDrive testClass {profileBasicInfo};
   testClass.m_moduloValue = 100;
-  log(L"\n\n<b>Test modulo related functions.</b>");
+  test::MockScalingDriveDeviceParam testDeviceParam {profileBasicInfo};
 
   log(L"\n\tget modulo value.");
   auto modValue = testClass.getModValue();

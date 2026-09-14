@@ -64,15 +64,6 @@ namespace comm::axisprofile
     /// @return Status of command in device
     virtual CmdStatusInDevice getCmdStatusInDevice(CmdType cmdType) = 0;
 
-    /// @brief Get actual operation mode
-    /// @return The actual operation mode
-    virtual AxisProfileOperationMode getOperationMode() = 0;
-
-    /// @brief Set the given operation mode to the device
-    /// @param[in]  opMode     The operation mode to be set
-    /// @return Status of the function call, STS_OK or an error code on failure
-    virtual AxisProfileResult setOperationMode(const AxisProfileOperationMode opMode) = 0;
-
     /// @brief Command of clearing device error
     /// @param[out] cmdType     command type
     /// @return Status of the function call, STS_OK or an error code on failure

@@ -13,40 +13,72 @@
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
+#include "profiles/canopen/canopen_defs.h"
+#include "profiles/i_device_boot_param_snapshot.h"
+
+#include <array>
+#include <vector>
 
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
 namespace comm::axisprofile::canopen
 {
+  /// @brief Descriptor of a Canopen boot parameter.
+  struct BootParamDescriptor
+  {
+    ObjectDirEntry objEntry;
+    BootParamValueType type;
+    std::size_t valueLen;
+  };
+
+  constexpr std::size_t SIGNAL_STATUS_WORD_LIST_SIZE = 16;
+
   // ---------------------------------------------------------------------------
   // Declaration of symbolic constants
   // ---------------------------------------------------------------------------
 
-  /// @brief This const list indicate the default booting parameters of CoE
-  inline const std::vector<ObjectDirEntry> COE_BOOT_PARAM_LIST = {
-    ENCODER_1_PROPERTY,
-    ENCODER_2_PROPERTY,
-    SIGNAL_STATUS_WORD_CONFIG_LIST,
-    //SUPPORTED_DRIVE_MODE,
-    SCALING_SI_UNIT_VELOCITY,
-    SCALING_SI_UNIT_POSITION,
-    SCALING_TORQUE_SCALING_TYPE,
-    SCALING_TORQUE_FACTOR,
-    SCALING_TORQUE_EXPONENT,
-    SCALING_GEAR_REVOLUTION_IN,
-    SCALING_GEAR_REVOLUTION_OUT,
-    SCALING_FEED_CONSTANT,
-    SCALING_SI_UNIT_ACCELERATION,
-    SIGNAL_STATUS_WORD_ASSIGN_LIST,
-    //HOMING_FEEDBACK_VALUE_STATUS,
-    SCALING_NOMINAL_TORQUE,
-    //TORQUE_FORCE_OPTIONS_CODE,
-    QUICK_STOP_OPTION,
-    //PROBE1_POS_LATCHED_TIMES,
-    //PROBE1_NEG_LATCHED_TIMES,
-    //PROBE2_POS_LATCHED_TIMES,
-    //PROBE2_NEG_LATCHED_TIMES,
-  };
+  inline const std::array<BootParamDescriptor, 15> COE_BOOT_PARAM_DESCRIPTOR_TABLE {{
+    {ENCODER_1_PROPERTY,             BootParamValueType::UNSIGNED16, sizeof(std::uint16_t)},
+    {ENCODER_2_PROPERTY,             BootParamValueType::UNSIGNED16, sizeof(std::uint16_t)},
+    {SIGNAL_STATUS_WORD_CONFIG_LIST, BootParamValueType::BYTEARRAY,  SIGNAL_STATUS_WORD_LIST_SIZE * sizeof(std::uint32_t)},
+    {SCALING_SI_UNIT_VELOCITY,       BootParamValueType::UNSIGNED32, sizeof(std::uint32_t)},
+    {SCALING_SI_UNIT_POSITION,       BootParamValueType::UNSIGNED32, sizeof(std::uint32_t)},
+    {SCALING_TORQUE_SCALING_TYPE,    BootParamValueType::UNSIGNED16, sizeof(std::uint16_t)},
+    {SCALING_TORQUE_FACTOR,          BootParamValueType::UNSIGNED16, sizeof(std::uint16_t)},
+    {SCALING_TORQUE_EXPONENT,        BootParamValueType::SIGNED16,   sizeof(std::int16_t)},
+    {SCALING_GEAR_REVOLUTION_IN,     BootParamValueType::UNSIGNED32, sizeof(std::uint32_t)},
+    {SCALING_GEAR_REVOLUTION_OUT,    BootParamValueType::UNSIGNED32, sizeof(std::uint32_t)},
+    {SCALING_FEED_CONSTANT,          BootParamValueType::UNSIGNED32, sizeof(std::uint32_t)},
+    {SCALING_SI_UNIT_ACCELERATION,   BootParamValueType::UNSIGNED32, sizeof(std::uint32_t)},
+    {SIGNAL_STATUS_WORD_ASSIGN_LIST, BootParamValueType::BYTEARRAY,  SIGNAL_STATUS_WORD_LIST_SIZE * sizeof(std::uint16_t)},
+    {SCALING_NOMINAL_TORQUE,         BootParamValueType::UNSIGNED32, sizeof(std::uint32_t)},
+    {QUICK_STOP_OPTION,              BootParamValueType::SIGNED16,   sizeof(std::int16_t)},
+  }};
+
+  inline const BootParamDescriptor* getCanopenBootParamDescriptor(const ObjectDirEntry& objEntry)
+  {
+    for (const auto& descriptor : COE_BOOT_PARAM_DESCRIPTOR_TABLE)
+    {
+      if (descriptor.objEntry.index == objEntry.index && descriptor.objEntry.subIndex == objEntry.subIndex)
+      {
+        return &descriptor;
+      }
+    }
+
+    return nullptr;
+  }
+
+  /// @brief Build the default CoE boot parameter list from descriptor table.
+  inline std::vector<ObjectDirEntry> getCanopenBootParamList()
+  {
+    std::vector<ObjectDirEntry> result {};
+    result.reserve(COE_BOOT_PARAM_DESCRIPTOR_TABLE.size());
+    for (const auto& descriptor : COE_BOOT_PARAM_DESCRIPTOR_TABLE)
+    {
+      result.push_back(descriptor.objEntry);
+    }
+    return result;
+  }
 
 }

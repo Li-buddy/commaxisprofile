@@ -86,8 +86,6 @@ namespace test
       return m_returnValue;
     }
 
-    bool isNeedReadBootParams() const override final { return m_needReadBootParams;}
-    std::uint32_t getCheckSumValue() const override final { return m_checksum;}
     comm::axisprofile::AxisProfileResult getChecksumIdnList(std::vector<std::string>& idnStrListRet) const override final
     {
       idnStrListRet = m_checksumIdnList;
@@ -133,10 +131,6 @@ namespace test
     /// @param[out] data  configuration data.
     virtual void setFuncSupportResult(bool supported) { m_funcSupported = supported; }
     
-    /// @brief This method can be used by tests to change the checksum value.
-    /// @param[out] data  configuration data.
-    virtual void setChecksumValue(std::uint32_t value) { m_checksum = value; }
-
     /// @brief This method can be used by tests to change the checksum idn list.
     /// @param[out] data  configuration data.
     virtual void setChecksumIdnList(std::vector<std::string>& list) { m_checksumIdnList = list; }
@@ -151,8 +145,6 @@ namespace test
     double m_outputEffectiveDelay {6 * 1E-3};                                                           ///< Output effective delay time
     bool m_standstill {true};                                                                           ///< Indicates axis is standstill or not
     double m_rateTorqueForce {1.0};                                                                     ///< Rate torque/force value
-    bool m_needReadBootParams {true};                                                                   ///< whether read drive booting parameters   
-    std::uint32_t m_checksum {};                                                                        ///< Parameter checksum
     std::vector<std::string> m_checksumIdnList;                                                         ///< Parameter checksum idn list
     bool m_homed {false};                                                                               ///< Indicates axis has homed or not    
   };

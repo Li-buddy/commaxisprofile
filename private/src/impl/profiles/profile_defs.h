@@ -56,8 +56,9 @@ namespace comm::axisprofile
     ITF_TYPE_JOB_MGR,           ///< job manager interface
     ITF_TYPE_CATEGORY,          ///< category interface
     ITF_TYPE_PROPERTY,          ///< property interface
+    ITF_TYPE_BOOTPARAMSNAPSHOT, ///< boot parameter snapshot interface
 
-    ITF_TYPE_MAX = ITF_TYPE_PROPERTY,  ///< maximum value, helper for loop
+    ITF_TYPE_MAX = ITF_TYPE_BOOTPARAMSNAPSHOT,  ///< maximum value, helper for loop
   };
   /// @brief The capacity of the interface type
   constexpr std::uint16_t SHARE_ITF_TYPE_CNT = static_cast<std::uint16_t>(SharingInterfaceType::ITF_TYPE_MAX) + 1;
@@ -214,7 +215,7 @@ namespace comm::axisprofile
     explicit ProfileOutputAssignedInfo(bool assigned): m_controlWord(assigned), m_position(assigned), m_velocity(assigned),
                                                        m_torqueForce(assigned), m_torqueVelLimHigh(assigned), m_torqueVelLimLow(assigned),
                                                        m_opMode(assigned), m_userPDOs(assigned), m_setReference(assigned), m_referenceOffset(assigned),
-                                                       m_signalControlWord(assigned)
+                                                       m_signalControlWord(assigned) 
     {};
 
   }ProfileOutputAssignedInfo;
@@ -301,7 +302,5 @@ namespace comm::axisprofile
   DECLARE_NAMED_TYPE(ArgSetAbsolutePosition, SetAbsPosData);  ///< Named type for SetAbsPosData
   DECLARE_NAMED_TYPE(ArgHoming, HomingData);                  ///< Named type for Homing
   DECLARE_NAMED_TYPE(ArgFixedStop, double);                   ///< Named type for FixedStop
-  DECLARE_NAMED_TYPE(ArgSetOperationMode, AxisProfileOperationMode);       ///< Named type for set operation mode argument
-  DECLARE_NAMED_TYPE(JobDataOperationMode, AxisProfileOperationMode);
   DECLARE_NAMED_TYPE(JobDataDeviceStatus, std::atomic<CmdStatusInDevice>);  /// Named type of job data of status in device
 }

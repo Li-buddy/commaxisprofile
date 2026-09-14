@@ -19,7 +19,9 @@
 #include "fieldbuses/fieldbus_helper.h"
 #include "helper/checksum_idn_list_helper.h"
 #include "helper/device_id_helper.h"
+#include "profiles/canopen/canopen_boot_param_snapshot.h"
 #include "profiles/canopen/canopen_boot_params.h"
+#include "profiles/i_device_boot_param_snapshot.h"
 #include <algorithm>
 
 // ---------------------------------------------------------------------------
@@ -64,15 +66,15 @@ void CanopenDeviceParamDrive::loadBootingTasks()
   m_initDeviceParam.emplace_back([this]{return readProbeLatchedParam();});
   m_initDeviceParam.emplace_back([this]{return initHomeState();});
   m_initDeviceParam.emplace_back([this]{return prepareSignalFuncHandler();});
-
-  if (!m_needReadBootParams)
-  {
-    APR_TRACE_MESSAGE("%s, Not need to read CoE drive parameters again.", m_profileBasicInfo.m_profileTrace.createTraceMsg());
-    return ;
-  }
   m_initDeviceParam.emplace_back([this]{return checkDeviceQuickStopCfg();});
   m_initDeviceParam.emplace_back([this]{return readDcConfigInfo();});
   m_initDeviceParam.emplace_back([this]{return readEncoderTypes();});
+}
+
+AxisProfileResult CanopenDeviceParamDrive::getParameterValueFromSnapshot(const ObjectDirEntry& objEntry, std::uint8_t* bufPtr, std::size_t bufLen)
+{
+  return CanopenBootParamSnapshot::getParameterValueFromSnapshot(m_sharingHandler, m_profileBasicInfo.m_profileTrace.createTraceMsg(),
+                                                                 objEntry, bufPtr, bufLen);
 }
 
 AxisProfileResult CanopenDeviceParamDrive::readDelayBrakeParam()
@@ -144,14 +146,13 @@ bool CanopenDeviceParamDrive::checkFunctionSupported(const FunctionSupport funct
 AxisProfileResult CanopenDeviceParamDrive::determineOpModeAvailable()
 {
   std::uint32_t driveModes = 0;
-  std::uint32_t bufsize = sizeof(driveModes);
-  void* buf = &driveModes;
-  ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, getObjDir(SUPPORTED_DRIVE_MODE, m_driveNumber)};
-  AxisProfileResult result = m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(buf), bufsize);
+  ObjectDirEntry supportedModeObj = getObjDir(SUPPORTED_DRIVE_MODE, m_driveNumber);
+  ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, supportedModeObj};
+  AxisProfileResult result = m_fieldbusAdapter->readSingleParamSync(requestData, reinterpret_cast<std::uint8_t*>(&driveModes), sizeof(driveModes));
   if (aprStatusFailed(result))
   {
     Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_READ_PARAM_FAILED, m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "Supported OP modes, PDO %s, slaveId %d", objDirToString(requestData.objEntry).c_str(), requestData.address);
+                       "Supported OP modes, PDO %s, slaveId %d", objDirToString(supportedModeObj).c_str(), m_profileBasicInfo.m_deviceAddress);
     return result;
   }
   m_opModeAvailInfoCanopen.clearOpModeAvailInfoCanopen();
@@ -209,18 +210,15 @@ AxisProfileResult CanopenDeviceParamDrive::checkDeviceQuickStopCfg()
   }
 
   std::int16_t driveQuickStopOption = 0;
-  std::uint32_t bufsize = sizeof(driveQuickStopOption);
-  void* buf = &driveQuickStopOption;
-
-  ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, getObjDir(QUICK_STOP_OPTION, m_driveNumber)};
-  AxisProfileResult result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(buf), bufsize);
+  ObjectDirEntry quickStopObj = getObjDir(QUICK_STOP_OPTION, m_driveNumber);
+  AxisProfileResult result = getParameterValueFromSnapshot(quickStopObj, reinterpret_cast<std::uint8_t*>(&driveQuickStopOption), sizeof(driveQuickStopOption));
   if (aprStatusFailed(result))
   {
     // This should return error, but due to the ctrlX Drive CoE is still in develop,
     // some objects may not been supported in every firmware version.
     // The return value should be changed to error when the ctrlX Drive CoE in is in stable version
     APR_TRACE_MESSAGE("%s can't be written successfully, check if the device %d support the object",
-                      objDirToString(requestData.objEntry).c_str(), requestData.address);
+                      objDirToString(quickStopObj).c_str(), m_profileBasicInfo.m_deviceAddress);
   }
 
   // Until RM2503, this method have only one judgment: quick stop option code 0x605A
@@ -229,7 +227,7 @@ AxisProfileResult CanopenDeviceParamDrive::checkDeviceQuickStopCfg()
   {
     Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_DEVICE_CONFIG_ERROR,
                        m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "Quick stop option code %s should be 6", objDirToString(requestData.objEntry).c_str());
+                       "Quick stop option code %s should be 6", objDirToString(quickStopObj).c_str());
     //TODO: add return error after test OK in MOT0206 RC1 app.
   }
 
@@ -312,22 +310,19 @@ AxisProfileResult CanopenDeviceParamDrive::readEncoderTypes()
     return AxisProfileResult::STS_OK;
   }
 
-  ParamReqDataCoE requestData {};
-  requestData.address = m_profileBasicInfo.m_deviceAddress;
   std::vector<CanopenParamStruct> readStructSet {};
   readStructSet.reserve(2);
   readStructSet.emplace_back(ENCODER_1_PROPERTY, &m_deviceCfgData.m_encoder1Property, sizeof(m_deviceCfgData.m_encoder1Property));
   readStructSet.emplace_back(ENCODER_2_PROPERTY, &m_deviceCfgData.m_encoder2Property, sizeof(m_deviceCfgData.m_encoder2Property));
   for (const auto& readParam : readStructSet)
   {
-    requestData.objEntry= readParam.m_objDirEntry;
-    auto result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(readParam.m_ptrData), readParam.dataSize);
+    auto result = getParameterValueFromSnapshot(readParam.m_objDirEntry, static_cast<std::uint8_t*>(readParam.m_ptrData), readParam.dataSize);
     if (aprStatusFailed(result))
     {
       // LCOV_EXCL_START - exclude code coverage section begin because this is only an fallback. Case could never happen.
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_WRN, DETAILED_DIAG_FUNCTION_NOT_IMPLEMENTED, m_profileBasicInfo.m_profileName.c_str(),
                          __FILE__, __FUNCTION__, __LINE__, "Encoder type, ObjDir: %s, error: 0x%X",
-                         objDirToString(requestData.objEntry).c_str(), result);
+                         objDirToString(readParam.m_objDirEntry).c_str(), result);
       // LCOV_EXCL_STOP - exclude code coverage section end
     }
   }
@@ -450,7 +445,8 @@ AxisProfileResult CanopenDeviceParamDrive::readChecksumIdnListFromDevice(std::ve
 
 bool CanopenDeviceParamDrive::checkBootIdnListModified()
 {
-  return ChecksumIdnListHelper::checkBootIdnListModifiedImpl<std::vector<ObjectDirEntry> >(m_checksumIdnList, COE_BOOT_PARAM_LIST,
+  const auto expectedBootParamList = getCanopenBootParamList();
+  return ChecksumIdnListHelper::checkBootIdnListModifiedImpl<std::vector<ObjectDirEntry> >(m_checksumIdnList, expectedBootParamList,
     [this] (std::vector<ObjectDirEntry>& list) {
       return this->readChecksumIdnListFromDevice(list);
     },

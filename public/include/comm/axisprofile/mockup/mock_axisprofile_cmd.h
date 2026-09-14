@@ -43,7 +43,6 @@ namespace comm::axisprofile
 
     CmdState m_cmdState = CmdState::STATE_UNKNOWN;            ///< State of the command
     CmdStatusInDevice m_cmdStatusInDevice = CmdStatusInDevice::DEVICE_UNKNOWN;  ///< Status of command in the device
-    AxisProfileOperationMode m_operationMode = AxisProfileOperationMode::UNDEFINED; ///< Operation mode
     AxisProfileResult m_retValue = AxisProfileResult::STS_OK; ///< Return value of C-Methods
     double m_homeNewPos {0.0};                                ///< New position for homing command
   };
@@ -75,19 +74,6 @@ namespace comm::axisprofile
   /// @param[in]  cmdType       command type
   /// @return Status of command in the device
   extern "C" CmdStatusInDevice AXISPROFILE_getCmdStatusInDeviceMock(void* handle, CmdType cmdType);
-
-  /// @brief Mockup of getting actual operation mode
-  ///
-  /// @param[in]  handle        pointer to the instantiated object
-  /// @return The actual operation mode
-  extern "C" AxisProfileOperationMode AXISPROFILE_getOperationModeMockCmd(void* handle);
-
-  /// @brief Mockup of setting operation mode
-  ///
-  /// @param[in]  handle        pointer to the instantiated object
-  /// @param[in]  opMode        The operation mode to be set
-  /// @return Status of the function call, STS_OK or an error code on failure
-  extern "C" AxisProfileResult AXISPROFILE_setOperationModeMockCmd(void* handle, const AxisProfileOperationMode opMode);
 
   /// @brief Mockup of command of clearing device error
   ///

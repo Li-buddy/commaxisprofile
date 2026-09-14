@@ -63,20 +63,6 @@ extern "C" CmdStatusInDevice AXISPROFILE_getCmdStatusInDevice(void* handle, CmdT
   return cmdIf->getCmdStatusInDevice(cmdType);
 }
 
-extern "C" AxisProfileOperationMode AXISPROFILE_getOperationModeCmd(void* handle)
-{
-  IAxisProfileCmd* cmdIf = static_cast<IAxisProfileCmd*>(handle);
-  RETURN_HANDLE_INVALIDE(cmdIf, AxisProfileOperationMode::UNDEFINED, "getOperationMode");
-  return cmdIf->getOperationMode();
-}
-
-extern "C" AxisProfileResult AXISPROFILE_setOperationModeCmd(void* handle, const AxisProfileOperationMode opMode)
-{
-  IAxisProfileCmd* cmdIf = static_cast<IAxisProfileCmd*>(handle);
-  RETURN_HANDLE_INVALIDE(cmdIf, AxisProfileResult::ERR_EXEC_NULL, "setOperationMode");
-  return cmdIf->setOperationMode(opMode);
-}
-
 extern "C" AxisProfileResult AXISPROFILE_clearDeviceErrorCmd(void* handle, CmdType& cmdType)
 {
   IAxisProfileCmd* cmdIf = static_cast<IAxisProfileCmd*>(handle);

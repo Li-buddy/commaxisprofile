@@ -78,15 +78,7 @@ namespace comm::axisprofile
     /// @brief This method get whether the device support probe latched times
     /// @return     Returns whether the device support this.
     virtual bool isLatchParamSupport() const = 0;
-        
-    /// @brief Read the configuration of whether need to read booting parameters.
-    /// @return      Return value indicating whether need to read booting parameters.
-    virtual bool isNeedReadBootParams() const = 0;
-
-    /// @brief Read the device's checksum value if the device support the function.
-    /// @return      Return value indicating device's checksum value, return 0 if device not support the function.
-    virtual std::uint32_t getCheckSumValue() const = 0;
-
+    
     /// @brief Read the device's checksum idn list. return empty
     /// @param[out]    params        The checksum idn list, assign empty if device not support checksum function.
     /// @return      Return value indicating success or error.

@@ -238,11 +238,9 @@ namespace comm::axisprofile
     REFERENCE_POS,              ///< referencing axis (drive homing)
     FIXED_STOP,                 ///< fixed stop
     SET_NEW_REF_WITHOUT_MOVE,   ///< set new reference without movement
-    GET_OP_MODE,                ///< get operation mode
-    SET_OP_MODE,                ///< set operation mode
   };
   constexpr std::uint16_t CMD_MIN = static_cast<std::uint16_t>(CmdType::CLEAR_DEV_ERR); ///< minimum type value
-  constexpr std::uint16_t CMD_MAX = static_cast<std::uint16_t>(CmdType::SET_OP_MODE); ///< maximum type value
+  constexpr std::uint16_t CMD_MAX = static_cast<std::uint16_t>(CmdType::SET_NEW_REF_WITHOUT_MOVE); ///< maximum type value
 
   /// @brief state of an axisprofile command state
   enum class CmdState : std::int16_t
@@ -627,8 +625,6 @@ namespace comm::axisprofile
       case CmdType::REFERENCE_POS:              return "Referencing Position";
       case CmdType::FIXED_STOP:                 return "Fixed Stop";
       case CmdType::SET_NEW_REF_WITHOUT_MOVE:   return "Set New Reference Without Move  ";
-      case CmdType::GET_OP_MODE:                return "Get Operation Mode";
-      case CmdType::SET_OP_MODE:                return "Set Operation Mode";
       default:  return "NotDefinedType";
     }
   }

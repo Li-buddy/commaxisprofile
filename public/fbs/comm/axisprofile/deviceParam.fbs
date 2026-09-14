@@ -1,0 +1,40 @@
+
+namespace comm.axisprofile.fbtypes;
+
+
+/// parameter value type
+enum paramValueType: uint16
+{
+  NoneType   = 0,
+  Unsigned16,
+  Signed16,
+  Unsigned32,
+  Signed32,
+  ByteArray,
+  ErrorType = 0xFFFF
+}
+
+/// This table indicate the parameter's value
+table paramValue {
+  valueUint16   :  ushort = null;
+  valueInt16    :  short = null;
+  valueInt32    :  int = null;
+  valueUint32   :  uint = null;
+  valueByteArray:  [byte];
+}
+
+
+/// This table is drive boot parameter
+table bootParam
+{
+  /// The idn name of this parameter.
+  name: string;
+
+  /// The value type of this parameter.
+  type: paramValueType;
+
+  /// The value of this parameter.
+  value: paramValue;
+}
+
+root_type bootParam;

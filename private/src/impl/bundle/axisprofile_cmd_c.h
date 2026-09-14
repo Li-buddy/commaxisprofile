@@ -64,19 +64,6 @@ extern "C" ::comm::axisprofile::AxisProfileResult AXISPROFILE_abortCmd(void* han
 /// @return Status of command in device
 extern "C" ::comm::axisprofile::CmdStatusInDevice AXISPROFILE_getCmdStatusInDevice(void* handle, ::comm::axisprofile::CmdType cmdType);
 
-/// @brief Get actual operation mode
-///
-/// @param[in]  handle        pointer to the instantiated object
-/// @return The actual operation mode
-extern "C" ::comm::axisprofile::AxisProfileOperationMode AXISPROFILE_getOperationModeCmd(void* handle);
-
-/// @brief Set the given operation mode to the device
-///
-/// @param[in]  handle        pointer to the instantiated object
-/// @param[in]  opMode        The operation mode to be set
-/// @return Status of the function call, STS_OK or an error code on failure
-extern "C" ::comm::axisprofile::AxisProfileResult AXISPROFILE_setOperationModeCmd(void* handle, const ::comm::axisprofile::AxisProfileOperationMode opMode);
-
 /// @brief Command of clearing device error
 ///
 /// @param[in]  handle        pointer to the instantiated object
