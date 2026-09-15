@@ -206,6 +206,14 @@ AxisProfileOperationMode SercosStatusControlDrive::getOperationMode() const
   return m_checkedOperationMode;
 }
 
+void SercosStatusControlDrive::confirmOperationModeFromDevice(AxisProfileOperationMode operationMode)
+{
+  if (operationMode != AxisProfileOperationMode::UNDEFINED)
+  {
+    m_checkedOperationMode = operationMode;
+  }
+}
+
 AxisProfileResult SercosStatusControlDrive::readOperationMode(AxisProfileOperationMode& operationMode)
 {
   if (!m_telegramAT)

@@ -299,11 +299,11 @@ AxisProfileResult AxisProfileCmd::setOperationModeCyclic(AxisProfileOperationMod
            cmdState == CmdState::STATE_ACTIVE ||
            cmdState == CmdState::STATE_ABORTING)
   {
-    // wait until reset has completed in device
+    // wait until the requested operation mode has been confirmed by the device
     cmdStatusInDev = getCmdStatusInDevice(cmdType);
     if (cmdStatusInDev == CmdStatusInDevice::DEVICE_COMPLETED)
     {
-      // trigger abort reset, axisprofile handle following precess itself
+      // trigger abort; the axisprofile job manager completes the cleanup
       // can't be failed
       abortCmd(cmdType);
       return AxisProfileResult::STS_OK;

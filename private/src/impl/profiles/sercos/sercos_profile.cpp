@@ -285,12 +285,13 @@ AxisProfileScalingStrategyCfg SercosProfile::getProfileScalingStrategyCfg() cons
 std::vector<std::unique_ptr<IJobObj>> SercosProfile::onGetJobList()
 {
   std::vector<std::unique_ptr<IJobObj>> jobs;
-  jobs.reserve(5);
+  jobs.reserve(6);
 
   jobs.emplace_back(std::make_unique<SercosJobReset>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<SercosJobHoming>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<SercosJobSetAbsPos>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<SercosJobFixedStop>(m_profileBasicInfo, m_sharingHandler));
+  jobs.emplace_back(std::make_unique<SercosJobSetOpMode>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<SercosJobDeviceParam>(m_profileBasicInfo, m_sharingHandler));
   return jobs;
 }

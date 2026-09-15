@@ -86,6 +86,13 @@ namespace test
     bool deviceHasWarning() const override {return false;} 
     comm::axisprofile::ReadyToOperate checkReadyToOperate() override {return comm::axisprofile::ReadyToOperate::DRIVE_ENABLED;}
     comm::axisprofile::AxisProfileResult analyzeStatusWord() override {return m_returnValue;}
+    void confirmOperationModeFromDevice(const comm::axisprofile::AxisProfileOperationMode operationMode) override
+    {
+      if (operationMode != comm::axisprofile::AxisProfileOperationMode::UNDEFINED)
+      {
+        m_operationMode = operationMode;
+      }
+    }
     
     // -------------------------------------------- Controlword -----------------------------------------------
 
