@@ -71,6 +71,11 @@ namespace test
     bool checkOperationMode(const comm::axisprofile::AxisProfileOperationMode /*opMode*/) const override { return true; }
     bool checkOperationModeSupported(const comm::axisprofile::AxisProfileOperationMode /*opMode*/, comm::axisprofile::OpModeErrorInfo& /*errorInfo*/) override { return true; }
     comm::axisprofile::AxisProfileOperationMode getOperationMode() const override { return m_operationMode; }
+    comm::axisprofile::AxisProfileResult readOperationMode(comm::axisprofile::AxisProfileOperationMode& operationMode) override
+    {
+      operationMode = m_operationMode;
+      return m_returnValue;
+    }
     bool checkPowerMode(const comm::axisprofile::AxisProfilePowerMode /*powerMode*/) const override { return true; }
     comm::axisprofile::AxisProfilePowerMode getPowerMode() const override { return m_powerMode; }
     bool checkError() const override { return m_deviceError; }

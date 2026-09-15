@@ -278,52 +278,6 @@ HRESULT TestSercosCyclicData::testClass()
   bool active = true;
   testCyclicDataDrive.activeNewRefOperation(active);
 
-  log(L"\n\t Test of signal function operation with out mapping");
-  uint8_t offset {};
-  aprResult = testCyclicDataDrive.activeSignalFunc(offset);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::ERR_ERR_DATA_NOT_MAPPED);
-
-  aprResult = testCyclicDataDrive.resetSignalFuncBit(offset);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::ERR_ERR_DATA_NOT_MAPPED);
-
-  bool state {};
-  aprResult = testCyclicDataDrive.getSignalFuncState(offset, state);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::ERR_ERR_DATA_NOT_MAPPED);
-
-  log(L"\n\t Test of signal function operation with normal mapping");
-  mappingHandlerMockup.getProfileAssignedInfo().m_output.m_signalControlWord = true;
-  mappingHandlerMockup.getProfileAssignedInfo().m_input.m_signalStatusWord = true;
-  aprResult = testCyclicDataDrive.activeSignalFunc(offset);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::STS_OK);
-
-  aprResult = testCyclicDataDrive.resetSignalFuncBit(offset);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::STS_OK);
-
-  aprResult = testCyclicDataDrive.getSignalFuncState(offset, state);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::STS_OK);
-
-  log(L"\n\t Test of signal function operation with nullptr mapping handler");
-  ptrSharing->removeSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER);
-  aprResult = testCyclicDataDrive.activeSignalFunc(offset);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::ERR_EXEC_NULL);
-
-  aprResult = testCyclicDataDrive.resetSignalFuncBit(offset);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::ERR_EXEC_NULL);
-
-  aprResult = testCyclicDataDrive.getSignalFuncState(offset, state);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::ERR_EXEC_NULL);
-
-  log(L"\n\t Test of signal function operation with a offset beyond range");
-  offset = 16; // normal max value is 15
-  aprResult = testCyclicDataDrive.activeSignalFunc(offset);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::ERR_INVALID_ARGUMENT);
-
-  aprResult = testCyclicDataDrive.resetSignalFuncBit(offset);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::ERR_INVALID_ARGUMENT);
-
-  aprResult = testCyclicDataDrive.getSignalFuncState(offset, state);
-  LOG_TEST_RESULT(aprResult, L"\nGet an unexpected result!", AxisProfileResult::ERR_INVALID_ARGUMENT);
-
   log(L"\n");
   return result;
 }

@@ -138,16 +138,6 @@ HRESULT TestAxisProfileCyclicDataEncoder::doTest()
   bool active = true;
   m_category->getCyclicDataInternal()->activeNewRefOperation(active);
 
-  uint8_t offset {};
-  result = m_category->getCyclicDataInternal()->activeSignalFunc(offset);
-  RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
-
-  result = m_category->getCyclicDataInternal()->resetSignalFuncBit(offset);
-  RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
-  bool state {};
-  result = m_category->getCyclicDataInternal()->getSignalFuncState(offset, state);
-  RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
-
   return res;
 }
 

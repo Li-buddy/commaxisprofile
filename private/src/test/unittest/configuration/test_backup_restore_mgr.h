@@ -27,7 +27,6 @@ namespace comm
     namespace provider
     {
       class NodeProfilesConfig;
-      class NodeProfilesBootParams;
     }
   } // namespace axisprofile
   namespace datalayer
@@ -71,9 +70,7 @@ public:
   //! @brief   main test function for running all tests
   //! @return  S_OK, when tests were successful
   HRESULT doTest();
- 
-  HRESULT doInit() final;
-  HRESULT doEnd() final;
+
 private: // methods
   // ----------------------------------------- Tests ---------------------------------------------
 
@@ -148,16 +145,13 @@ private: // methods
 
 private:                                                                                   // data
   const std::string m_profilesConfigNodeTypeAddress = "types/axisprofile/profiles/cfg";    //!< Type address string for NodeProfilesConfig
-  const std::string m_profilesBootParamTypeAddress = "types/axisprofile/profiles/state/boot-params";//!< Type address string for NodeProfilesConfig
   const std::string m_testProfileName = "testProfile";                                     //!< Profile name used in this test
   comm::axisprofile::IBackupRestoreMgr *m_backupMgr{};                                     //!< pointer to backup  and restore manager
   comm::datalayer::IProvider* m_datalayerProvider{};                                       //!< Pointer to the datalayer provider
   comm::axisprofile::provider::NodeProfilesConfig* m_profilesConfigNode{};                 //!< Pointer to the NodeProfilesConfig instance
-  comm::axisprofile::provider::NodeProfilesBootParams* m_bootParamNode {};                 //!< Pointer to the NodeProfilesBootParams instance
   test::MockAxisProfileCmp m_mockAxisProfileCmp{};                                         //!< Mockup of the axis profile component
   comm::datalayer::DatalayerSystem m_testDatalayerSystem{};                                //!< DatalayerSystem used in this test
-  std::string m_configBfbsPath{};                                                          //!< Path to the bfbs file of the configuration 
-  std::string m_bootParamBfbsPath {};                                                      //!< Path to the bfbs file of the boot params flatbuffer
+  std::string m_configBfbsPath{};                                                          //!< Path to the bfbs file of the configuration flatbuffer
   std::string m_configFolderPath{};                                                        //!< Path to the test folder where all configuration Json files are stored
   const std::vector<TestData> m_testData{};                                                //!< Data of all single transaction based load
   const std::vector<TestData> m_testData2{};                                               //!< Data of  miscellaneous

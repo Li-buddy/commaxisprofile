@@ -34,7 +34,7 @@ HRESULT TestProfileDeviceParam::doTest()
   hResult |= testCInterface();
   hResult |= testForGetPostionDataFormat();
   hResult |= testDcConfigRelatedMethods();
-  //hResult |= testFuncInSignalStatusWord();
+  hResult |= testFuncInSignalStatusWord();
   hResult |= testMiscellaneous();
   hResult |= testIsDriveSupportChecksum();
 
@@ -268,48 +268,48 @@ HRESULT TestProfileDeviceParam::testDcConfigRelatedMethods() const
   return S_OK;
 }
 
-//HRESULT TestProfileDeviceParam::testFuncInSignalStatusWord() const
-//{
-//  MockFieldbusAdapterSoE fieldbusAdapter;
-//  ProfileBasicInfo profileBasicInfo;
-//  profileBasicInfo.m_fieldbusAdapter = &fieldbusAdapter;
-//  profileBasicInfo.m_profileName = "testProfile";
-//  AcknowledgeTelegram  atData;
-//  MasterDataTelegram  mdtData;
-//  AxisProfileDeviceParamUinttest testDeviceParam(profileBasicInfo, &atData, &mdtData);
-//
-//  log(L"\nTest checking signal status word without share handler...");
-//  FunctionSupportErrorInfo errInfo;
-//  SignalFunction func;
-//  testDeviceParam.setSharingHandler(nullptr);
-//  auto res = testDeviceParam.isFuncInSignalStatusWord(func, errInfo);
-//  LOG_TEST_RESULT_ANY(res == false, L"\n  unexpected value.");
-//
-//  log(L"\nTest the checking of undefined functionality.");
-//  test::MockAxisProfileMappingHandler mappingHandlerMockup {};
-//  test::MockAxisProfileTrace profileTraceMockup {};
-//  AxisProfileSharingHandler shareHandler {&profileTraceMockup};
-//  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testDeviceParam);
-//  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappingHandlerMockup);
-//
-//  auto& assign = mappingHandlerMockup.getProfileAssignedInfo();
-//  assign.m_input.m_signalStatusWord = true;
-//  testDeviceParam.m_signalStatusWordFuncs.clear();
-//  func.function = FunctionSupport::HOMING_STATUS_CYCLIC;
-//  res = testDeviceParam.isFuncInSignalStatusWord(func, errInfo);
-//  LOG_TEST_RESULT_ANY(res == false, L"\n  unexpected value.");
-//
-//  log(L"\nTest the checking of the unsupported functionality.");
-//  func.function = FunctionSupport::HOMING_STATUS_CYCLIC;
-//  testDeviceParam.m_signalStatusWordFuncs.emplace_back(FunctionSupport::HOMING_STATUS_CYCLIC,
-//                                                      [](const std::uint16_t& /*param*/, const std::uint16_t& /*bit*/) -> bool { return false; },
-//                                                      false,
-//                                                      0);
-//  res = testDeviceParam.isFuncInSignalStatusWord(func, errInfo);
-//  LOG_TEST_RESULT_ANY(res == false, L"\n  unexpected value.");
-//
-//  return S_OK;
-//}
+HRESULT TestProfileDeviceParam::testFuncInSignalStatusWord() const
+{
+  MockFieldbusAdapterSoE fieldbusAdapter;
+  ProfileBasicInfo profileBasicInfo;
+  profileBasicInfo.m_fieldbusAdapter = &fieldbusAdapter;
+  profileBasicInfo.m_profileName = "testProfile";
+  AcknowledgeTelegram  atData;
+  MasterDataTelegram  mdtData;
+  AxisProfileDeviceParamUinttest testDeviceParam(profileBasicInfo, &atData, &mdtData);
+
+  log(L"\nTest checking signal status word without share handler...");
+  FunctionSupportErrorInfo errInfo;
+  SignalStatusWordFunction func;
+  testDeviceParam.setSharingHandler(nullptr);
+  auto res = testDeviceParam.isFuncInSignalStatusWord(func, errInfo);
+  LOG_TEST_RESULT_ANY(res == false, L"\n  unexpected value.");
+
+  log(L"\nTest the checking of undefined functionality.");
+  test::MockAxisProfileMappingHandler mappingHandlerMockup {};
+  test::MockAxisProfileTrace profileTraceMockup {};
+  AxisProfileSharingHandler shareHandler {&profileTraceMockup};
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testDeviceParam);
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappingHandlerMockup);
+
+  auto& assign = mappingHandlerMockup.getProfileAssignedInfo();
+  assign.m_input.m_signalStatusWord = true;
+  testDeviceParam.m_signalStatusWordFuncs.clear();
+  func.function = FunctionSupport::HOMING_STATUS_CYCLIC;
+  res = testDeviceParam.isFuncInSignalStatusWord(func, errInfo);
+  LOG_TEST_RESULT_ANY(res == false, L"\n  unexpected value.");
+
+  log(L"\nTest the checking of the unsupported functionality.");
+  func.function = FunctionSupport::HOMING_STATUS_CYCLIC;
+  testDeviceParam.m_signalStatusWordFuncs.emplace_back(FunctionSupport::HOMING_STATUS_CYCLIC,
+                                                      [](const std::uint16_t& /*param*/, const std::uint16_t& /*bit*/) -> bool { return false; },
+                                                      false,
+                                                      0);
+  res = testDeviceParam.isFuncInSignalStatusWord(func, errInfo);
+  LOG_TEST_RESULT_ANY(res == false, L"\n  unexpected value.");
+
+  return S_OK;
+}
 
 HRESULT TestProfileDeviceParam::testMiscellaneous() const
 {

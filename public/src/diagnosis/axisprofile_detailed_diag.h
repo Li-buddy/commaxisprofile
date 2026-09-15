@@ -176,7 +176,6 @@ namespace comm::axisprofile
   constexpr std::uint32_t DETAILED_DIAG_PARSE_PARAM_FAILED                  = 0x0C580601;
   constexpr std::uint32_t DETAILED_DIAG_PARSE_VENDOR_ID_FAILED              = 0x0C580602;
   constexpr std::uint32_t DETAILED_DIAG_WRITE_PARAM_FAILED                  = 0x0C580603;
-  constexpr std::uint32_t DETAILED_DIAG_READ_DEVICE_CFG_VIA_MASTER_FAILED   = 0x0C580604;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // *********************************************** MESSAGES *********************************************** //
@@ -199,8 +198,4 @@ namespace comm::axisprofile
   constexpr std::uint32_t DETAILED_DIAG_BOOT_INCONSISTENT_PROTOCOL           = 0x0C58070C;
   constexpr std::uint32_t DETAILED_DIAG_BOOT_PROFILE_CHECK_RESP_DONTUSE      = 0x0C58070D;
   constexpr std::uint32_t DETAILED_DIAG_BOOT_NO_HOMING_STATUS_FROM_DEVICE    = 0x0C58070E;
-  constexpr std::uint32_t DETAILED_DIAG_BOOT_COLLECTING_DEVICE_INFO          = 0x0C58070F;
-  constexpr std::uint32_t DETAILED_DIAG_BOOT_COLLECT_DEVICE_INFO_FINISH      = 0x0C580710;
-  constexpr std::uint32_t DETAILED_DIAG_BOOT_VALIDATE_DATA_CONSISTENCY       = 0x0C580711;
-  constexpr std::uint32_t DETAILED_DIAG_BOOT_VALIDATE_DATA_CONSISTENCY_FINISH = 0x0C580712;
 }

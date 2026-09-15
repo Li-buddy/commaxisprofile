@@ -5,8 +5,8 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2021-2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
-/// All rights reserved in the event of the grant of a patent, utility model or design.
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
+/// All rights reserved in the event of the grant of a patent, utility model or design.  
 //
 // ---------------------------------------------------------------------------
 
@@ -14,14 +14,11 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "canopen_device_param_drive.h"
-#include "canopen_signal_func_handler.h"
 #include "diagnosis/dia.h"
 #include "fieldbuses/fieldbus_helper.h"
 #include "helper/checksum_idn_list_helper.h"
 #include "helper/device_id_helper.h"
-#include "profiles/canopen/canopen_boot_param_snapshot.h"
 #include "profiles/canopen/canopen_boot_params.h"
-#include "profiles/i_device_boot_param_snapshot.h"
 #include <algorithm>
 
 // ---------------------------------------------------------------------------
@@ -54,7 +51,13 @@ CanopenDeviceParamDrive::CanopenDeviceParamDrive(ProfileBasicInfo& profileBasicI
   :AxisProfileDeviceParamDrive(profileBasicInfo, at, mdt), m_fieldbusAdapter(profileBasicInfo.m_fieldbusAdapter),
   m_driveNumber(profileBasicInfo.m_driveNumber)
 {
-  m_signalFuncHandler = new CanopenSignalFuncHandler(profileBasicInfo);
+  // Register function of homing status checking with cyclic data.
+  registerSignalStatusWordFuncs(FunctionSupport::HOMING_STATUS_CYCLIC, [](const std::uint32_t& param, const std::uint16_t& bit) -> bool
+    {
+      // Homing status is supported when this object is configured in the signal status word.
+      return static_cast<std::uint16_t>(param >> 16) == HOMING_FEEDBACK_VALUE_STATUS.index
+      && static_cast<std::uint8_t>(param>>8) == HOMING_FEEDBACK_VALUE_STATUS.subIndex && bit == 0;
+    });
 }
 
 void CanopenDeviceParamDrive::loadBootingTasks()
@@ -65,22 +68,22 @@ void CanopenDeviceParamDrive::loadBootingTasks()
   m_initDeviceParam.emplace_back([this]{return determineOpModeAvailable();});
   m_initDeviceParam.emplace_back([this]{return readProbeLatchedParam();});
   m_initDeviceParam.emplace_back([this]{return initHomeState();});
-  m_initDeviceParam.emplace_back([this]{return prepareSignalFuncHandler();});
+
+  if (!m_needReadBootParams)
+  {
+    APR_TRACE_MESSAGE("%s, Not need to read CoE drive parameters again.", m_profileBasicInfo.m_profileTrace.createTraceMsg());
+    return ;
+  }
   m_initDeviceParam.emplace_back([this]{return checkDeviceQuickStopCfg();});
   m_initDeviceParam.emplace_back([this]{return readDcConfigInfo();});
+  m_initDeviceParam.emplace_back([this]{return checkSignalStatusWord();});
   m_initDeviceParam.emplace_back([this]{return readEncoderTypes();});
-}
-
-AxisProfileResult CanopenDeviceParamDrive::getParameterValueFromSnapshot(const ObjectDirEntry& objEntry, std::uint8_t* bufPtr, std::size_t bufLen)
-{
-  return CanopenBootParamSnapshot::getParameterValueFromSnapshot(m_sharingHandler, m_profileBasicInfo.m_profileTrace.createTraceMsg(),
-                                                                 objEntry, bufPtr, bufLen);
 }
 
 AxisProfileResult CanopenDeviceParamDrive::readDelayBrakeParam()
 {
   m_brakeDelySupport = false;
-  return  AxisProfileResult::STS_OK;
+  return  AxisProfileResult::STS_OK;   
 }
 
 AxisProfileResult CanopenDeviceParamDrive::getDelayBrakeInfo()
@@ -116,9 +119,9 @@ bool CanopenDeviceParamDrive::checkFunctionSupported(const FunctionSupport funct
     break;
     case FunctionSupport::HOMING_STATUS_CYCLIC:
     {
-      SignalFunction func;
+      SignalStatusWordFunction func;
       func.function = function;
-      result = m_signalFuncHandler->isFuncInSignalStatusWord(func, errorInfo);
+      result = isFuncInSignalStatusWord(func, errorInfo);
     }
     break;
     case FunctionSupport::ERROR_CODE_CYCLIC:
@@ -143,16 +146,66 @@ bool CanopenDeviceParamDrive::checkFunctionSupported(const FunctionSupport funct
   return result;
 }
 
+AxisProfileResult CanopenDeviceParamDrive::readSignalStatusWordCfg(std::vector<std::uint32_t>& params, std::vector<std::uint16_t>& assignBits)
+{
+  auto syncReader = [this](const ObjectDirEntry& obj, void* data, std::size_t size)
+  {
+    std::memset(data, 0, size);
+    // prepare request parameters
+    ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, obj};
+
+    // NOTE: different from SoE response, no actual data size indicated from response data package.
+    AxisProfileResult res = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(data), size);
+    if (aprStatusFailed(res))
+    {
+      Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_READ_PARAM_FAILED, m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
+                         "Signal status, CoE: %s, error: 0x%08X", objDirToString(requestData.objEntry).c_str(), res);
+    }
+    return res;
+  };
+
+  // Signal status word: Configuration list (0x2C82:02 / S-0-0026), Data length 4 bytes var
+  // Maximum of 16 parameters can be configured.
+  // The lists in 0x2C82:02 and 0x2C82:03 have the same length
+  std::uint8_t maxCfgParams = 16;
+  std::unique_ptr<std::uint32_t[]> paramsBuf = std::make_unique<std::uint32_t[]>(maxCfgParams);
+  auto res = syncReader(getObjDir(SIGNAL_STATUS_WORD_CONFIG_LIST, m_profileBasicInfo.m_driveNumber), paramsBuf.get(), maxCfgParams * sizeof(std::uint32_t));
+  if (aprStatusSucceeded(res))
+  {
+    std::uint32_t* firstParam = paramsBuf.get();
+    for (auto i = 0; i < maxCfgParams; ++i)
+    {
+      // The read result (4bytes per element) contains index and sub-index of CoE object.
+      params.emplace_back(*(firstParam + i));
+    }
+
+    // Signal status word: Assign list signal (0x2C82:03 / S-0-0328), Data length 2 bytes var.
+    std::unique_ptr<std::uint16_t[]> bitsBuf = std::make_unique<std::uint16_t[]>(maxCfgParams);
+    res = syncReader(getObjDir(SIGNAL_STATUS_WORD_ASSIGN_LIST, m_profileBasicInfo.m_driveNumber), bitsBuf.get(), maxCfgParams * sizeof(std::uint16_t));
+    if (aprStatusSucceeded(res))
+    {
+      std::uint16_t* firstBit = bitsBuf.get();
+      for (auto i = 0; i < maxCfgParams; ++i)
+      {
+        assignBits.emplace_back(*(firstBit + i));
+      }
+    }
+  }
+
+  return res;
+}
+
 AxisProfileResult CanopenDeviceParamDrive::determineOpModeAvailable()
 {
   std::uint32_t driveModes = 0;
-  ObjectDirEntry supportedModeObj = getObjDir(SUPPORTED_DRIVE_MODE, m_driveNumber);
-  ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, supportedModeObj};
-  AxisProfileResult result = m_fieldbusAdapter->readSingleParamSync(requestData, reinterpret_cast<std::uint8_t*>(&driveModes), sizeof(driveModes));
+  std::uint32_t bufsize = sizeof(driveModes);
+  void* buf = &driveModes;
+  ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, getObjDir(SUPPORTED_DRIVE_MODE, m_driveNumber)};
+  AxisProfileResult result = m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(buf), bufsize);
   if (aprStatusFailed(result))
   {
     Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_READ_PARAM_FAILED, m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "Supported OP modes, PDO %s, slaveId %d", objDirToString(supportedModeObj).c_str(), m_profileBasicInfo.m_deviceAddress);
+                       "Supported OP modes, PDO %s, slaveId %d", objDirToString(requestData.objEntry).c_str(), requestData.address);
     return result;
   }
   m_opModeAvailInfoCanopen.clearOpModeAvailInfoCanopen();
@@ -210,15 +263,18 @@ AxisProfileResult CanopenDeviceParamDrive::checkDeviceQuickStopCfg()
   }
 
   std::int16_t driveQuickStopOption = 0;
-  ObjectDirEntry quickStopObj = getObjDir(QUICK_STOP_OPTION, m_driveNumber);
-  AxisProfileResult result = getParameterValueFromSnapshot(quickStopObj, reinterpret_cast<std::uint8_t*>(&driveQuickStopOption), sizeof(driveQuickStopOption));
+  std::uint32_t bufsize = sizeof(driveQuickStopOption);
+  void* buf = &driveQuickStopOption;
+
+  ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, getObjDir(QUICK_STOP_OPTION, m_driveNumber)};
+  AxisProfileResult result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(buf), bufsize);
   if (aprStatusFailed(result))
   {
     // This should return error, but due to the ctrlX Drive CoE is still in develop,
     // some objects may not been supported in every firmware version.
-    // The return value should be changed to error when the ctrlX Drive CoE in is in stable version
+    // The return value should be changed to error when the ctrlX Drive CoE in is in stable version 
     APR_TRACE_MESSAGE("%s can't be written successfully, check if the device %d support the object",
-                      objDirToString(quickStopObj).c_str(), m_profileBasicInfo.m_deviceAddress);
+                      objDirToString(requestData.objEntry).c_str(), requestData.address);
   }
 
   // Until RM2503, this method have only one judgment: quick stop option code 0x605A
@@ -227,7 +283,7 @@ AxisProfileResult CanopenDeviceParamDrive::checkDeviceQuickStopCfg()
   {
     Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_DEVICE_CONFIG_ERROR,
                        m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "Quick stop option code %s should be 6", objDirToString(quickStopObj).c_str());
+                       "Quick stop option code %s should be 6", objDirToString(requestData.objEntry).c_str());
     //TODO: add return error after test OK in MOT0206 RC1 app.
   }
 
@@ -263,7 +319,7 @@ AxisProfileResult CanopenDeviceParamDrive::getDeviceInformation()
 
   }
 
-  return AxisProfileResult::STS_OK;
+  return AxisProfileResult::STS_OK;                                                                                                                   
 }
 
 AxisProfileResult CanopenDeviceParamDrive::readProbeLatchedParam()
@@ -310,19 +366,22 @@ AxisProfileResult CanopenDeviceParamDrive::readEncoderTypes()
     return AxisProfileResult::STS_OK;
   }
 
+  ParamReqDataCoE requestData {};
+  requestData.address = m_profileBasicInfo.m_deviceAddress;
   std::vector<CanopenParamStruct> readStructSet {};
   readStructSet.reserve(2);
   readStructSet.emplace_back(ENCODER_1_PROPERTY, &m_deviceCfgData.m_encoder1Property, sizeof(m_deviceCfgData.m_encoder1Property));
   readStructSet.emplace_back(ENCODER_2_PROPERTY, &m_deviceCfgData.m_encoder2Property, sizeof(m_deviceCfgData.m_encoder2Property));
   for (const auto& readParam : readStructSet)
   {
-    auto result = getParameterValueFromSnapshot(readParam.m_objDirEntry, static_cast<std::uint8_t*>(readParam.m_ptrData), readParam.dataSize);
+    requestData.objEntry= readParam.m_objDirEntry;
+    auto result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(readParam.m_ptrData), readParam.dataSize);
     if (aprStatusFailed(result))
     {
       // LCOV_EXCL_START - exclude code coverage section begin because this is only an fallback. Case could never happen.
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_WRN, DETAILED_DIAG_FUNCTION_NOT_IMPLEMENTED, m_profileBasicInfo.m_profileName.c_str(),
                          __FILE__, __FUNCTION__, __LINE__, "Encoder type, ObjDir: %s, error: 0x%X",
-                         objDirToString(readParam.m_objDirEntry).c_str(), result);
+                         objDirToString(requestData.objEntry).c_str(), result);
       // LCOV_EXCL_STOP - exclude code coverage section end
     }
   }
@@ -378,7 +437,7 @@ AxisProfileResult CanopenDeviceParamDrive::readChecksumValueFromDevice(std::uint
 }
 
 AxisProfileResult CanopenDeviceParamDrive::writeChecksumIdnListToDevice(const std::vector<ObjectDirEntry>& objList)
-{
+{ 
   std::vector<std::uint8_t> tmpBuff {};
   auto funcListToRaw = [] (const ObjectDirEntry& objEntry, std::uint8_t* rawBuf)
     {
@@ -445,8 +504,7 @@ AxisProfileResult CanopenDeviceParamDrive::readChecksumIdnListFromDevice(std::ve
 
 bool CanopenDeviceParamDrive::checkBootIdnListModified()
 {
-  const auto expectedBootParamList = getCanopenBootParamList();
-  return ChecksumIdnListHelper::checkBootIdnListModifiedImpl<std::vector<ObjectDirEntry> >(m_checksumIdnList, expectedBootParamList,
+  return ChecksumIdnListHelper::checkBootIdnListModifiedImpl<std::vector<ObjectDirEntry> >(m_checksumIdnList, COE_BOOT_PARAM_LIST,
     [this] (std::vector<ObjectDirEntry>& list) {
       return this->readChecksumIdnListFromDevice(list);
     },
@@ -454,7 +512,7 @@ bool CanopenDeviceParamDrive::checkBootIdnListModified()
       return this->writeChecksumIdnListToDevice(list);
     },
     m_profileBasicInfo.m_deviceAddress
-  );
+  );  
 }
 
 AxisProfileResult CanopenDeviceParamDrive::getChecksumIdnList(std::vector<std::string>& idnStrListRet) const

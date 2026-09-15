@@ -21,73 +21,7 @@ REGISTER_TEST_TO_GROUP(FuncTestProfilesCanopen, Profiles_Canopen);
 
 HRESULT FuncTestProfilesCanopen::doInit()
 {
-  HRESULT result = S_OK;
-  log(L"\n<b>Create function test system...</b>");
-
-  result = startTestEnvironment();
-  RETURN_TEST_FAILED(result, L"\nStart axisprofile system failed.");
-
-  result = switchSystemStatemachine(StateIDType::CONFIG, StateIDType::CONFIG);
-  RETURN_TEST_FAILED(result, L"\nSwitch System to CONFIG failed");
-
-  result = addProfileToSystem(AxisProfileType::CANOPEN_OVER_ETHERCAT, 1, m_profileName.c_str(), &m_profile);
-  RETURN_TEST_FAILED(result, L"\nAdd profile to system failed");
-  RETURN_TEST_RESULT_SET_PTR(m_profile, L"\nEmpty of axisprofile instance");
-  
-  log(L"\nConfigure new axisprofile.");
-  m_axisProfileComponent->getAxisProfileManager()->setProfileInputBuffer(m_profileName.c_str(), MOCK_ECAT_INPUTBUFFER_STRING);
-  m_axisProfileComponent->getAxisProfileManager()->setProfileOutputBuffer(m_profileName.c_str(), MOCK_ECAT_OUTPUTBUFFER_STRING);
-
-  m_profile->getPropertyInterface()->setEtherCATName(MOCK_ECAT_MASTER_INSTANCE_NAME);
-  m_profile->getPropertyInterface()->setDeviceName(MOCK_ECAT_SLAVE_DEVICE_NAME);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::STATUSWORD, MOCK_ECAT_INBUFFER_STATUSWORD);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::POSITION, MOCK_ECAT_INBUFFER_POSITION);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::DIAGMSG, MOCK_ECAT_INBUFFER_DIAGMSG);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::VELOCITY, MOCK_ECAT_INBUFFER_VELOCITY);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SWITCH_REF, MOCK_ECAT_INBUFFER_SWITCH_REF);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SWITCH_POS_LIM, MOCK_ECAT_INBUFFER_SWITCH_POS_LIM);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SWITCH_NEG_LIM, MOCK_ECAT_INBUFFER_SWITCH_NEG_LIM);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::OP_MODE_DISPLAY, MOCK_ECAT_INBUFFER_OP_MODE_DISPLAY);
-
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE1_POSEDG, MOCK_ECAT_INBUFFER_PROBE1_POS_EDG);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE1_NEGEDG, MOCK_ECAT_INBUFFER_PROBE1_NEG_EDG);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE1_POSLAT, MOCK_ECAT_INBUFFER_PROBE1_POS_LAT);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE1_NEGLAT, MOCK_ECAT_INBUFFER_PROBE1_NEG_LAT);
-
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE2_POSEDG, MOCK_ECAT_INBUFFER_PROBE2_POS_EDG);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE2_NEGEDG, MOCK_ECAT_INBUFFER_PROBE2_NEG_EDG);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE2_POSLAT, MOCK_ECAT_INBUFFER_PROBE2_POS_LAT);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE2_NEGLAT, MOCK_ECAT_INBUFFER_PROBE2_NEG_LAT);
-
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SMO_SAFETY_SELECTION, MOCK_ECAT_INBUFFER_SMO_SAFETY_SELECTION);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SMO_SAFETY_STATUS, MOCK_ECAT_INBUFFER_SMO_SAFETY_STATUS);
-
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::TORQUE_FORCE, MOCK_ECAT_INBUFFER_TORQUE_FORCE);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::TORQUE_LIMIT_STATUS, MOCK_ECAT_INBUFFER_TORQUE_FORCE_LIMIT_STATUS);
-
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_1, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_1);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_2, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_2);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_3, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_3);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_4, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_4);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_5, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_5);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_6, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_6);
-  m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SIGNAL_STATUS_WORD, MOCK_ECAT_INBUFFER_SIGNAL_STATUS_WORD);
-
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::CONTROLWORD, MOCK_ECAT_OUTBUFFER_CMDWORD);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::POSITION, MOCK_ECAT_OUTBUFFER_POSITION);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::VELOCITY, MOCK_ECAT_OUTBUFFER_VELOCITY);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::OP_MODE, MOCK_ECAT_INBUFFER_OP_MODE);
-
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_1, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_1);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_2, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_2);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_3, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_3);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_4, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_4);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_5, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_5);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_6, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_6);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::TORQUE_FORCE, MOCK_ECAT_OUTBUFFER_TORQUE_FORCE);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::TORQUE_VEL_LIMIT_HIGH, MOCK_ECAT_OUTBUFFER_TORQUE_FORCE_LIMIT_HIGH);
-  m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::TORQUE_VEL_LIMIT_LOW, MOCK_ECAT_OUTBUFFER_TORQUE_FORCE_LIMIT_LOW);
-  return result;
+  return startTestEnvironment();
 }
 
 HRESULT FuncTestProfilesCanopen::doEnd()
@@ -112,7 +46,68 @@ HRESULT FuncTestProfilesCanopen::doTest()
 
 HRESULT FuncTestProfilesCanopen::doDataTransmitReceiveTest()
 {
-  HRESULT result = switchSystemStatemachine(StateIDType::BOOTING, StateIDType::RUNNING);
+  log(L"\n\n<b>Test 1: Check the communication to and from the datalayer.</b>");
+
+  HRESULT result = switchSystemStatemachine(StateIDType::CONFIG, StateIDType::CONFIG);
+  RETURN_TEST_FAILED(result, L"\nSwitch System to CONFIG failed");
+
+  IAxisProfileInternal* testProfile{};
+  result = addProfileToSystem(AxisProfileType::CANOPEN_OVER_ETHERCAT, 1, m_profileName.c_str(), &testProfile);
+  RETURN_TEST_FAILED(result, L"\nAdd profile to system failed");
+  RETURN_TEST_RESULT_SET_PTR(testProfile, L"\nEmpty of axisprofile instance");
+
+  log(L"\nConfigure new axisprofile.");
+  m_axisProfileComponent->getAxisProfileManager()->setProfileInputBuffer(m_profileName.c_str(), MOCK_ECAT_INPUTBUFFER_STRING);
+  m_axisProfileComponent->getAxisProfileManager()->setProfileOutputBuffer(m_profileName.c_str(), MOCK_ECAT_OUTPUTBUFFER_STRING);
+
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::STATUSWORD, MOCK_ECAT_INBUFFER_STATUSWORD);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::POSITION, MOCK_ECAT_INBUFFER_POSITION);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::DIAGMSG, MOCK_ECAT_INBUFFER_DIAGMSG);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::VELOCITY, MOCK_ECAT_INBUFFER_VELOCITY);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SWITCH_REF, MOCK_ECAT_INBUFFER_SWITCH_REF);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SWITCH_POS_LIM, MOCK_ECAT_INBUFFER_SWITCH_POS_LIM);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SWITCH_NEG_LIM, MOCK_ECAT_INBUFFER_SWITCH_NEG_LIM);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::OP_MODE_DISPLAY, MOCK_ECAT_INBUFFER_OP_MODE_DISPLAY);
+
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE1_POSEDG, MOCK_ECAT_INBUFFER_PROBE1_POS_EDG);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE1_NEGEDG, MOCK_ECAT_INBUFFER_PROBE1_NEG_EDG);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE1_POSLAT, MOCK_ECAT_INBUFFER_PROBE1_POS_LAT);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE1_NEGLAT, MOCK_ECAT_INBUFFER_PROBE1_NEG_LAT);
+
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE2_POSEDG, MOCK_ECAT_INBUFFER_PROBE2_POS_EDG);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE2_NEGEDG, MOCK_ECAT_INBUFFER_PROBE2_NEG_EDG);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE2_POSLAT, MOCK_ECAT_INBUFFER_PROBE2_POS_LAT);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::PROBE2_NEGLAT, MOCK_ECAT_INBUFFER_PROBE2_NEG_LAT);
+
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SMO_SAFETY_SELECTION, MOCK_ECAT_INBUFFER_SMO_SAFETY_SELECTION);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SMO_SAFETY_STATUS, MOCK_ECAT_INBUFFER_SMO_SAFETY_STATUS);
+
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::TORQUE_FORCE, MOCK_ECAT_INBUFFER_TORQUE_FORCE);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::TORQUE_LIMIT_STATUS, MOCK_ECAT_INBUFFER_TORQUE_FORCE_LIMIT_STATUS);
+
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_1, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_1);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_2, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_2);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_3, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_3);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_4, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_4);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_5, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_5);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::USER_PDO_INPUT_6, MOCK_ECAT_INBUFFER_USER_PDO_INPUT_6);
+  testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::SIGNAL_STATUS_WORD, MOCK_ECAT_INBUFFER_SIGNAL_STATUS_WORD);
+
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::CONTROLWORD, MOCK_ECAT_OUTBUFFER_CMDWORD);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::POSITION, MOCK_ECAT_OUTBUFFER_POSITION);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::VELOCITY, MOCK_ECAT_OUTBUFFER_VELOCITY);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::OP_MODE, MOCK_ECAT_INBUFFER_OP_MODE);
+
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_1, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_1);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_2, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_2);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_3, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_3);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_4, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_4);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_5, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_5);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::USER_PDO_OUTPUT_6, MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_6);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::TORQUE_FORCE, MOCK_ECAT_OUTBUFFER_TORQUE_FORCE);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::TORQUE_VEL_LIMIT_HIGH, MOCK_ECAT_OUTBUFFER_TORQUE_FORCE_LIMIT_HIGH);
+  testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::TORQUE_VEL_LIMIT_LOW, MOCK_ECAT_OUTBUFFER_TORQUE_FORCE_LIMIT_LOW);
+  result = switchSystemStatemachine(StateIDType::BOOTING, StateIDType::RUNNING);
   RETURN_TEST_FAILED(result, L"\nSwitch System to RUNNING failed");
 
   log(L"\nExecute single cycle to initialize the Status- and Controlword!");
@@ -122,7 +117,7 @@ HRESULT FuncTestProfilesCanopen::doDataTransmitReceiveTest()
   log(L"\nSet power mode to 'ON' for profile '%ls'", UTF8TOWIDE(m_profileName));
   AxisProfileResult aprResult;
   do {
-    aprResult = m_profile->getStatusControlInterface()->setPowerMode(AxisProfilePowerMode::POWER_ON);
+    aprResult = testProfile->getStatusControlInterface()->setPowerMode(AxisProfilePowerMode::POWER_ON);
     (void)executeSingleCycle();
     m_mockEthercatMaster->runCoEStatusControl();
     if (aprStatusFailed(aprResult))
@@ -135,7 +130,7 @@ HRESULT FuncTestProfilesCanopen::doDataTransmitReceiveTest()
   log(L"\nSet operation mode to 'Positioning' for profile '%ls'", UTF8TOWIDE(m_profileName));
   do
   {
-    aprResult = m_profile->getStatusControlInterface()->setOperationMode(AxisProfileOperationMode::POSITIONING);
+    aprResult = testProfile->getStatusControlInterface()->setOperationMode(AxisProfileOperationMode::POSITIONING);
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
     if (aprStatusFailed(aprResult))
     {
@@ -156,10 +151,10 @@ HRESULT FuncTestProfilesCanopen::doDataTransmitReceiveTest()
   for (std::int32_t testLoop = 0; testLoop <= maxTestLoops; testLoop++)
   {
     // Get actual data
-    m_profile->getCyclicDataInterface()->getActualValuesDevice(&atDataTestvalues);
+    testProfile->getCyclicDataInterface()->getActualValuesDevice(&atDataTestvalues);
     actualPositionValues[testLoop] = static_cast<float>(atDataTestvalues.m_actualPosition);
-    bool correctOperationMode = m_profile->getStatusControlInterface()->checkOperationMode(AxisProfileOperationMode::POSITIONING);
-    bool correctPowerMode = m_profile->getStatusControlInterface()->checkPowerMode(AxisProfilePowerMode::POWER_ON);
+    bool correctOperationMode = testProfile->getStatusControlInterface()->checkOperationMode(AxisProfileOperationMode::POSITIONING);
+    bool correctPowerMode = testProfile->getStatusControlInterface()->checkPowerMode(AxisProfilePowerMode::POWER_ON);
     if (testLoop > 1)
     {
       if ((false == ((commandedPositionValues[testLoop - 2] - actualPositionValues[testLoop]) < 1E-6)) && (correctPowerMode) && (correctOperationMode))
@@ -171,7 +166,7 @@ HRESULT FuncTestProfilesCanopen::doDataTransmitReceiveTest()
 
     // Write command data => expected value is m so 
     mdtDataTestvalues.m_commandPosition = static_cast<float>(testLoop) / 1000.0;
-    m_profile->getCyclicDataInterface()->setCommandValuesDevice(mdtDataTestvalues);
+    testProfile->getCyclicDataInterface()->setCommandValuesDevice(mdtDataTestvalues);
     commandedPositionValues[testLoop] = static_cast<float>(mdtDataTestvalues.m_commandPosition);
 
     // Execute single cycle

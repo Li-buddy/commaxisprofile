@@ -53,10 +53,6 @@ private: // methods
   /// @brief This method delete the test thread
   void deleteThread();
 
-  /// @brief Test the base class of job object
-  /// @return S_OK, when the test was successful
-  HRESULT testJobBase();
-
 private: // data
 
   std::thread* m_thread {nullptr};          ///< Thread for testing

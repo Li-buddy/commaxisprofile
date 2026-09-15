@@ -272,8 +272,8 @@ HRESULT TestCanopenStatusControl::testSetPowerMode()
   std::vector<TestPowerMode> testcases
   {
     {L"PowerOn: everything works fine",   {0x40, 0x21, 0x23, 0x27}, AxisProfileResult::STS_OK,            AxisProfilePowerMode::POWER_ON},
-    {L"PowerOn: quick stop active",        {0x07, 0x27},             AxisProfileResult::STS_OK,            AxisProfilePowerMode::POWER_ON},
     {L"PowerOn: invalid state",           {0x00},                   AxisProfileResult::ERR_INVALID_STATE, AxisProfilePowerMode::POWER_ON},
+    {L"PowerOn: invalid state",           {0x07},                   AxisProfileResult::ERR_INVALID_STATE, AxisProfilePowerMode::POWER_ON},
     {L"PowerOff: everything works fine",  {0x27, 0x23, 0x21},       AxisProfileResult::STS_OK,            AxisProfilePowerMode::POWER_OFF},
     {L"Unknown power mode",               {0x00},                   AxisProfileResult::ERR_NOK,           AxisProfilePowerMode::POWER_OFF_TORQUE_FREE},
   };

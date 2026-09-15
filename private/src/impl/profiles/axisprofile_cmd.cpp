@@ -15,7 +15,7 @@
 #include "bundle/axisprofile_cmd_c.h"
 #include "profiles/job_mgr/i_job_mgr.h"
 #include "profiles/axisprofile_job_base.h"
-
+#include <iostream>
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -52,6 +52,8 @@ AxisProfileCmd::AxisProfileCmd(ProfileBasicInfo& profileInfo)
   m_cItf.referencingAxis = AXISPROFILE_referencingAxisCmd;
   m_cItf.fixedStop = AXISPROFILE_fixedStopCmd;
   m_cItf.setNewReferenceWithoutMovement = AXISPROFILE_setNewReferenceWithoutMovement;
+  m_cItf.setOperationMode = AXISPROFILE_setOperationModeCmd;
+  m_cItf.setOperationModeCyclic = AXISPROFILE_setOperationModeCyclicCmd;
 }
 
 void AxisProfileCmd::setSharingHandler(IAxisProfileSharingHandler* handler)
@@ -203,7 +205,6 @@ AxisProfileResult AxisProfileCmd::clearDeviceError2()
   {
     return retValue;
   }
-
   for (const auto& cmd : m_resetCmds)
   {
     if (getCmdState(cmd) == CmdState::STATE_ERROR)
@@ -271,4 +272,69 @@ AxisProfileResult AxisProfileCmd::setNewReferenceWithoutMovement(double newPos, 
   ArgHoming arg({newPos, encoder, refMode, true});
   cmdType = CmdType::SET_NEW_REF_WITHOUT_MOVE;
   return startCmd(cmdType, &arg);
+}
+
+AxisProfileResult AxisProfileCmd::setOperationMode(AxisProfileOperationMode opMode)
+{
+  ArgSetOperationMode arg({opMode});
+  CmdType cmdType = CmdType::SET_OPERATION_MODE;
+  return startCmd(cmdType, &arg);
+}
+
+AxisProfileResult AxisProfileCmd::setOperationModeCyclic(AxisProfileOperationMode opMode)
+{
+  std::cout << "AxisProfileCmd::setOperationModeCyclic" << std::endl;
+
+  CmdType cmdType = CmdType::SET_OPERATION_MODE;
+  CmdStatusInDevice cmdStatusInDev {};
+  auto cmdState = getCmdState(cmdType);
+  if (cmdState == CmdState::STATE_IDLE)
+  {
+    // profile command is idle and can be triggered
+    ArgSetOperationMode arg({opMode});
+    std::cout << "start cmd set op mode" << std::endl;
+    auto res = startCmd(cmdType, &arg);
+    if (aprStatusFailed(res))
+    {
+      std::cout << "failed to start cmd set op mode" << std::endl;
+      return AxisProfileResult::ERR_COMMAND_EXECUTION;
+    }
+  }
+  else if (cmdState == CmdState::STATE_ACTIVE)
+  {
+    std::cout << "cmd state : "<<(std::int16_t)cmdState << std::endl;
+    // wait until reset has completed in device
+    cmdStatusInDev = getCmdStatusInDevice(cmdType);
+    std::cout << "cmd status : " << (std::int16_t)cmdStatusInDev << std::endl;
+    if (cmdStatusInDev == CmdStatusInDevice::DEVICE_COMPLETED)
+    {
+      std::cout << "complete cmd set op mode" << std::endl;
+      // trigger abort reset, axisprofile handle following precess itself
+      // can't be failed
+      abortCmd(cmdType);
+      return AxisProfileResult::STS_OK;
+    }    
+  }
+  // error handling
+  if (cmdState == CmdState::STATE_ERROR || cmdStatusInDev == CmdStatusInDevice::DEVICE_ERROR)
+  {
+    resetCmd(cmdType);
+    Dia::sendDiagnosis(MAIN_DIAG_COMMAND_ERR, DETAILED_DIAG_DEVICE_STATUS_ERROR,
+                       m_profileInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
+                       "Trigger Reset again please");
+    return AxisProfileResult::ERR_INVALID_STATE;
+  }
+
+  if (ENUM_TO_I16(cmdState) > STATE_MAX || ENUM_TO_I16(cmdState) < STATE_MIN ||
+      cmdStatusInDev > CmdStatusInDevice::DEVICE_INTERRUPTED || cmdStatusInDev < CmdStatusInDevice::DEVICE_NOT_SET)
+  {
+    resetCmd(cmdType);
+    APR_TRACE_ERROR("%s; get unknown state, cmdState %d, statusInDev %d",
+                    m_profileInfo.m_profileTrace.createTraceMsg(),
+                    static_cast<std::int16_t>(cmdType),
+                    static_cast<std::int16_t>(cmdStatusInDev));
+    return AxisProfileResult::ERR_INVALID_STATE;
+  }
+
+  return AxisProfileResult::STS_PENDING;
 }

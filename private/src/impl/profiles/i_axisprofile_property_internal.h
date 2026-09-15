@@ -65,9 +65,5 @@ namespace comm::axisprofile
     /// @brief This method get the flag indicate whether enable checksum function
     /// @return     Return whether enable checksum.
     virtual bool isChecksumEnabled() const = 0;
-
-    /// @brief This method sets the EtherCAT master name for curret axisprofile.
-    /// @return     Return value indicating success or error.
-    virtual AxisProfileResult setEtherCATName(const char* name) = 0;
   };
 }

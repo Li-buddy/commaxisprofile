@@ -4,11 +4,11 @@
 ///
 /// @brief This header file is part of the axisprofile library and implements
 /// base class of all axis profiles.
-///
+/// 
 /// SPDX-FileCopyrightText: Copyright (c) 2018 - 2025 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
 /// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
@@ -31,17 +31,16 @@ namespace comm::axisprofile
   // Forward references
   // ---------------------------------------------------------------------------
   class IAxisProfileSharingHandler;
-  class IDeviceBootParamSnapshot;
   class IUserPDOMgr;
   class IScaling;
 
   // ---------------------------------------------------------------------------
   // Declaration of symbolic constants
   // ---------------------------------------------------------------------------
-
+    
   // ---------------------------------------------------------------------------
   // Declaration of macros
-  // ---------------------------------------------------------------------------
+  // --------------------------------------------------------------------------- 
 
   // ---------------------------------------------------------------------------
   // Declaration of data types
@@ -100,7 +99,6 @@ namespace comm::axisprofile
     IAxisProfileProbeInternal* getProbeInterface() final;
     IAxisProfileCmdInternal* getCmdInterface() final;
     IAxisProfilePropertyInternal* getPropertyInterface() final;
-    IDeviceBootParamSnapshot* getDeviceBootParmSnapshotInterface() final;
     IAxisProfileMappingHandler* getMappingHandler() const final;
     IFieldbusAdapter* getFieldbusAdapter() const final;
     IJobMgr* getJobMgr() final;
@@ -141,19 +139,18 @@ namespace comm::axisprofile
     AxisProfileResult registerAllJobs();
 
   protected: // data
-
+      
     std::string m_strDeviceName{};              ///< Name of the configured device
     ProfileBasicInfo m_profileBasicInfo;        ///< Profile basic information
-
+    
     IAxisProfileDiagMsgInternal* m_diagMsgInterface{};               ///< Pointer to the internal diagnostic message interface
     IAxisProfileMappingHandler* m_mappingHandler{};                  ///< Pointer to the mapping handler for the profile
-    IAxisProfileSharingHandler* m_sharingHandler{};                  ///< Pointer to the data sharing handler
+    IAxisProfileSharingHandler* m_sharingHandler{};                  ///< Pointer to the data sharing handler 
     IAuxJobHandler* m_auxJobHandler {};                              ///< Pointer to the aux job handler
     IAxisProfileParamAccess* m_paramAccess {};                       ///< Pointer to the axisprofile parameter access
     ICategoryAdapter* m_profileCategory {};                          ///< Pointer to the category of current profile
     IAxisProfileCmdInternal* m_cmdIf {};                             ///< Pointer to the command interface
     IAxisProfilePropertyInternal* m_propertyInterface{};             ///< Pointer to the property interface
-    IDeviceBootParamSnapshot* m_bootParamSnapshotInterface {};        ///< Pointer to the boot parameter snapshot interface
     IJobMgr* m_jobMgr {};                                            ///< Pointer to the job manager
 
     const DriveProfileType m_driveProfileType;                       ///< IEC 61800-7 drive profile type
@@ -161,8 +158,8 @@ namespace comm::axisprofile
     std::vector<std::function<AxisProfileResult()>> m_initMethods;   ///< vector contains all init methods
     MutexHelper m_mutexHelper {};                                    ///< mutex helper for easy use of mutex
 
-    AcknowledgeTelegram m_telegramAT {};    ///< Container for the Acknowledge Telegram (AT)
-    MasterDataTelegram m_telegramMDT {};    ///< Container for the Master Data Telegram (MDT)
+    AcknowledgeTelegram m_telegramAT;    ///< Container for the Acknowledge Telegram (AT)
+    MasterDataTelegram m_telegramMDT;    ///< Container for the Master Data Telegram (MDT)
     bool m_profileActivated{true};       ///< This property holds whether the profile is activated.
-  };
+  }; 
 }

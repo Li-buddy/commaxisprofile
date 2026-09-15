@@ -14,7 +14,6 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "sercos_job_base.h"
-#include "profiles/signal_func/signal_func_cmd.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -61,11 +60,9 @@ namespace comm::axisprofile::sercos
     AxisProfileResult onJobActivating() final;
     AxisProfileResult onJobAborting() final;
     AxisProfileResult onUpdateStatusInDevice() final;
-    AxisProfileResult onJobEnterActivating() final;
 
   private: // data
 
-    const IAxisProfileStatusControlInternal* m_statusControlIf;                    ///< status and controlword interface
-    SignalFuncCmd m_signalFuncCmd {{FunctionSupport::CLEAR_DEVERR_CMD_CYCLIC}};    ///< signal function command for clear device error
+    const IAxisProfileStatusControlInternal* m_statusControlIf; ///< status and controlword interface
   };
 }

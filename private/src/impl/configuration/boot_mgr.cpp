@@ -47,11 +47,14 @@ using namespace comm::axisprofile;
 BootMgr::BootMgr()
 {
   // The methods will be executed in the order they are added to the vector
-  m_bootMethods.reserve(9);
+  m_bootMethods.reserve(12);
   m_bootMethods.emplace_back("Loading system configuration",          "loadSystemCfg",                 [this]()->AxisProfileResult { return loadSystemCfg(); });
   m_bootMethods.emplace_back("Executing external checking",           "execExternalChecking",          [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->execExternalChecking(); });
-  m_bootMethods.emplace_back("collect fieldbus master information",   "collectAllDeviceInfo",          [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->collectAllDeviceInfo(m_abortBooting); });
-  m_bootMethods.emplace_back("check Consistency ",                    "checkConsistency",              [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->checkConsistency(); });
+  m_bootMethods.emplace_back("Initiating device information manager", "initDeviceInfoMgr",             [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->initDeviceInfoMgr(); });
+  m_bootMethods.emplace_back("Browses fieldbus-master instance",      "browsesFieldbusMasterInstance", [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->browseFieldbusMasterInstance(m_abortBooting); });
+  m_bootMethods.emplace_back("update device address",                 "updateProfileAddress",          [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->updateProfileAddress(); });
+  m_bootMethods.emplace_back("Validate protocol consistency",         "validateProtocolInfo",          [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->validateProtocolInfo(); });
+  m_bootMethods.emplace_back("Validate mapping configuration",        "validateMappingCfg",            [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->validateMappingCfg(); });
   m_bootMethods.emplace_back("Checking fieldbus and device status",   "checkFieldbusAndDeviceStatus",  [this]()->AxisProfileResult { return checkFieldbusAndDeviceStatus(); });
   m_bootMethods.emplace_back("Initiating axisprofile manager",        "initManager",                   [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->initManager(m_abortBooting, m_component->getCycleTime()); });
   m_bootMethods.emplace_back("Checking scheduler state",              "isSchedulerCallableInRunState", [this]()->AxisProfileResult { return isSchedulerCallableInRunState(); });
@@ -436,13 +439,7 @@ AxisProfileResult BootMgr::checkFieldbusAndDeviceStatus()
     for (masterIt = fieldbusInstances.begin(); masterIt != fieldbusInstances.end();)
     {
       IFieldbusAdapter* fieldbusAdapter = nullptr;
-      const auto& linkedProfiles = masterIt->second->getLinkedProfiles();
-      // skip if current master not linked by any profile
-      if (linkedProfiles.empty())
-      {
-        ++masterIt;
-        continue;
-      }
+      auto linkedProfiles = masterIt->second->getLinkedProfiles();
       for (const auto profile : linkedProfiles)
       {
         if (profile->checkProfileActivated())
@@ -527,12 +524,6 @@ AxisProfileResult BootMgr::checkFieldbusAndDeviceStatus()
 
 AxisProfileResult BootMgr::checkFieldbusStatus(const std::string& masterName, IFieldbusAdapter* adapter)
 {
-  if (!adapter)
-  {
-    APR_TRACE_ERROR("Master of %s is nullptr.", masterName.c_str());
-    return AxisProfileResult::ERR_EXEC_NULL;
-  }
-
   MasterStatus status;
   AxisProfileResult result = adapter->readFieldbusMasterStatusSync(status.m_status);
   if (aprStatusFailed(result))

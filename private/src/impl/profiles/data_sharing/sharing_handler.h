@@ -7,8 +7,8 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2018 - 2025 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
-/// All rights reserved in the event of the grant of a patent, utility model or design.
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
+/// All rights reserved in the event of the grant of a patent, utility model or design.  
 
 // ---------------------------------------------------------------------------
 // Include Files
@@ -70,8 +70,7 @@ namespace comm::axisprofile
     IScaling*                          getScalingIF()             const final;
     ICategoryAdapter*                  getCategoryIF()            const final;
     IAxisProfilePropertyInternal*      getPropertyIF()            const final;
-    IAxisProfileCmdInternal*           getCmdIF()                 const final;
-    IDeviceBootParamSnapshot*          getBootParamSnapshotIF()   const final;
+    IAxisProfileCmdInternal*           getCmdIF()                 const final;  
 
   private:
 

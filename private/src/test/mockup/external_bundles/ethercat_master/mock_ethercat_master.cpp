@@ -1,12 +1,22 @@
-/// @file
-///
-/// This source file is part of the axisprofile library and implement mock EtherCAT master.
-///
-/// SPDX-FileCopyrightText: Copyright (c) 2018 - 2026 Bosch Rexroth AG
-///
-/// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
-/// All rights reserved in the event of the grant of a patent, utility model or design.
+// ---------------------------------------------------------------------------
+//
+//! @file       mock_ethercat_master.cpp
+//!
+//! @author     DC-AE/ESW2
+//!
+//! @copyright  Bosch Rexroth Corporation http://www.boschrexroth.com
+//!
+//! @version    1.0.0
+//!
+//! @date       2018
+//
+// ---------------------------------------------------------------------------
+//
+//! This source file is part of the axisprofile library and implements a
+//! mockup of the ethercat master component.
+//
+// ---------------------------------------------------------------------------
+
 
 // ---------------------------------------------------------------------------
 // Include Files
@@ -21,6 +31,7 @@
 // Name Spaces
 // ---------------------------------------------------------------------------
 using namespace test;
+
 
 MockEthercatMaster::MockEthercatMaster(const xTST_Test* test, comm::datalayer::IDataLayerFactory* datalayerFactory): m_testClass(test), m_datalayerFactory(datalayerFactory)
 {
@@ -98,20 +109,6 @@ HRESULT MockEthercatMaster::init()
   if (resultDatalayer != comm::datalayer::DlResult::DL_OK)
   {
     m_testClass->error(L"\nregisterNode() failed for %ls! Result: %ls", UTF8TOWIDE(MOCK_ECAT_SLAVE_DC_CFG_INFO), UTF8TOWIDE(resultDatalayer.toString()));
-    return E_FAIL;
-  }
-
-  resultDatalayer = m_provider->registerNode(MOCK_ECAT_SLAVE_ADDRESS_MAPP, &m_ecatSlaveAddressMapping);
-  if (resultDatalayer != comm::datalayer::DlResult::DL_OK)
-  {
-    m_testClass->error(L"\nregisterNode() failed for %ls! Result: %ls", UTF8TOWIDE(MOCK_ECAT_SLAVE_ADDRESS_MAPP), UTF8TOWIDE(resultDatalayer.toString()));
-    return E_FAIL;
-  }
-
-  resultDatalayer = m_provider->registerNode(MOCK_ECAT_SLAVE_CFG_INFO, &m_ecatSlaveCfgInfo);
-  if (resultDatalayer != comm::datalayer::DlResult::DL_OK)
-  {
-    m_testClass->error(L"\nregisterNode() failed for %ls! Result: %ls", UTF8TOWIDE(MOCK_ECAT_SLAVE_CFG_INFO), UTF8TOWIDE(resultDatalayer.toString()));
     return E_FAIL;
   }
 
@@ -259,27 +256,6 @@ HRESULT MockEthercatMaster::deInit()
     if (comm::datalayer::STATUS_FAILED(dlResult))
     {
       m_testClass->error(L"\nprovider->unregisterNode() failed for node %s! Result: %ls", UTF8TOWIDE(MOCK_ECAT_SLAVE_STATUS), UTF8TOWIDE(dlResult.toString()));
-      result = E_FAIL;
-    }
-
-    m_provider->unregisterNode(MOCK_ECAT_SLAVE_DC_CFG_INFO);
-    if (comm::datalayer::STATUS_FAILED(dlResult))
-    {
-      m_testClass->error(L"\nprovider->unregisterNode() failed for node %s! Result: %ls", UTF8TOWIDE(MOCK_ECAT_SLAVE_DC_CFG_INFO), UTF8TOWIDE(dlResult.toString()));
-      result = E_FAIL;
-    }
-
-    m_provider->unregisterNode(MOCK_ECAT_SLAVE_ADDRESS_MAPP);
-    if (comm::datalayer::STATUS_FAILED(dlResult))
-    {
-      m_testClass->error(L"\nprovider->unregisterNode() failed for node %s! Result: %ls", UTF8TOWIDE(MOCK_ECAT_SLAVE_ADDRESS_MAPP), UTF8TOWIDE(dlResult.toString()));
-      result = E_FAIL;
-    }
-
-    m_provider->unregisterNode(MOCK_ECAT_SLAVE_CFG_INFO);
-    if (comm::datalayer::STATUS_FAILED(dlResult))
-    {
-      m_testClass->error(L"\nprovider->unregisterNode() failed for node %s! Result: %ls", UTF8TOWIDE(MOCK_ECAT_SLAVE_CFG_INFO), UTF8TOWIDE(dlResult.toString()));
       result = E_FAIL;
     }
 

@@ -149,6 +149,13 @@ AxisProfileOperationMode CanopenStatusControlDrive::getOperationMode() const
   return result;
 }
 
+AxisProfileResult CanopenStatusControlDrive::readOperationMode(AxisProfileOperationMode& operationMode)
+{
+  const AxisProfileResult result = checkOperationMode();
+  operationMode = getOperationMode();
+  return result;
+}
+
 AxisProfileResult CanopenStatusControlDrive::checkOperationMode()
 {
   AxisProfileResult result {AxisProfileResult::STS_OK};
@@ -161,7 +168,8 @@ AxisProfileResult CanopenStatusControlDrive::checkOperationMode()
   }
   else
   {
-    m_setAndCheckOpModeState.checkedOpMode = AxisProfileOperationMode::OPMODE_PENDING;
+    // this part may affect job objects
+    // m_setAndCheckOpModeState.checkedOpMode = AxisProfileOperationMode::OPMODE_PENDING;
     // no cyclic data, need to asynchronous request the operation mode from drive.
     std::uint16_t objIndex = getObjIndex(MODES_OF_OPERATION_DISPLAY.index, m_profileBasicInfo.m_driveNumber);
     std::uint8_t objSubIdx = 0x0;
@@ -441,15 +449,6 @@ AxisProfileResult CanopenStatusControlDrive::powerOnProcedure()
 
     case FsaState::SWITCHED_ON:
       // transition 4
-      m_telegramMDT->m_controlWord.m_word = 0;
-      m_telegramMDT->m_controlWord.m_bits.bit0 = 1;
-      m_telegramMDT->m_controlWord.m_bits.bit1 = 1;
-      m_telegramMDT->m_controlWord.m_bits.bit2 = 1;
-      m_telegramMDT->m_controlWord.m_bits.bit3 = 1;
-      break;
-
-    case FsaState::QUICK_STOP_ACTIVE:
-      // transition 16
       m_telegramMDT->m_controlWord.m_word = 0;
       m_telegramMDT->m_controlWord.m_bits.bit0 = 1;
       m_telegramMDT->m_controlWord.m_bits.bit1 = 1;

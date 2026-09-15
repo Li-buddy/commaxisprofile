@@ -15,11 +15,8 @@
 #include "canopen_scaling_strategy_drive.h"
 #include "common/debug_trace.h"
 #include "diagnosis/dia.h"
-#include "profiles/canopen/canopen_boot_param_snapshot.h"
 #include "profiles/canopen/canopen_defs.h"
-#include "profiles/category/drive/axisprofile_device_param_drive.h"
 #include "profiles/data_sharing/i_sharing_handler.h"
-#include "profiles/i_device_boot_param_snapshot.h"
 #include "profiles/profile_trace.h"
 #include "profiles/scaling/unit_defs.h"
 #include "profiles/scaling/unit_helper.h"
@@ -59,7 +56,7 @@ ScalingStrategyCoEDrive::ScalingStrategyCoEDrive(ProfileBasicInfo& profileBasicI
 
 AxisProfileResult ScalingStrategyCoEDrive::calcScalingLSBWeights()
 {
-  // Begin to calculate LSB values; parameter reads are done in calc* methods via snapshot helper paths.
+  //begin to calculate LSB (trigger from scaling)
   auto res = Scaling::executeCalcScalingLSBWeights();//template method related to calpos calvel calacc, and so on
   res |= checkScalingUniform();
   return res;
@@ -67,8 +64,8 @@ AxisProfileResult ScalingStrategyCoEDrive::calcScalingLSBWeights()
 
 AxisProfileResult ScalingStrategyCoEDrive::readPosScalingParamsSync()
 {
-  const ObjectDirEntry objEntry = getObjDir(SCALING_SI_UNIT_POSITION, m_profileBasicInfo.m_driveNumber);
-  auto result = getParameterValueFromSnapshot(objEntry, reinterpret_cast<std::uint8_t*>(&m_unitPosition.m_data), sizeof(m_unitPosition.m_data));
+  ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, getObjDir(SCALING_SI_UNIT_POSITION, m_profileBasicInfo.m_driveNumber)};    
+  auto result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, reinterpret_cast<std::uint8_t*>(&m_unitPosition.m_data), sizeof(m_unitPosition.m_data));
   if (aprStatusFailed(result))
   {
     return result;
@@ -79,8 +76,8 @@ AxisProfileResult ScalingStrategyCoEDrive::readPosScalingParamsSync()
 
 AxisProfileResult ScalingStrategyCoEDrive::readVelScalingParamsSync()
 {
-  const ObjectDirEntry objEntry = getObjDir(SCALING_SI_UNIT_VELOCITY, m_profileBasicInfo.m_driveNumber);
-  auto result = getParameterValueFromSnapshot(objEntry, reinterpret_cast<std::uint8_t*>(&m_unitVelocity.m_data), sizeof(m_unitVelocity.m_data));
+  ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, getObjDir(SCALING_SI_UNIT_VELOCITY, m_profileBasicInfo.m_driveNumber)}; // 0x60A9 (SI_UNIT_VELOCITY)
+  auto result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, reinterpret_cast<std::uint8_t*>(&m_unitVelocity.m_data), sizeof(m_unitVelocity.m_data));
   if (aprStatusFailed(result))
   {
     return result;
@@ -91,8 +88,8 @@ AxisProfileResult ScalingStrategyCoEDrive::readVelScalingParamsSync()
 
 AxisProfileResult ScalingStrategyCoEDrive::readAccScalingParamsSync()
 {
-  const ObjectDirEntry objEntry = getObjDir(SCALING_SI_UNIT_ACCELERATION, m_profileBasicInfo.m_driveNumber);
-  auto result = getParameterValueFromSnapshot(objEntry, reinterpret_cast<std::uint8_t*>(&m_unitAcceleration.m_data), sizeof(m_unitAcceleration.m_data));
+  ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, getObjDir(SCALING_SI_UNIT_ACCELERATION, m_profileBasicInfo.m_driveNumber)};// 0x60AA (SI_UNIT_ACCELERATION)
+  auto result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, reinterpret_cast<std::uint8_t*>(&m_unitAcceleration.m_data), sizeof(m_unitAcceleration.m_data));
   if (aprStatusFailed(result))
   {
     return result;
@@ -112,15 +109,16 @@ AxisProfileResult ScalingStrategyCoEDrive::readTorqueScalingParamsSync()
   readStructSet.emplace_back(SCALING_FEED_CONSTANT,       &m_unitTorque.m_feedConstant,           sizeof(m_unitTorque.m_feedConstant));
   readStructSet.emplace_back(SCALING_NOMINAL_TORQUE,      &m_unitTorque.m_motorRatedTorqueRaw,    sizeof(m_unitTorque.m_motorRatedTorqueRaw));
 
+  ParamReqDataCoE requestData {m_profileBasicInfo.m_deviceAddress, {0, 0}};
   for (const auto& item : readStructSet)
   {
-    const ObjectDirEntry objEntry = getObjDir(item.m_objDirEntry, m_profileBasicInfo.m_driveNumber);
-    AxisProfileResult result = getParameterValueFromSnapshot(objEntry, static_cast<std::uint8_t*>(item.m_ptrData), item.dataSize);
+    requestData.objEntry = getObjDir(item.m_objDirEntry, m_profileBasicInfo.m_driveNumber);
+    AxisProfileResult result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(item.m_ptrData), item.dataSize);
     if (aprStatusFailed(result))
     {
       APR_TRACE_MESSAGE("%s; read object %s failed at slaveId %d, check if the device supports it",
                         m_profileBasicInfo.m_profileTrace.createTraceMsg(result),
-                        objDirToString(objEntry).c_str(), m_profileBasicInfo.m_deviceAddress);
+                        objDirToString(requestData.objEntry).c_str(), requestData.address);
       return result;
     }
   }
@@ -135,15 +133,6 @@ AxisProfileResult ScalingStrategyCoEDrive::readTorqueScalingParamsSync()
     return AxisProfileResult::ERR_INVALID_ARGUMENT;
   }
   return AxisProfileResult::STS_OK;
-}
-
-AxisProfileResult ScalingStrategyCoEDrive::getParameterValueFromSnapshot(const ObjectDirEntry& objEntry, std::uint8_t* bufPtr, std::size_t bufLen)
-{
-  return CanopenBootParamSnapshot::getParameterValueFromSnapshot(m_sharingHandler,
-                                                                 m_profileBasicInfo.m_profileTrace.createTraceMsg(),
-                                                                 objEntry,
-                                                                 bufPtr,
-                                                                 bufLen);
 }
 
 AxisProfileResult ScalingStrategyCoEDrive::calcPosScalingLSBWeight()

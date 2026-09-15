@@ -1,10 +1,12 @@
 #include "test_axisprofile_manager.h"
+#include <string.h>
 #include "bundle/i_axisprofile.h"
 #include "profiles/i_axisprofile_internal.h"
 #include "helper/datalayer_memory_map_helper.h"
 #include "common/datalayer/client_internal.h"
 
 // Mockups
+#include "mockup/mock_axisprofile_mapping_handler.h"
 #include "mockup/external_bundles/mock_datalayer_factory.h"
 #include "mockup/external_bundles/mock_datalayer_memory_user.h"
 #include "mockup/external_bundles/ethercat_master/mock_ethercat_master.h"
@@ -22,6 +24,25 @@ REGISTER_TEST_TO_GROUP(TestAxisProfileManager, 2_UnitTest);
 REGISTER_TEST_TO_GROUP(TestAxisProfileManager, Manager);
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Constructor/Destructor
+
+TestAxisProfileManager::TestAxisProfileManager()
+{
+}
+
+TestAxisProfileManager::~TestAxisProfileManager(void)
+{
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Test
+
 HRESULT TestAxisProfileManager::doTest()
 {
   log(L"\n\n----------------------------------------------------------------");
@@ -34,7 +55,7 @@ HRESULT TestAxisProfileManager::doTest()
   hresult |= testMemoryInit();
   hresult |= testMappingInit();
   hresult |= testFieldMgrInit();
-  hresult |= testForCollectAllDeviceInfo();
+  hresult |= testFieldbusMasterInstanceInit();
   hresult |= testAxisProfiles();
   hresult |= testProcessDataAt();
   hresult |= testProcessDataMdt();
@@ -50,8 +71,15 @@ HRESULT TestAxisProfileManager::testManagerFieldbusMgrInit()
 {
   log(L"\n<b>Test the initialization of the fieldbus manager.</b>");
   HRESULT hresult = S_OK;
-  AxisProfileManager testManager{};  
-  LOG_TEST_RESULT(testManager.initDeviceInfoMgr(), L"Method should have failed.", AxisProfileResult::ERR_EXEC_NULL);
+  AxisProfileManager testManager{};
+  
+  AxisProfileResult result = testManager.initDeviceInfoMgr();
+  AxisProfileResult expectedResult = AxisProfileResult::ERR_EXEC_NULL;
+  if ( result != expectedResult )
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
   return hresult;
 }
 
@@ -71,14 +99,26 @@ HRESULT TestAxisProfileManager::testManagerInit()
   AxisProfileManager testManager{};
 
   log(L"\nCall initManager() without a datalayer.");
-  LOG_TEST_RESULT(testManager.initManager(m_abortBoot), L"Method should have failed.", AxisProfileResult::ERR_EXEC_NULL);
+  AxisProfileResult result = testManager.initManager(m_abortBoot);
+  AxisProfileResult expectedResult = AxisProfileResult::ERR_EXEC_NULL;
+  if ( result != expectedResult )
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   log(L"\nSet the datalayer (with createClient() error simulation).");
   testFactoryDL.simulateCreateClientError(true);
   testManager.setDataLayer(&testFactoryDL, nullptr);
 
   log(L"\nCall initManager() with datalayer but simulate out of memory (client creation fails).");
-  LOG_TEST_RESULT(testManager.initManager(m_abortBoot), L"Method should have failed.", AxisProfileResult::ERR_EXEC_NULL);
+  result = testManager.initManager(m_abortBoot);
+  expectedResult = AxisProfileResult::ERR_EXEC_NULL;
+  if (result != expectedResult)
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   log(L"\nSet the datalayer.");
   testFactoryDL.simulateCreateClientError(false);
@@ -87,7 +127,13 @@ HRESULT TestAxisProfileManager::testManagerInit()
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_testNode = &mockEcatNode;
 
   log(L"\nCall initManager() without any memory configuration.");
-  LOG_TEST_RESULT(testManager.initManager(m_abortBoot), L"Method should have failed.", AxisProfileResult::STS_OK);
+  result = testManager.initManager(m_abortBoot);
+  expectedResult = AxisProfileResult::STS_OK;
+  if ( result != expectedResult )
+  {
+    error(L"Method should have succeeded. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   log(L"\nAdd an axis profile for further testing.");
   std::string testProfileName = "testProfile";
@@ -99,13 +145,28 @@ HRESULT TestAxisProfileManager::testManagerInit()
   log(L"\nCall initManager() and simulate an error when opening datalayer RT memory.");
   testFactoryDL.setReturnValue(comm::datalayer::DlResult::DL_FAILED);
   testManager.setDataLayer(&testFactoryDL, nullptr);
-  LOG_TEST_RESULT(testManager.initManager(m_abortBoot), L"Method should have failed.", AxisProfileResult::ERR_DATALAYER);
+  result = testManager.initManager(m_abortBoot);
+  expectedResult = AxisProfileResult::ERR_DATALAYER;
+  if ( result != expectedResult )
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   log(L"\nCall initManager() and simulate a wrong memory map (verifyFlatbuffers() fail).");
   testFactoryDL.setReturnValue(comm::datalayer::DlResult::DL_OK);
-  LOG_TEST_RESULT(testManager.initManager(m_abortBoot), L"Method should have failed.", AxisProfileResult::ERR_DLRT);
+  result = testManager.initManager(m_abortBoot);
+  expectedResult = AxisProfileResult::ERR_DLRT;
+  if ( result != expectedResult )
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
-  LOG_TEST_RESULT_PTR(testManager.getStateMachineStatusIF(), L"Return should not be null pointer.", nullptr);
+  if(testManager.getStateMachineStatusIF())
+  {
+    error(L"Return should not be null pointer.");
+  }
 
   printTestCaseResult(hresult);
   return hresult;
@@ -130,10 +191,20 @@ HRESULT TestAxisProfileManager::testMemoryInit()
   log(L"\nAdd two axis profiles for further testing.");
   HRESULT resulAddProfile = addProfileToManager(&testManager, 1, "testProfile1", MOCK_ECAT_INPUTBUFFER_STRING, MOCK_ECAT_OUTPUTBUFFER_STRING);
   resulAddProfile |= addProfileToManager(&testManager, 2, "testProfile2", MOCK_ECAT_INPUTBUFFER_STRING, MOCK_ECAT_OUTPUTBUFFER_STRING);
-  RETURN_TEST_RESULT(resulAddProfile, L"Add profiles to manager failed. End testcase", S_OK);
+  if ( S_OK != resulAddProfile )
+  {
+    error(L"Add profiles to manager failed. End testcase");
+    return E_FAIL;
+  }
 
   log(L"\nCall initMemory() with existing profiles.");
-  LOG_TEST_RESULT(testManager.initMemory(), L"Method should have succeeded.", AxisProfileResult::STS_OK);
+  AxisProfileResult result = testManager.initMemory();
+  AxisProfileResult expectedResult = AxisProfileResult::STS_OK;
+  if ( result != expectedResult )
+  {
+    error(L"Method should have succeeded. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   printTestCaseResult(hresult);
 
@@ -154,17 +225,39 @@ HRESULT TestAxisProfileManager::testMemoryInit()
 
   log(L"\nAdd a profile with empty buffer address.");
   AxisProfileResult resultCreate = testManagerEmpty.createAxisProfile(comm::axisprofile::AxisProfileType::SERVODRIVE_OVER_ETHERCAT, invaliProfile);
-  RETURN_TEST_RESULT(resultCreate, L"Create profiles to manager failed. End testcase", S_OK);
+  if (aprStatusFailed(resultCreate))
+  {
+    error(L"Create profiles to manager failed. End testcase");
+    return E_FAIL;
+  }
 
   log(L"\nCall initMemory() with invalid profiles.");
-  LOG_TEST_RESULT(testManagerEmpty.initMemory(), L"Method should have failed.", AxisProfileResult::ERR_PROFILE_CONFIG);
+  result = testManagerEmpty.initMemory();
+  expectedResult = AxisProfileResult::ERR_PROFILE_CONFIG;
+  if (result != expectedResult)
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   testManagerEmpty.setProfileInputBuffer(invaliProfile.c_str(), MOCK_ECAT_INPUTBUFFER_STRING);
-  LOG_TEST_RESULT(testManagerEmpty.initMemory(), L"Method should have failed.", AxisProfileResult::ERR_PROFILE_CONFIG);
+  result = testManagerEmpty.initMemory();
+  expectedResult = AxisProfileResult::ERR_PROFILE_CONFIG;
+  if (result != expectedResult)
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   testFactoryDL.setReturnValue(comm::datalayer::DlResult::DL_FAILED);
   log(L"\nCall initMemory().");
-  LOG_TEST_RESULT(testManagerEmpty.initMemory(), L"Method should have succeeded.", AxisProfileResult::ERR_DATALAYER);
+  result = testManagerEmpty.initMemory();
+  expectedResult = AxisProfileResult::ERR_DATALAYER;
+  if ( result != expectedResult )
+  {
+    error(L"Method should have succeeded. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   printTestCaseResult(hresult);  
 
@@ -195,26 +288,52 @@ HRESULT TestAxisProfileManager::testMappingInit()
 
   log(L"\nAdd an axis profile for further testing.");
   HRESULT resulAddProfile = addProfileToManager(&testManager, 1, "testProfile1", MOCK_ECAT_INPUTBUFFER_STRING, MOCK_ECAT_OUTPUTBUFFER_STRING);
-  RETURN_TEST_RESULT(resulAddProfile, L"Add profiles to manager failed.", S_OK);
+  if ( S_OK != resulAddProfile )
+  {
+    error(L"Add profiles to manager failed.");
+    return E_FAIL;
+  }
 
   log(L"\nFirst of all call initMemory() for initialization.");
-  RETURN_TEST_RESULT(testManager.initMemory(), L"Initialization of Memory for initMapping failed.", AxisProfileResult::STS_OK);
+  if ( AxisProfileResult::STS_OK != testManager.initMemory() )
+  {
+    error(L"Initialization of Memory for initMapping failed.");
+    return  E_FAIL;
+  }
 
   log(L"\nCall initMapping() and simulate an abort of the waiting loop.");
   m_abortBoot = true;
   testUserObject.get()->setReturnValue(test::MockMemoryUser::ReturnValueIdentifier::GET_MEMMAP, comm::datalayer::DlResult::Value::DL_RT_INVALIDMEMORYMAP);
-  RETURN_TEST_RESULT(testManager.initMapping(m_abortBoot), L"Method should have failed.", AxisProfileResult::STS_BOOTING_ABORT);
+  AxisProfileResult result = testManager.initMapping(m_abortBoot);
+  AxisProfileResult expectedResult = AxisProfileResult::STS_BOOTING_ABORT;
+  if (result != expectedResult)
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   log(L"\nCall initMapping() and simulate an error in the memory user (getMemoryMap() fails).");
   m_abortBoot = false;
   testUserObject.get()->setReturnValue(test::MockMemoryUser::ReturnValueIdentifier::GET_MEMMAP, comm::datalayer::DlResult::Value::DL_FAILED);
-  RETURN_TEST_RESULT(testManager.initMapping(m_abortBoot), L"Method should have failed.", AxisProfileResult::ERR_DLRT);
+  result = testManager.initMapping(m_abortBoot);
+  expectedResult = AxisProfileResult::ERR_DLRT;
+  if (result != expectedResult)
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   log(L"\nReset memory user error.");
   testUserObject.get()->setReturnValue(test::MockMemoryUser::ReturnValueIdentifier::GET_MEMMAP, comm::datalayer::DlResult::Value::DL_OK);
 
   log(L"\nCall initMapping().");
-  RETURN_TEST_RESULT(testManager.initMapping(m_abortBoot), L"Method should have succeed.", AxisProfileResult::STS_OK);
+  result = testManager.initMapping(m_abortBoot);
+  expectedResult = AxisProfileResult::STS_OK;
+  if ( result != expectedResult )
+  {
+    error(L"Method should have succeeded. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   printTestCaseResult(hresult);
 
@@ -225,12 +344,13 @@ HRESULT TestAxisProfileManager::testFieldMgrInit()
 {
   log(L"\n<b>Test the initialization of the fieldbus manager.</b>");
   HRESULT hresult = S_OK;
+
   AxisProfileManager testManager{};
-  LOG_TEST_RESULT(testManager.initDeviceInfoMgr(), L"Failed to initialize the fieldbus manager", AxisProfileResult::STS_OK);
+  testManager.initDeviceInfoMgr();
   return hresult;
 }
 
-HRESULT TestAxisProfileManager::testForCollectAllDeviceInfo()
+HRESULT TestAxisProfileManager::testFieldbusMasterInstanceInit()
 {
   log(L"\n<b>Test the initialization of the fieldbus master instance data.</b>");
   HRESULT hresult = S_OK;
@@ -245,17 +365,26 @@ HRESULT TestAxisProfileManager::testForCollectAllDeviceInfo()
   std::string errorProfileName = "errorProfile";
   log(L"\nAdd profile '%ls' with wrong config to manager.", UTF8TOWIDE(errorProfileName));
   HRESULT resulAddProfile = addProfileToManager(&testManager, 1, errorProfileName.c_str(), MOCK_ECAT_INPUTBUFFER_STRING, "error/out/buffer");
-  RETURN_TEST_RESULT(resulAddProfile, L"Add profiles to manager failed. End testcase", S_OK);
+  if (S_OK != resulAddProfile)
+  {
+    error(L"Add profiles to manager failed. End testcase");
+    return E_FAIL;
+  }
 
   //init fieldbus manager
   testManager.initDeviceInfoMgr();
 
-  log(L"\nCall validateFieldbusMasterInfo() and simulate wrong profile config error.");
+  log(L"\nCall browseFieldbusMasterInstance() and simulate wrong profile config error.");
+  bool abortInitialization{};
   test::MockEthercatMasterInstancesNode mockEcatNode{};
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_testNode = &mockEcatNode;
-  testManager.collectAllDeviceInfo(false);
-  AxisProfileResult result = testManager.validateFieldbusMasterInfo();
-  LOG_TEST_RESULT(result, L"Method should have failed.", AxisProfileResult::ERR_PROFILE_CONFIG);
+  AxisProfileResult result = testManager.browseFieldbusMasterInstance(abortInitialization);
+  AxisProfileResult expectedResult = AxisProfileResult::ERR_PROFILE_CONFIG;
+  if (result != expectedResult)
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   log(L"\nDelete profile '%ls' with wrong configuration.", UTF8TOWIDE(errorProfileName));
   delete testManager.m_mapAxisProfiles[errorProfileName].m_axisProfile;
@@ -263,23 +392,33 @@ HRESULT TestAxisProfileManager::testForCollectAllDeviceInfo()
 
   log(L"\nAdd correct profile '%ls' to manager.", UTF8TOWIDE(m_profileName));
   resulAddProfile = addProfileToManager(&testManager, 1, m_profileName.c_str(), MOCK_ECAT_INPUTBUFFER_STRING, MOCK_ECAT_OUTPUTBUFFER_STRING);
-  RETURN_TEST_RESULT(resulAddProfile, L"Add profiles to manager failed. End testcase", S_OK);
+  if (S_OK != resulAddProfile)
+  {
+    error(L"Add profiles to manager failed. End testcase");
+    return E_FAIL;
+  }
 
-  log(L"\nCall validateFieldbusMasterInfo() and simulate datalayer browse error.");
+  log(L"\nCall browseFieldbusMasterInstance() and simulate datalayer browse error.");
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_testNode = nullptr;
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_returnValue = comm::datalayer::DlResult::DL_FAILED;
-  result = testManager.collectAllDeviceInfo(false);
-  LOG_TEST_RESULT(result, L"Method should have failed.", AxisProfileResult::ERR_DATALAYER_BROWSE_NODE);
+  result = testManager.browseFieldbusMasterInstance(abortInitialization);
+  expectedResult = AxisProfileResult::ERR_DATALAYER_BROWSE_NODE;
+  if (result != expectedResult)
+  {
+    error(L"Method should have failed. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
-  log(L"\nCall validateFieldbusMasterInfo() when everything is OK.");
-  auto profile = testManager.getProfileByName(m_profileName.c_str());
-  auto internalProfile = static_cast<IAxisProfileInternal*>(profile);
-  internalProfile->getPropertyInterface()->setEtherCATName(MOCK_ECAT_MASTER_INSTANCE_NAME);
+  log(L"\nCall browseFieldbusMasterInstance() when everything is OK.");
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_testNode = &mockEcatNode;
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_returnValue = comm::datalayer::DlResult::DL_OK;
-  testManager.collectAllDeviceInfo(false);
-  result = testManager.validateFieldbusMasterInfo();
-  LOG_TEST_RESULT(result, L"Method should have failed.", AxisProfileResult::STS_OK);
+  result = testManager.browseFieldbusMasterInstance(abortInitialization);
+  expectedResult = AxisProfileResult::STS_OK;
+  if (result != expectedResult)
+  {
+    error(L"Method should have succeeded. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   return hresult;
 }
@@ -302,26 +441,36 @@ HRESULT TestAxisProfileManager::testProcessDataAt()
 
   // process data without registered profiles (nothing to do)
   AxisProfileResult result = testManager.processDataAt();
-  LOG_TEST_RESULT(result, L"processDataAt did fail but should succeed without any work todo.", AxisProfileResult::STS_OK);
+  AxisProfileResult expectedResult = AxisProfileResult::STS_OK;
+  if ( result != expectedResult )
+  {
+    error(L"processDataAt did fail but should succeed without any work todo. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   // create profile so processing has something to do
   HRESULT resulAddProfile = addProfileToManager(&testManager, 1, "testProfile1", MOCK_ECAT_INPUTBUFFER_STRING, MOCK_ECAT_OUTPUTBUFFER_STRING);
-  RETURN_TEST_RESULT(resulAddProfile, L"Add profiles to manager failed. End testcase", S_OK);
+  if ( S_OK != resulAddProfile )
+  {
+    error(L"Add profiles to manager failed. End testcase");
+    return E_FAIL;
+  }
 
   //init fieldbus manager
   testManager.initDeviceInfoMgr();
 
-  log(L"\nCall validateFieldbusMasterInfo() when everything is OK.");
+  log(L"\nCall browseFieldbusMasterInstance() when everything is OK.");
   bool abortInitialization{};
   test::MockEthercatMasterInstancesNode mockEcatNode{};
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_testNode = &mockEcatNode;
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_returnValue = comm::datalayer::DlResult::DL_OK;
-  auto profile = testManager.getProfileByName("testProfile1");
-  auto internalProfile = static_cast<IAxisProfileInternal*>(profile);
-  internalProfile->getPropertyInterface()->setEtherCATName(MOCK_ECAT_MASTER_INSTANCE_NAME);
-  testManager.collectAllDeviceInfo(false);
-  result = testManager.validateFieldbusMasterInfo();
-  LOG_TEST_RESULT(result, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
+  result = testManager.browseFieldbusMasterInstance(abortInitialization);
+  expectedResult = AxisProfileResult::STS_OK;
+  if (result != expectedResult)
+  {
+    error(L"Method should have succeeded. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   log(L"\nCreate memory map for further testing.");
   test::MemoryMapHelper memMapHelper;
@@ -332,19 +481,46 @@ HRESULT TestAxisProfileManager::testProcessDataAt()
   test::MockEthercatMasterParamRequestNodeSoE paramRequestNodeMockSoE{};
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_testNode = &paramRequestNodeMockSoE;
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_returnValue = comm::datalayer::DlResult::DL_OK;
-  RETURN_TEST_RESULT(testManager.initManager(abortInitialization), L"Add profiles to manager failed. End testcase", S_OK);
+  if (aprStatusFailed(testManager.initManager(abortInitialization)))
+  {
+    error(L"Initialization of device manager failed.");
+    return E_FAIL;
+  }
 
   // process data with error in end access to memory
   testUserObject->setReturnValue(test::MockMemoryUser::ReturnValueIdentifier::END_ACCESS, comm::datalayer::DlResult::DL_FAILED);
-  LOG_TEST_RESULT(testManager.processDataAt(), L"\nprocessDataAt did not fail as expected in end access.", AxisProfileResult::ERR_DATALAYER);
+  result = testManager.processDataAt();
+  expectedResult = AxisProfileResult::ERR_DATALAYER;
+  if ( result != expectedResult )
+  {
+    error(L"processDataAt did not fail as expected in end access. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   // process data successful to reset internal variable
   testUserObject->setReturnValue(test::MockMemoryUser::ReturnValueIdentifier::END_ACCESS, comm::datalayer::DlResult::DL_OK);
-  LOG_TEST_RESULT(testManager.processDataAt(), L"\nprocessDataAt did fail but should work.", AxisProfileResult::STS_OK);
+  result = testManager.processDataAt();
+  expectedResult = AxisProfileResult::STS_OK;
+  if ( result != expectedResult )
+  {
+    error(L"processDataAt did fail but should work. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   // process data with error in begin access to memory
   testUserObject->setReturnValue(test::MockMemoryUser::ReturnValueIdentifier::BEGIN_ACCESS, comm::datalayer::DlResult::DL_FAILED);
-  LOG_TEST_RESULT(testManager.processDataAt(), L"\nprocessDataAt did not fail as expected in begin access.", AxisProfileResult::ERR_DATALAYER);
+  result = testManager.processDataAt();
+  expectedResult = AxisProfileResult::ERR_DATALAYER;
+  if ( result != expectedResult )
+  {
+    error(L"processDataAt did not fail as expected in begin access. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
+
+  if ( hresult == S_OK )
+  {
+    log(L"... <DARK_GREEN>OK</DARK_GREEN>");
+  }
 
   return hresult;
 }
@@ -366,26 +542,57 @@ HRESULT TestAxisProfileManager::testProcessDataMdt()
 
   // process data successful without registered profiles (nothing to do)
   AxisProfileResult result = testManager.processDataMdt();
-  LOG_TEST_RESULT(result, L"processDataMdt did fail but should work.", AxisProfileResult::STS_OK);
+  AxisProfileResult expectedResult = AxisProfileResult::STS_OK;
+  if ( result != expectedResult )
+  {
+    error(L"processDataMdt did fail but should work. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   // create profile so processing has something to do
   HRESULT resulAddProfile = addProfileToManager(&testManager, 1, "testProfile1", MOCK_ECAT_INPUTBUFFER_STRING, MOCK_ECAT_OUTPUTBUFFER_STRING);
-  RETURN_TEST_RESULT(resulAddProfile, L"Add profiles to manager failed. End testcase", S_OK);
+  if ( S_OK != resulAddProfile )
+  {
+    error(L"Add profiles to manager failed. End testcase");
+    return E_FAIL;
+  }
 
   // just init the memory here not the mapping, because mapping is not needed for the unittest and in fact part of the profile not the manager
-  RETURN_TEST_RESULT(testManager.initMemory(), L"Failed to init manager. End testcase", AxisProfileResult::STS_OK);
+  if ( aprStatusFailed(testManager.initMemory()) )
+  {
+    error(L"Initialization of device manager failed.");
+    return E_FAIL;
+  }
 
   // process data with error in end access to memory
   testUserObject->setReturnValue(test::MockMemoryUser::ReturnValueIdentifier::END_ACCESS, comm::datalayer::DlResult::DL_FAILED);
-  LOG_TEST_RESULT(testManager.processDataMdt(), L"processDataMdt did not fail as expected in end access", AxisProfileResult::ERR_DATALAYER);
+  result = testManager.processDataMdt();
+  expectedResult = AxisProfileResult::ERR_DATALAYER;
+  if ( result != expectedResult )
+  {
+    error(L"processDataMdt did not fail as expected in end access. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   // process data successful to reset internal variable.
   testUserObject->setReturnValue(test::MockMemoryUser::ReturnValueIdentifier::END_ACCESS, comm::datalayer::DlResult::DL_OK);
-  LOG_TEST_RESULT(testManager.processDataMdt(), L"processDataMdt did fail but should work", AxisProfileResult::STS_OK);
+  result = testManager.processDataMdt();
+  expectedResult = AxisProfileResult::STS_OK;
+  if ( result != expectedResult )
+  {
+    error(L"processDataMdt did fail but should work. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   // process data with error in begin access to memory
   testUserObject->setReturnValue(test::MockMemoryUser::ReturnValueIdentifier::BEGIN_ACCESS, comm::datalayer::DlResult::DL_FAILED);
-  LOG_TEST_RESULT(testManager.processDataMdt(), L"processDataMdt did not fail as expected in begin access", AxisProfileResult::ERR_DATALAYER);
+  result = testManager.processDataMdt();
+  expectedResult = AxisProfileResult::ERR_DATALAYER;
+  if ( result != expectedResult )
+  {
+    error(L"processDataMdt did not fail as expected in begin access. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   if ( hresult == S_OK )
   {
@@ -411,35 +618,71 @@ HRESULT TestAxisProfileManager::testAxisProfiles()
   testManager.setDataLayer(&testFactoryDL, nullptr);
   test::MockEthercatMasterInstancesNode mockEcatNode{};
   static_cast<test::MockDatalayerClient*>(testManager.m_datalayerClient->getBase())->m_testNode = &mockEcatNode;
-  RETURN_TEST_RESULT(testManager.initManager(m_abortBoot), L"Failed to init manager. End testcase", AxisProfileResult::STS_OK);
+
+  if ( aprStatusFailed(testManager.initManager(m_abortBoot)) )
+  {
+    error(L"Initialization of device manager failed.");
+    return E_FAIL;
+  }
 
   // create profile with an empty string
   std::string emptyProfileName = "";
   AxisProfileResult result = testManager.createAxisProfile(comm::axisprofile::AxisProfileType::SERVODRIVE_OVER_ETHERCAT, emptyProfileName);
-  LOG_TEST_RESULT(result, L"createAxisProfile did not return invalid argument", AxisProfileResult::ERR_INVALID_ARGUMENT);
+  AxisProfileResult expectedResult = AxisProfileResult::ERR_INVALID_ARGUMENT;
+  if (result != expectedResult)
+  {
+    error(L"createAxisProfile did not return invalid argument. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   // create profile of a non existing type
   std::string testProfileName = "testProfile";
   result = testManager.createAxisProfile(comm::axisprofile::AxisProfileType::UNDEFINED, testProfileName);
-  LOG_TEST_RESULT(result, L"createAxisProfile did not return expected status.", AxisProfileResult::ERR_NOTIMPLEMENTED);
+  expectedResult = AxisProfileResult::ERR_NOTIMPLEMENTED;
+  if ( result != expectedResult )
+  {
+    error(L"createAxisProfile did not return expected status. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   // create profile successful
   result = testManager.createAxisProfile(comm::axisprofile::AxisProfileType::SERVODRIVE_OVER_ETHERCAT, testProfileName);
-  LOG_TEST_RESULT(result, L"createAxisProfile did fail but should succeeded.", AxisProfileResult::STS_OK);
+  expectedResult = AxisProfileResult::STS_OK;
+  if ( result != expectedResult )
+  {
+    error(L"createAxisProfile did fail but should succeeded. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   // Try to get a non existing profile
   const IAxisProfile* profileRequest = testManager.getProfileByName("NotValid");
-  LOG_TEST_RESULT_PTR(profileRequest, L"getProfileName returns a profile, that not exists.", nullptr);
+  if ( profileRequest )
+  {
+    error(L"getProfileName returns a profile, that not exists.");
+    hresult = E_FAIL;
+  }
 
   // Try to get the testprofile
   profileRequest = testManager.getProfileByName(testProfileName.c_str());
-  LOG_TEST_RESULT_SET_PTR(profileRequest, L"getProfileName did not return the expected profile.");
+  if (!profileRequest)
+  {
+    error(L"getProfileName did not return the expected profile.");
+    hresult = E_FAIL;
+  }
 
   // delete profile successful
   result = testManager.deleteAxisProfile("testProfile");
-  LOG_TEST_RESULT(result, L"deleteAxisProfile did fail but should succeeded.", AxisProfileResult::STS_OK);
+  expectedResult = AxisProfileResult::STS_OK;
+  if ( result != expectedResult )
+  {
+    error(L"deleteAxisProfile did fail but should succeeded. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
-  printTestCaseResult(hresult);
+  if ( hresult == S_OK )
+  {
+    log(L"... <DARK_GREEN>OK</DARK_GREEN>");
+  }
 
   return hresult;
 }
@@ -457,44 +700,106 @@ HRESULT TestAxisProfileManager::testMethodErrorCases()
   testManager.setDataLayer(&testFactoryDL, nullptr);
 
   log(L"\n<b>Test error cases for setProfileInputBuffer/setProfileOutputBuffer.");
-  AxisProfileResult result = testManager.setProfileInputBuffer(nullptr, nullptr);
-  LOG_TEST_RESULT(result, L"setProfileInputBuffer did not return 'ERR_EXEC_NULL' for nullptr profileName.", AxisProfileResult::ERR_EXEC_NULL);
+  AxisProfileResult result    = testManager.setProfileInputBuffer(nullptr, nullptr);
+  AxisProfileResult expResult = AxisProfileResult::ERR_EXEC_NULL;
+  if ( expResult != result )
+  {
+    error(L"setProfileInputBuffer did not return 'ERR_EXEC_NULL' for nullptr profileName. Expected: 0x%X, Actual: 0x%X", expResult, result);
+    hresult = E_FAIL;
+  }
 
   result = testManager.setProfileInputBuffer("doesNotExist", "doesAlsoNotExist");
-  LOG_TEST_RESULT(result, L"setProfileInputBuffer did not return 'ERR_PROFILE_NOT_FOUND' for nullptr profileName.", AxisProfileResult::ERR_PROFILE_NOT_FOUND);
-  
+  expResult = AxisProfileResult::ERR_PROFILE_NOT_FOUND;
+  if ( expResult != result )
+  {
+    error(L"setProfileInputBuffer did not return 'ERR_PROFILE_NOT_FOUND' for nullptr profileName. Expected: 0x%X, Actual: 0x%X", expResult, result);
+    hresult = E_FAIL;
+  }
+
   result = testManager.setProfileOutputBuffer(nullptr, nullptr);
-  LOG_TEST_RESULT(result, L"setProfileOutputBuffer did not return 'ERR_EXEC_NULL' for nullptr profileName.", AxisProfileResult::ERR_EXEC_NULL);
+  expResult = AxisProfileResult::ERR_EXEC_NULL;
+  if (expResult != result)
+  {
+    error(L"setProfileOutputBuffer did not return 'ERR_EXEC_NULL' for nullptr profileName. Expected: 0x%X, Actual: 0x%X", expResult, result);
+    hresult = E_FAIL;
+  }
 
   result = testManager.setProfileOutputBuffer("doesNotExist", "doesAlsoNotExist");
-  LOG_TEST_RESULT(result, L"setProfileOutputBuffer did not return 'ERR_PROFILE_NOT_FOUND' for nullptr profileName.", AxisProfileResult::ERR_PROFILE_NOT_FOUND);
+  expResult = AxisProfileResult::ERR_PROFILE_NOT_FOUND;
+  if (expResult != result)
+  {
+    error(L"setProfileOutputBuffer did not return 'ERR_PROFILE_NOT_FOUND' for nullptr profileName. Expected: 0x%X, Actual: 0x%X", expResult, result);
+    hresult = E_FAIL;
+  }
 
   std::string testProfileName = "testProfile";
   testManager.createAxisProfile(AxisProfileType::SERVODRIVE_OVER_ETHERCAT, testProfileName);
 
+  result = testManager.setProfileInputBuffer(testProfileName.c_str(), nullptr);
+  expResult = AxisProfileResult::ERR_EXEC_NULL;
+  if ( expResult != result )
+  {
+    error(L"setProfileInputBuffer did not return invalid argument for nullptr buffer string. Expected: 0x%X, Actual: 0x%X", expResult, result);
+    hresult = E_FAIL;
+  }
+
+  result = testManager.setProfileOutputBuffer(testProfileName.c_str(), nullptr);
+  expResult = AxisProfileResult::ERR_EXEC_NULL;
+  if ( expResult != result )
+  {
+    error(L"setProfileOutputBuffer did not return invalid argument for nullptr buffer string. Expected: 0x%X, Actual: 0x%X", expResult, result);
+    hresult = E_FAIL;
+  }
+
   char test[] = "";
   result = testManager.setProfileInputBuffer(testProfileName.c_str(), test);
-  LOG_TEST_RESULT(result, L"setProfileInputBuffer did not return 'invalid argument' for empty buffer string.", AxisProfileResult::ERR_INVALID_ARGUMENT);
+  expResult = AxisProfileResult::ERR_INVALID_ARGUMENT;
+  if ( expResult != result )
+  {
+    error(L"setProfileInputBuffer did not return invalid argument for empty buffer string. Expected: 0x%X, Actual: 0x%X", expResult, result);
+    hresult = E_FAIL;
+  }
 
   result = testManager.setProfileOutputBuffer(testProfileName.c_str(), test);
-  LOG_TEST_RESULT(result, L"setProfileOutputBuffer did not return 'invalid argument' for empty buffer string.", AxisProfileResult::ERR_INVALID_ARGUMENT);
+  expResult = AxisProfileResult::ERR_INVALID_ARGUMENT;
+  if ( expResult != result )
+  {
+    error(L"setProfileOutputBuffer did not return invalid argument for empty buffer string. Expected: 0x%X, Actual: 0x%X", expResult, result);
+    hresult = E_FAIL;
+  }
 
   log(L"\n<b>Test errorcases for getProfileInputBuffer/getProfileOutputBuffer.");
   const char* testBuffer = testManager.getProfileInputBuffer(nullptr);
-  LOG_TEST_RESULT_PTR(testBuffer, L"getProfileInputBuffer did not return a nullptr for invalid input.", nullptr);
+  if ( testBuffer != nullptr )
+  {
+    error(L"getProfileInputBuffer did not return a nullptr for invalid input.");
+    hresult = E_FAIL;
+  }
 
   testBuffer = testManager.getProfileOutputBuffer(nullptr);
-  LOG_TEST_RESULT_PTR(testBuffer, L"getProfileOutputBuffer did not return a nullptr for invalid input.", nullptr);
+  if ( testBuffer != nullptr )
+  {
+    error(L"getProfileOutputBuffer did not return a nullptr for invalid input.");
+    hresult = E_FAIL;
+  }
 
   log(L"\n<b>Test errorcases for deleteProfile.");
   // delete profile successful
   result = testManager.deleteAxisProfile({});
-  LOG_TEST_RESULT(result, L"deleteAxisProfile did not return invalid argument for nullptr.", AxisProfileResult::ERR_INVALID_ARGUMENT);
+  expResult = AxisProfileResult::ERR_INVALID_ARGUMENT;
+  if ( result != expResult )
+  {
+    error(L"deleteAxisProfile did not return invalid argument for nullptr. Expected: 0x%X, Actual: 0x%X", expResult, result);
+    hresult = E_FAIL;
+  }
 
   result = testManager.deleteAxisProfile("noProfile");
-  LOG_TEST_RESULT(result, L"deleteAxisProfile did not return profile not found.", AxisProfileResult::ERR_PROFILE_NOT_FOUND);
-
-  printTestCaseResult(hresult);
+  expResult = AxisProfileResult::ERR_PROFILE_NOT_FOUND;
+  if ( result != expResult )
+  {
+    error(L"deleteAxisProfile did not return profile not found. Expected: 0x%X, Actual: 0x%X", expResult, result);
+    hresult = E_FAIL;
+  } 
 
   return hresult; 
 }
@@ -503,21 +808,28 @@ HRESULT TestAxisProfileManager::addProfileToManager(comm::axisprofile::IAxisProf
 {
   StateMachineState state {StateMachineState::CONFIG};
   manager->getStateMachineStatusIF() = &state;
-  auto result = manager->createAxisProfile(AxisProfileType::SERVODRIVE_OVER_ETHERCAT, profileName);
-  RETURN_TEST_FAILED(result, L"\nCreate test axisprofile failed.");
-
-  result = manager->setProfileInputBuffer(profileName, inputAddress);
-  RETURN_TEST_FAILED(result, L"\nFailed to set input buffer.");
-
-  result = manager->setProfileOutputBuffer(profileName, outputAdress);
-  RETURN_TEST_FAILED(result, L"\nFailed to set Output buffer.");
-
+  if ( aprStatusFailed(manager->createAxisProfile(AxisProfileType::SERVODRIVE_OVER_ETHERCAT, profileName)))
+  {
+    return E_FAIL;
+  }
+  if (aprStatusFailed(manager->setProfileInputBuffer(profileName, inputAddress)))
+  {
+    return E_FAIL;
+  }
+  if (aprStatusFailed(manager->setProfileOutputBuffer(profileName, outputAdress)))
+  {
+    return E_FAIL;
+  }
   std::shared_ptr<const IAxisProfileC> newProfile{};
-  result = manager->connectAxisProfile(profileName, newProfile);
-  RETURN_TEST_FAILED(result, L"\nFailed to connect AxisProfile.");
-
+  if (aprStatusFailed(manager->connectAxisProfile(profileName, newProfile)))
+  {
+    return E_FAIL;
+  }
   auto protertyIf = newProfile.get()->getPropertyInterface(newProfile.get()->handle);
-  RETURN_TEST_FAILED(protertyIf->setDeviceAddress(protertyIf->handle, deviceAddress), L"\nFailed to set device address.");
+  if (aprStatusFailed(protertyIf->setDeviceAddress(protertyIf->handle, deviceAddress)))
+  {
+    return E_FAIL;
+  }
 
   return S_OK;
 }
@@ -541,7 +853,13 @@ HRESULT TestAxisProfileManager::testProcessAuxJobs()
   AxisProfileManager testManager {};
 
   log(L"\nCall processAuxJobs() when everything is OK.");
-  LOG_TEST_RESULT(testManager.processAuxJobs(), L"Method should have succeeded.", AxisProfileResult::STS_OK);
+  AxisProfileResult result = testManager.processAuxJobs();
+  AxisProfileResult expectedResult = AxisProfileResult::STS_OK;
+  if (result != expectedResult)
+  {
+    error(L"Method should have succeeded. Expected: 0x%X, Actual: 0x%X", expectedResult, result);
+    hresult = E_FAIL;
+  }
 
   return hresult;
 }
@@ -563,38 +881,48 @@ HRESULT TestAxisProfileManager::testValidateMappingCfg()
   pProfile->getMappingHandler()->configureOutputValue(OutputMappingValueID::POSITION, "testDevice/output/position");
   pProfile->getMappingHandler()->configureOutputValue(OutputMappingValueID::CONTROLWORD, "testDevice/output/controlword");
 
-  LOG_TEST_RESULT(testManager.validatePdoCfg(), L"Method should have succeeded.", AxisProfileResult::STS_OK);
+  AxisProfileResult expectedResult = AxisProfileResult::STS_OK;
+  AxisProfileResult result = testManager.validateMappingCfg();
+  LOG_TEST_RESULT(expectedResult, L"Method should have succeeded.", result);
   
   //test for incosistence input mapping device name
   log(L"\n<BLUE>Test the input mapping incosistence case.</BLUE>");
   pProfile->getMappingHandler()->configureInputValue(InputMappingValueID::STATUSWORD, "testDevice1/input/statusword");
-  LOG_TEST_RESULT(testManager.validatePdoCfg(), L"Method should have succeeded.", AxisProfileResult::ERR_PROFILE_CONFIG);
-
+  result = testManager.validateMappingCfg();
+  expectedResult = AxisProfileResult::ERR_PROFILE_CONFIG;
+  LOG_TEST_RESULT(expectedResult, L"Method should have succeeded.", result);
   pProfile->getMappingHandler()->configureInputValue(InputMappingValueID::STATUSWORD, "testDevice/input/statusword");
+
   //test for incosistence output mapping device name
   log(L"\n<BLUE>Test the output mapping incosistence case.</BLUE>");
   pProfile->getMappingHandler()->configureOutputValue(OutputMappingValueID::CONTROLWORD, "testDevice1/output/controlword");
-  LOG_TEST_RESULT(testManager.validatePdoCfg(), L"Method should have succeeded.", AxisProfileResult::ERR_PROFILE_CONFIG);
-
+  result = testManager.validateMappingCfg();
+  expectedResult = AxisProfileResult::ERR_PROFILE_CONFIG;
+  LOG_TEST_RESULT(expectedResult, L"Method should have succeeded.", result);
   pProfile->getMappingHandler()->configureOutputValue(OutputMappingValueID::CONTROLWORD, "testDevice/output/controlword");
+
   //test for duplicate mapping items
   log(L"\n<BLUE>Test the duplicate mapping items case.</BLUE>");
   pProfile->getMappingHandler()->configureInputValue(InputMappingValueID::POSITION,   "testDevice/input/statusword");
   pProfile->getMappingHandler()->configureInputValue(InputMappingValueID::STATUSWORD, "testDevice/input/statusword");
-  LOG_TEST_RESULT(testManager.validatePdoCfg(), L"Method should have succeeded.", AxisProfileResult::ERR_PROFILE_CONFIG);
+  result = testManager.validateMappingCfg();
+  expectedResult = AxisProfileResult::ERR_PROFILE_CONFIG;
+  LOG_TEST_RESULT(expectedResult, L"Method should have succeeded.", result);
 
   //test for empty items
   log(L"\n<BLUE>Test the empty mapping items case.</BLUE>");
   pProfile->getMappingHandler()->configureInputValue(InputMappingValueID::POSITION, "");
-  LOG_TEST_RESULT(testManager.validatePdoCfg(), L"Method should have succeeded.", AxisProfileResult::STS_OK);
+  result = testManager.validateMappingCfg();
+  expectedResult = AxisProfileResult::STS_OK;
+  LOG_TEST_RESULT(expectedResult, L"Method should have succeeded.", result);
 
   //test for IO mapping items
   log(L"\n<BLUE>Test the duplicate mapping items case.</BLUE>");
   pProfile->getMappingHandler()->configureInputValue(InputMappingValueID::DIAGMSG, "testDevice/input/DIAGMSG");
   pProfile->getMappingHandler()->configureInputValue(InputMappingValueID::STATUSWORD, "testDevice/input/statusword");
-  LOG_TEST_RESULT(testManager.validatePdoCfg(), L"Method should have succeeded.", AxisProfileResult::STS_OK);
-
-  printTestCaseResult(hresult);
+  result = testManager.validateMappingCfg();
+  expectedResult = AxisProfileResult::STS_OK;
+  LOG_TEST_RESULT(expectedResult, L"Method should have succeeded.", result);
 
   return hresult;
 }
@@ -602,7 +930,7 @@ HRESULT TestAxisProfileManager::testValidateMappingCfg()
 HRESULT TestAxisProfileManager::testExecExternalChecking()
 {
   log(L"\n<b>Test case of executing external checking for profiles.</b>");
-  HRESULT hresult = S_OK;
+  HRESULT result = S_OK;
   AxisProfileManager testManager{};
 
   log(L"\n<BLUE>Test of external checking.</BLUE>");
@@ -626,7 +954,5 @@ HRESULT TestAxisProfileManager::testExecExternalChecking()
   res = testManager.unregisterAllCheckCallbacks("testBundle");
   LOG_TEST_RESULT(AxisProfileResult::STS_OK, L"Unregister external checking function of profile", res);
 
-  printTestCaseResult(hresult);
-
-  return hresult;
+  return result;
 }

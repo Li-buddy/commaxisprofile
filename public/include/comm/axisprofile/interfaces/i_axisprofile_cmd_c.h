@@ -129,6 +129,18 @@ extern "C" {
     /// @return Status of the function call, STS_OK or an error code on failure
     ::comm::axisprofile::AxisProfileResult(*setNewReferenceWithoutMovement)(void* handle, double newPos, ::comm::axisprofile::AxisProfileEncoder encoder, ::comm::axisprofile::RefMode refMode, ::comm::axisprofile::CmdType& cmdType);
 
+    /// @brief Command of setting operation mode to device
+    /// note: The operation may require several cycles.
+    ///       The function is non - blocking and cycle - invocable.
+    ///       Repeated calls continue an operation returning STS_PENDING.
+    /// @param[in]  handle        pointer to the instantiated object
+    /// @param[in]  opMode        operation mode to be set
+    /// @return Status of the function call, STS_OK or an error code on failure
+    ::comm::axisprofile::AxisProfileResult(*setOperationMode)(void* handle, const ::comm::axisprofile::AxisProfileOperationMode opMode);
+
+    ///
+    ::comm::axisprofile::AxisProfileResult(*setOperationModeCyclic)(void* handle, const ::comm::axisprofile::AxisProfileOperationMode opMode);
+
     void* reserved[99];  ///< reservation
   } IAxisProfileCmdC;
 

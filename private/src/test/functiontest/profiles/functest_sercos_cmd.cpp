@@ -70,8 +70,6 @@ HRESULT FuncTestSercosCmd::doInit()
   m_axisProfileComponent->getAxisProfileManager()->setProfileInputBuffer(m_name.c_str(), MOCK_ECAT_INPUTBUFFER_STRING);
   m_axisProfileComponent->getAxisProfileManager()->setProfileOutputBuffer(m_name.c_str(), MOCK_ECAT_OUTPUTBUFFER_STRING);
 
-  m_profile->getPropertyInterface()->setEtherCATName(MOCK_ECAT_MASTER_INSTANCE_NAME);
-  m_profile->getPropertyInterface()->setDeviceName(MOCK_ECAT_SLAVE_DEVICE_NAME);
   m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::STATUSWORD, MOCK_ECAT_INBUFFER_STATUSWORD);
   m_profile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::POSITION, MOCK_ECAT_INBUFFER_POSITION);
   m_profile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::CONTROLWORD, MOCK_ECAT_OUTBUFFER_CMDWORD);

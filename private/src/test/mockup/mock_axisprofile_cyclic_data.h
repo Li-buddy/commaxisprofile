@@ -150,9 +150,7 @@ namespace test
     comm::axisprofile::AxisProfileResult booting() override {return m_returnValue;}
     comm::axisprofile::AxisProfileResult setNewRefPosition([[maybe_unused]] std::int32_t newRefPos) override { return comm::axisprofile::AxisProfileResult::STS_OK; };
     comm::axisprofile::AxisProfileResult activeNewRefOperation([[maybe_unused]] bool active) override { return comm::axisprofile::AxisProfileResult::STS_OK; };
-    comm::axisprofile::AxisProfileResult activeSignalFunc(std::uint8_t /*bitOffset*/) override{ return comm::axisprofile::AxisProfileResult::STS_OK; };
-    comm::axisprofile::AxisProfileResult resetSignalFuncBit(std::uint8_t /*bitOffset*/) override{ return comm::axisprofile::AxisProfileResult::STS_OK; };
-    comm::axisprofile::AxisProfileResult getSignalFuncState(std::uint8_t /*bitOffset*/, bool& /*value*/){ return comm::axisprofile::AxisProfileResult::STS_OK; };
+
     // ----------------------------- Test methods ---------------------------------
 
     //! @brief This method can be used by tests to change the behavior of the member functions

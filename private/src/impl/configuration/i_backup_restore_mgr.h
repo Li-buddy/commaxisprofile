@@ -2,20 +2,20 @@
 
 // ---------------------------------------------------------------------------
 //
-/// @file       i_backup_restore_mgr.h
-///
-/// @author     DC-AE/ESW2
-///
-/// @copyright  Bosch Rexroth Corporation http://www.boschrexroth.com
-///
-/// @version    1.0.0
-///
-/// @date       2019
+//! @file       i_backup_restore_mgr.h
+//!
+//! @author     DC-AE/ESW2
+//!
+//! @copyright  Bosch Rexroth Corporation http://www.boschrexroth.com
+//!
+//! @version    1.0.0
+//!
+//! @date       2019
 //
 // ---------------------------------------------------------------------------
 //
-/// This header file is part of the axisprofile library and implements the
-/// interface of the backup restore manager.
+//! This header file is part of the axisprofile library and implements the
+//! interface of the backup restore manager.
 //
 // ---------------------------------------------------------------------------
 
@@ -53,31 +53,31 @@ namespace comm
     // ---------------------------------------------------------------------------
     // Declaration of macros
     // ---------------------------------------------------------------------------
-    /// This macro prints the given parameter as string.
+    //! This macro prints the given parameter as string.
     #define _CLASS_NAME_(x)   (           # x )
-    /// This macro maps the given parameter to a macro that prints it as string.
+    //! This macro maps the given parameter to a macro that prints it as string.
     #define CLASS_NAME(x)     (_CLASS_NAME_(x))
     
     
     // ---------------------------------------------------------------------------
     // Declaration of data types
     // ---------------------------------------------------------------------------
-    ///< load phase
+    //!< load phase
     enum class LoadPhases : std::uint32_t
     {
-      QUERY = 0,   ///< check if loading of the file is possible
-      PREPARE,     ///< perform preparation steps for loading
-      LOAD,        ///< load the given configuration
-      VALIDATE,    ///< perform post processing steps
-      ACTIVATE,    ///< Establish desired run state of the motion (if phases 1-4 have been finished without problems)
-      ABORT,       ///< Do NOT change run state of the device, clean up if required
+      QUERY = 0,   //!< check if loading of the file is possible
+      PREPARE,     //!< perform preparation steps for loading
+      LOAD,        //!< load the given configuration
+      VALIDATE,    //!< perform post processing steps
+      ACTIVATE,    //!< Establish desired run state of the motion (if phases 1-4 have been finished without problems)
+      ABORT,       //!< Do NOT change run state of the device, clean up if required
 
-      COUNT        ///< this must always be the last entry
+      COUNT        //!< this must always be the last entry
     };    
 
-    /// @brief Get the target load phase of a persistence operation as string
-    /// @param[in]    phase    the load phase of a persistence operation
-    /// @return       the load phase of a persistence operation as string
+    //! @brief Get the target load phase of a persistence operation as string
+    //! @param[in]    phase    the load phase of a persistence operation
+    //! @return       the load phase of a persistence operation as string
     inline const char* loadPhasetoString(LoadPhases phase)
     {
       switch (phase)
@@ -93,10 +93,10 @@ namespace comm
       return "UNDEF";
     }
 
-    /// @brief Get the load phase of a persistence operation from a string (default is QUERY)
-    /// Change input string to uppercase since Configuration sends request in lowercase.
-    /// @param[in]    phase   the load phase of a persistence operation as string
-    /// @return                      the load phase of a persistence operation
+    //! @brief Get the load phase of a persistence operation from a string (default is QUERY)
+    //! Change input string to uppercase since Configuration sends request in lowercase.
+    //! @param[in]    phase   the load phase of a persistence operation as string
+    //! @return                      the load phase of a persistence operation
     inline LoadPhases stringToLoadPhases(const char* phase)
     {
       std::string phaseStr = phase;
@@ -134,48 +134,50 @@ namespace comm
     // Declaration of classes and structures
     // ---------------------------------------------------------------------------
     
-    /// @class IBackupRestoreMgr
-    /// This is the interface of the backup/restore manager class.
+    //! @class IBackupRestoreMgr
+    //! This is the interface of the backup/restore manager class.
     class IBackupRestoreMgr
     {
     public: // methods
       virtual ~IBackupRestoreMgr() noexcept = default;
 
-      /// @brief This method returns the class name.
-      ///
-      /// @return                      Return class name.
+      //! @brief This method returns the class name.
+      //!
+      //! @return                      Return class name.
       static const char* getClassName(void) { return (CLASS_NAME(IBackupRestoreMgr)); }
 
-      /// @brief Load a single axis profile configuration and its boot parameters.
-      /// @param[in]   profileName   Name of the axis profile that should be loaded.
-      /// @param[in]   filePath      File path of the axis profile config JSON file (can be an empty string).
-      /// @return  Return value indicating success or error.
-      virtual AxisProfileResult load(const std::string& profileName, const std::string& filePath) = 0;
+      //! @brief Load a single axis profile configuration file.
+      //! @param[in]   profileName   Name of the axis profile that should be loaded.
+      //! @param[in]   dlCfgUri      Datalayer URI of the configuration node of the desired axis profile.
+      //! @param[in]   filePath      File path of the axis profile config JSON file (can be an empty string).
+      //! @return  Return value indicating success or error.
+      virtual AxisProfileResult load(const std::string& profileName, const std::string& dlCfgUri, const std::string& filePath) = 0;
 
-      /// @brief Store a single axis profile data(configuration and boot parameters) into JSON files.
-      /// @param[in]   profileName   Name of the requested axis profile that should be saved.
-      /// @param[in]   filePath      Target path where the axis profile config JSON file should be stored (can be an empty string).
-      /// @return  Return value indicating success or error.
-      virtual AxisProfileResult save(const std::string& profileName, const std::string& filePath) = 0;
+      //! @brief Store a single axis profile configuration into a JSON file.
+      //! @param[in]   profileName   Name of the requested axis profile that should be saved.
+      //! @param[in]   dlCfgUri      Datalayer URI of the configuration node of the desired axis profile.
+      //! @param[in]   filePath      Target path where the axis profile config JSON file should be stored (can be an empty string).
+      //! @return  Return value indicating success or error.
+      virtual AxisProfileResult save(const std::string& profileName, const std::string& dlCfgUri, const std::string& filePath) = 0;
 
-      /// @brief Load a complete system configuration including all existing profiles.
-      /// @param[in]  folderPath   Folder from which to read the config files (can be an empty string)
-      /// @return  Return value indicating success or error.
+      //! @brief Load a complete system configuration including all existing profiles.
+      //! @param[in]  folderPath   Folder from which to read the config files (can be an empty string)
+      //! @return  Return value indicating success or error.
       virtual AxisProfileResult loadSystemCfg(const std::string& folderPath) = 0;
 
-      /// @brief Store the complete system configuration including all existing profiles.
-      /// @param[in]  folderPath   Folder from which to read the config files (can be an empty string)
-      /// @return  Return value indicating success or error.
+      //! @brief Store the complete system configuration including all existing profiles.
+      //! @param[in]  folderPath   Folder from which to read the config files (can be an empty string)
+      //! @return  Return value indicating success or error.
       virtual AxisProfileResult saveSystemCfg(const std::string& folderPath) = 0;
 
-      /// @brief Load a complete system configuration including all existing profiles.
-      /// @param[in]  persistenceParam   variant object that holds information for loading 
-      /// @return  Return value indicating success or error.
+      //! @brief Load a complete system configuration including all existing profiles.
+      //! @param[in]  persistenceParam   variant object that holds information for loading 
+      //! @return  Return value indicating success or error.
       virtual AxisProfileResult loadSystemCfg(const comm::datalayer::Variant& persistenceParam) = 0;      
 
-      /// @brief Store the complete axisprofile system configuration including all existing axisprofiles.
-      /// @param[in]  persistenceParam   variant object that holds information for saving 
-      /// @return  Return value indicating success or error.
+      //! @brief Store the complete axisprofile system configuration including all existing axisprofiles.
+      //! @param[in]  persistenceParam   variant object that holds information for saving 
+      //! @return  Return value indicating success or error.
       virtual AxisProfileResult saveSystemCfg(const comm::datalayer::Variant& persistenceParam) = 0;
 
       /// @brief Make the changes of the given axisprofile object persistent (e.g. object have been deleted)

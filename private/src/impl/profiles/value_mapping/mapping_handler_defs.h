@@ -104,7 +104,6 @@ namespace comm
       USER_PDO_OUTPUT_6,    ///< user PDO output 6
       IO_SET_REFERENCE,      ///< same interface as homing and set-pos-abs
       IO_REFERENCE_OFFSET,   ///< the offset value(related to scaling)
-      SIGNAL_CONTROL_WORD,   ///< signal CONTROL word
     };
 
     /// @brief Group of input/output mapping items
@@ -257,7 +256,6 @@ namespace comm
       const std::string USER_PDO_OUTPUT_6 = "user-pdo-output6";           ///< user receive PDO 6
       const std::string IO_SET_REFERENCE = "io-encoder-set-reference";    ///< set-pos-abs
       const std::string IO_REFERENCE_OFFSET = "io-encoder-reference-offset";  ///< the offset value
-      const std::string SIGNAL_CONTROL_WORD = "signal-control-word";          ///< signal control word
     } AprOutputMappingValueIDStrings;                                     ///< string
 
     //! @brief Supported input mapping value IDs as description
@@ -321,7 +319,6 @@ namespace comm
       const std::string USER_PDO_OUTPUT_6   = "Optional, the user PDO for transmit 6";       ///< user transmit PDO 6//!< Onput mapping value ID for modes of operation
       const std::string IO_SET_REFERENCE    = "Optional, trigger to set reference";          ///< same interface as homing and set-pos-abs
       const std::string IO_REFERENCE_OFFSET = "Optional, the IO reference offset";           ///< the offset value
-      const std::string SIGNAL_CONTROL_WORD = "Optional, the signal control word";           ///< Signal control word
     } AprOutputMappingValueIDDescriptions; //!< description
 
     //! @brief Mapping group as String
@@ -388,7 +385,6 @@ namespace comm
       if (buffer.compare(AprOutputMappingValueIDStrings.USER_PDO_OUTPUT_6) == 0) { return OutputMappingValueID::USER_PDO_OUTPUT_6; }
       if (buffer.compare(AprOutputMappingValueIDStrings.IO_SET_REFERENCE) == 0)  { return OutputMappingValueID::IO_SET_REFERENCE; }
       if (buffer.compare(AprOutputMappingValueIDStrings.IO_REFERENCE_OFFSET) == 0){ return OutputMappingValueID::IO_REFERENCE_OFFSET; }
-      if (buffer.compare(AprOutputMappingValueIDStrings.SIGNAL_CONTROL_WORD) == 0){ return OutputMappingValueID::SIGNAL_CONTROL_WORD; }
       return OutputMappingValueID::UNKNOWN;
     }
 
@@ -414,7 +410,6 @@ namespace comm
         case OutputMappingValueID::USER_PDO_OUTPUT_6:   return AprOutputMappingValueIDStrings.USER_PDO_OUTPUT_6;
         case OutputMappingValueID::IO_SET_REFERENCE:    return AprOutputMappingValueIDStrings.IO_SET_REFERENCE;
         case OutputMappingValueID::IO_REFERENCE_OFFSET: return AprOutputMappingValueIDStrings.IO_REFERENCE_OFFSET;
-        case OutputMappingValueID::SIGNAL_CONTROL_WORD: return AprOutputMappingValueIDStrings.SIGNAL_CONTROL_WORD;
         default:                                        return AprOutputMappingValueIDStrings.UNKNOWN;
       }
     }
@@ -441,7 +436,6 @@ namespace comm
         case OutputMappingValueID::USER_PDO_OUTPUT_6:   return AprOutputMappingValueIDDescriptions.USER_PDO_OUTPUT_6;
         case OutputMappingValueID::IO_SET_REFERENCE:    return AprOutputMappingValueIDDescriptions.IO_SET_REFERENCE;
         case OutputMappingValueID::IO_REFERENCE_OFFSET: return AprOutputMappingValueIDDescriptions.IO_REFERENCE_OFFSET;
-        case OutputMappingValueID::SIGNAL_CONTROL_WORD: return AprOutputMappingValueIDDescriptions.SIGNAL_CONTROL_WORD;
         default:                                        return AprOutputMappingValueIDDescriptions.UNKNOWN;
       }
     }

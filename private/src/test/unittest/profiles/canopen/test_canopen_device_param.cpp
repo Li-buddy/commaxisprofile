@@ -5,7 +5,6 @@
 #include "profiles/data_sharing/sharing_handler.h"
 #include "profiles/profile_trace.h"
 #include "profiles/canopen/drive/canopen_device_param_drive.h"
-#include "profiles/canopen/canopen_boot_param_snapshot.h"
 
 //Mockups
 #include "helper/flatbuffers_helper_coe.h"
@@ -18,7 +17,6 @@
 #include "mockup/mock_profile_trace.h"
 #include "mockup/mock_scaling.h"
 #include "mockup/mock_axisprofile_property.h"
-#include "mockup/mock_job_mgr.h"  
 
 using namespace comm::axisprofile;
 
@@ -48,13 +46,8 @@ HRESULT TestCanopenDeviceParam::doTest()
   hresult |= testDetermineOpModeAvailable();
   hresult |= testNotAvailableMethods();
   hresult |= testCheckFunctionSupported();
-  hresult |= testCheckStandstill();
-  hresult |= testLoadBootingTasks();
-  hresult |= testGetDeviceParamJobObj();
   hresult |= testCheckAxisHomed();
-  hresult |= testConstructDeviceParamCoE();
-  hresult |= testReadEncoderTypes();
-  
+
   return hresult;
 }
 
@@ -82,12 +75,8 @@ HRESULT TestCanopenDeviceParam::testFirmwareInfo()
   canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, &atData, &mdtData};
 
   test::MockAxisProfileProperty property {};
-  canopen::CanopenBootParamSnapshot bootParamSnapshot {profileBasicInfo};
-
   AxisProfileSharingHandler shareHandler {&profileTraceMockup};
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
-  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
-  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
   testClass.setSharingHandler(&shareHandler);
 
   property.setDeviceSeries(DeviceSeries::CTRLXDRIVE);
@@ -96,10 +85,6 @@ HRESULT TestCanopenDeviceParam::testFirmwareInfo()
 
   log(L"\n<b>Test Indra drive firmware information related functions.</b>");
   property.setDeviceSeries(DeviceSeries::INDRADRIVE);
-  testClass.checkDeviceQuickStopCfg();
-
-  log(L"\n<b>Test KNOWN_GENERAL_3RD_DRIVE firmware information related functions.</b>");
-  property.setDeviceSeries(DeviceSeries::KNOWN_GENERAL_3RD_DRIVE);
   testClass.checkDeviceQuickStopCfg();
   return hresult;
 }
@@ -239,7 +224,7 @@ HRESULT TestCanopenDeviceParam::testCheckFunctionSupported()
   auto& assignedInfo = mappingHandlerMockup.getProfileAssignedInfo();
   assignedInfo.m_output.m_opMode = false;
   assignedInfo.m_input.m_opModeDisplay = false;
-  testClass.prepareSignalFuncHandler();
+
   log(L"\n  Test the failure checking...");
   FunctionSupportErrorInfo errorInfo;
   bool result = testClass.checkFunctionSupported(static_cast<FunctionSupport>(0xFF), errorInfo);
@@ -323,14 +308,13 @@ HRESULT TestCanopenDeviceParam::testChecksum()
 
   log(L"\nReadChecksumIdnList test, normal case, return default idn list...");
   mockClient.m_returnValue = comm::datalayer::DlResult::DL_OK;
-  const auto canopenBootParamList = canopen::getCanopenBootParamList();
-  mockFieldbusAdapter.m_fbsHelper.writeParam(canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex, canopenBootParamList);
+  mockFieldbusAdapter.m_fbsHelper.writeParam(canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex, canopen::COE_BOOT_PARAM_LIST);
   mockFieldbusAdapter.m_fbsHelper.generateSDOResponseFlatbuffer(&idnListVar, canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex);
   mockClient.m_callbackVariant = idnListVar;
   idnList.clear();
   res = testClass.readChecksumIdnListFromDevice(idnList);
   RETURN_TEST_RESULT(res, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
-  RETURN_TEST_RESULT_ANY(idnList.size() == canopenBootParamList.size(), L"\nUnexpected return value.");
+  RETURN_TEST_RESULT_ANY(idnList.size() == canopen::COE_BOOT_PARAM_LIST.size(), L"\nUnexpected return value.");
   RETURN_TEST_RESULT_ANY(!testClass.checkBootIdnListModified(), L"\nUnexpected return value.");
   RETURN_TEST_RESULT(testClass.getChecksumIdnList(idnStrList), L"\nUnexpected return value.", AxisProfileResult::STS_OK);
 
@@ -378,10 +362,8 @@ HRESULT TestCanopenDeviceParam::testCheckNeedReadBootParams()
   test::MockAxisProfileTrace profileTraceMockup {};
   AxisProfileSharingHandler shareHandler {&profileTraceMockup};
   test::MockAxisProfileProperty property {};
-  canopen::CanopenBootParamSnapshot bootParamSnapshot {profileBasicInfo};
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
-  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
 
   log(L"\nCheckBootIdnListModified test, drive not support...");
   property.setDeviceSeries(DeviceSeries::CTRLXDRIVE);
@@ -414,7 +396,7 @@ HRESULT TestCanopenDeviceParam::testCheckNeedReadBootParams()
   mockClient.resetClient();
   mockFieldbusAdapter.m_fbsHelper.generateSDOResponseFlatbuffer(&var, canopen::CHECKSUM_VALUE.index, canopen::CHECKSUM_VALUE.subIndex);
   mockClient.m_vecCallBackVariant.push_back(var);
-  mockFieldbusAdapter.m_fbsHelper.writeParam(canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex, canopen::getCanopenBootParamList());
+  mockFieldbusAdapter.m_fbsHelper.writeParam(canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex, canopen::COE_BOOT_PARAM_LIST);
   mockFieldbusAdapter.m_fbsHelper.generateSDOResponseFlatbuffer(&idnListVar, canopen::CHECKSUM_PARAMETERS.index, canopen::CHECKSUM_PARAMETERS.subIndex);
   mockClient.m_vecCallBackVariant.push_back(idnListVar);
   RETURN_TEST_RESULT(testClass.checkNeedReadBootParams(), L"\nUnexpected return value.", false);
@@ -422,152 +404,115 @@ HRESULT TestCanopenDeviceParam::testCheckNeedReadBootParams()
   return S_OK;
 }
 
-HRESULT TestCanopenDeviceParam::testCheckStandstill()
-{
-  log(L"\n<b>Test the CheckStandstill function.</b>");
-  test::MockFieldbusAdapterCoE mockFieldbusAdapter {};
-  ProfileBasicInfo profileBasicInfo;
-  profileBasicInfo.m_axisProfileType = AxisProfileType::CANOPEN_OVER_ETHERCAT;
-  profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
-  canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, nullptr, nullptr};
-
-  test::MockAxisProfileTrace profileTraceMockup {};
-  AxisProfileSharingHandler shareHandler {&profileTraceMockup};
-  test::MockAxisProfileProperty property {};
-  property.setDeviceSeries(DeviceSeries::CTRLXDRIVE);
-  test::MockAxisProfileMappingHandler mappingHandlerMockup {};
-  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappingHandlerMockup);
-  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
-  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
-  bool standstill {false};
-  AxisProfileResult res = testClass.checkStandstill(standstill);
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_EXEC_NULL);
-
-  log(L"\n<b>Test KNOWN_GENERAL_3RD_DRIVE firmware information related functions.</b>");
-  property.setDeviceSeries(DeviceSeries::KNOWN_GENERAL_3RD_DRIVE);
-  res = testClass.checkStandstill(standstill);
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
-  return S_OK;
-}
-
-HRESULT TestCanopenDeviceParam::testLoadBootingTasks()
-{
-  log(L"\n<b>Test the LoadBootingTasks function.</b>");
-  test::MockFieldbusAdapterCoE mockFieldbusAdapter {};
-  ProfileBasicInfo profileBasicInfo;
-  profileBasicInfo.m_axisProfileType = AxisProfileType::CANOPEN_OVER_ETHERCAT;
-  profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
-  canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, nullptr, nullptr};
-  testClass.m_needReadBootParams = false;
-  testClass.loadBootingTasks();
-  LOG_TEST_RESULT(testClass.m_initDeviceParam.size(), L"\nUnexpected return value", 8);
-
-  return S_OK;
-}
-
-HRESULT TestCanopenDeviceParam::testGetDeviceParamJobObj()
-{
-  log(L"\n<b>Test the getDeviceParamJobObj function.</b>");
-  test::MockFieldbusAdapterCoE mockFieldbusAdapter {};
-  ProfileBasicInfo profileBasicInfo;
-  profileBasicInfo.m_axisProfileType = AxisProfileType::CANOPEN_OVER_ETHERCAT;
-  profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
-  canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, nullptr, nullptr};
-  AxisProfileResult res = testClass.getDeviceParamJobObj();
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_EXEC_NULL);
-
-  log(L"\n Test for jobobj is nullptr");
-  test::MockAxisProfileTrace profileTraceMockup {};
-  test::MockJobMgr mockJobMgr {};
-  mockJobMgr.m_jobObjPtr = nullptr;
-  AxisProfileSharingHandler sharingHandler(&profileTraceMockup);
-  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_JOB_MGR, &mockJobMgr);
-  testClass.setSharingHandler(&sharingHandler);
-  res = testClass.getDeviceParamJobObj();
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_EXEC_NULL);
-
-  return S_OK;
-}
-
 HRESULT TestCanopenDeviceParam::testCheckAxisHomed()
 {
-  log(L"\n<b>Test the CheckAxisHomed function.</b>");
+  log(L"\n<b>Test checkAxisHomed function.</b>");
+  HRESULT hresult = S_OK;
+
+  // Setup common objects
   test::MockFieldbusAdapterCoE mockFieldbusAdapter {};
+  test::MockDatalayerClientEx mockClient {};
+  mockFieldbusAdapter.setDatalayer(static_cast<comm::datalayer::IClient*>(&mockClient));
+  std::uint32_t deviceAddress = 1;
+  std::uint8_t driveNumber = 0;
+
   ProfileBasicInfo profileBasicInfo;
-  profileBasicInfo.m_axisProfileType = AxisProfileType::CANOPEN_OVER_ETHERCAT;
+  profileBasicInfo.m_deviceAddress = deviceAddress;
+  profileBasicInfo.m_driveNumber = driveNumber;
   profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
-  canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, nullptr, nullptr};
+  profileBasicInfo.m_profileName = m_profileName;
+
+  // AT/MDT telegrams
+  AcknowledgeTelegram atData;
+  MasterDataTelegram mdtData;
+
+  // Sharing handler and property
   test::MockAxisProfileTrace profileTraceMockup {};
   AxisProfileSharingHandler shareHandler {&profileTraceMockup};
-  test::MockAxisProfileProperty property {};
-  property.setDeviceSeries(DeviceSeries::CTRLXDRIVE);
   test::MockAxisProfileMappingHandler mappingHandlerMockup {};
+  test::MockAxisProfileProperty property {};
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappingHandlerMockup);
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
-  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
 
-  bool homed {false};
-  AxisProfileResult res = testClass.checkAxisHomed(homed);
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_EXEC_NULL);
-  return S_OK;
-}
+  // Test 1: Homing status via signal status word (Rexroth drive, mapped cyclically)
+  {
+    canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, &atData, &mdtData};
+    testClass.setSharingHandler(&shareHandler);
 
-HRESULT TestCanopenDeviceParam::testConstructDeviceParamCoE()
-{
-  log(L"\n<b>Test the Construct DeviceParamCoE.</b>");
-  test::MockFieldbusAdapterCoE mockFieldbusAdapter {};
-  ProfileBasicInfo profileBasicInfo;
-  profileBasicInfo.m_axisProfileType = AxisProfileType::CANOPEN_OVER_ETHERCAT;
-  profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
-  ReadWriteType type = ReadWriteType::READ;
-  ObjectDirEntry id {};
-  std::uint16_t value {};
-  AxisProfileResult res = canopen::CanopenDeviceParamDrive::deviceParamCoE(profileBasicInfo, nullptr, type, id, value, std::size_t(value));
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_EXEC_NULL);
+    // Simulate Rexroth drive
+    property.setDeviceSeries(DeviceSeries::INDRADRIVE);
 
-  log(L"\nTest for jobobj CmdState::STATE_IDLE");
-  test::MockJobObj jobObj {};
-  jobObj.m_jobData = nullptr;
-  jobObj.m_objState = CmdState::STATE_IDLE;
-  res = canopen::CanopenDeviceParamDrive::deviceParamCoE(profileBasicInfo, &jobObj, type, id, value, std::size_t(value));
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_EXEC_NULL);
+    // Simulate mapping handler returns assigned for HOMING_STATUS_CYCLIC
+    auto& assignedInfo = mappingHandlerMockup.getProfileAssignedInfo();
+    assignedInfo.m_input.m_homed = false; // not used in this branch
 
-  log(L"\nTest for jobobj CmdState::STATE_ACTIVE");
-  jobObj.m_objState = CmdState::STATE_ACTIVE;
-  res = canopen::CanopenDeviceParamDrive::deviceParamCoE(profileBasicInfo, &jobObj, type, id, value, std::size_t(value));
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_EXEC_NULL);
+    // Simulate isFuncInSignalStatusWord returns true by mapping bit 0
+    atData.m_signalStatusword = 0x0001; // bit 0 set (homed)
+    bool homed = false;
+    auto res = testClass.checkAxisHomed(homed);
+    RETURN_TEST_RESULT(res, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
 
-  log(L"\nTest for jobobj CmdState::STATE_ERROR");
-  jobObj.m_objState = CmdState::STATE_ERROR;
-  res = canopen::CanopenDeviceParamDrive::deviceParamCoE(profileBasicInfo, &jobObj, type, id, value, std::size_t(value));
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_JOB_EXECUTION);
-  return S_OK;
-}
+    atData.m_signalStatusword = 0x0000; // bit 0 clear (not homed)
+    homed = true;
+    res = testClass.checkAxisHomed(homed);
+    RETURN_TEST_RESULT(res, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
+  }
 
-HRESULT TestCanopenDeviceParam::testReadEncoderTypes()
-{
-  log(L"\n<b>Test the readEncoderTypes function.</b>");
-  test::MockFieldbusAdapterCoE mockFieldbusAdapter {};
-  ProfileBasicInfo profileBasicInfo;
-  profileBasicInfo.m_axisProfileType = AxisProfileType::CANOPEN_OVER_ETHERCAT;
-  profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
-  canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, nullptr, nullptr};
+  // Test 2: 3rd-party drive with mapped input (m_input.m_homed)
+  {
+    canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, &atData, &mdtData};
+    testClass.setSharingHandler(&shareHandler);
 
-  test::MockAxisProfileTrace profileTraceMockup {};
-  AxisProfileSharingHandler shareHandler {&profileTraceMockup};
-  test::MockAxisProfileProperty property {};
-  canopen::CanopenBootParamSnapshot bootParamSnapshot {profileBasicInfo};
+    // Simulate 3rd-party drive
+    property.setDeviceSeries(DeviceSeries::INNOVANCE);
 
-  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
-  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
-  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
+    // Simulate mapping handler returns assigned for m_input.m_homed
+    auto& assignedInfo = mappingHandlerMockup.getProfileAssignedInfo();
+    assignedInfo.m_input.m_homed = true;
 
-  property.setDeviceSeries(DeviceSeries::KNOWN_GENERAL_3RD_DRIVE);
-  AxisProfileResult res = testClass.readEncoderTypes();
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::STS_OK);
+    // Simulate bitStatusHomed
+    atData.m_bitStatusHomed.m_bit = 1;
+    bool homed = false;
+    auto res = testClass.checkAxisHomed(homed);
+    RETURN_TEST_RESULT(res, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
+    RETURN_TEST_RESULT_ANY(homed == true, L"\nHomed should be true when m_bitStatusHomed is 1.");
 
-  property.setDeviceSeries(DeviceSeries::CTRLXDRIVE);
-  res = testClass.readEncoderTypes();
-  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::STS_OK);
-  return S_OK;
+    atData.m_bitStatusHomed.m_bit = 0;
+    res = testClass.checkAxisHomed(homed);
+    RETURN_TEST_RESULT(res, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
+    RETURN_TEST_RESULT_ANY(homed == false, L"\nHomed should be false when m_bitStatusHomed is 0.");
+  }
+
+  // Test 3: Fallback to stored value (no mapping, no Rexroth, no 3rd-party input)
+  {
+    canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, &atData, &mdtData};
+    testClass.setSharingHandler(&shareHandler);
+
+    property.setDeviceSeries(DeviceSeries::INNOVANCE);
+    auto& assignedInfo = mappingHandlerMockup.getProfileAssignedInfo();
+    assignedInfo.m_input.m_homed = false;
+
+    // m_homed is false by default
+    bool homed = true;
+    auto res = testClass.checkAxisHomed(homed);
+    RETURN_TEST_RESULT(res, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
+    RETURN_TEST_RESULT_ANY(homed == false, L"\nHomed should fallback to stored value (false).");
+  }
+
+  // Test 4: Fallback to stored value (no Rexroth, with 3rd-party input)
+  {
+    canopen::CanopenDeviceParamDrive testClass {profileBasicInfo, &atData, &mdtData};
+    testClass.setSharingHandler(&shareHandler);
+
+    property.setDeviceSeries(DeviceSeries::INNOVANCE);
+    auto& assignedInfo = mappingHandlerMockup.getProfileAssignedInfo();
+    assignedInfo.m_input.m_homed = true;
+
+    // m_homed is false by default
+    bool homed = true;
+    auto res = testClass.checkAxisHomed(homed);
+    RETURN_TEST_RESULT(res, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
+  }
+
+  return hresult;
 }

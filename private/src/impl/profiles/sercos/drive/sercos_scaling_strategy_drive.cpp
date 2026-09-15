@@ -15,10 +15,8 @@
 #include "comm/axisprofile/defines/axisprofile_defs.h"
 #include "comm/ethercat/master/fbs/parameter_generated.h"
 #include "diagnosis/dia.h"
-#include "profiles/category/drive/axisprofile_device_param_drive.h"
 #include "profiles/data_sharing/i_sharing_handler.h"
 #include "profiles/scaling/unit_helper.h"
-#include "profiles/sercos/sercos_boot_param_snapshot.h"
 #include "profiles/sercos/sercos_defs.h"
 #include "sercos_scaling_strategy_drive.h"
 #include <cmath>
@@ -58,17 +56,13 @@ AxisProfileResult ScalingStrategySoEDrive::calcScalingLSBWeights()
   return res;
 }
 
-AxisProfileResult ScalingStrategySoEDrive::getParameterValueFromSnaphot(std::uint16_t idn, std::uint8_t* bufPtr, std::size_t bufLen)
-{
-  return SercosBootParamSnapshot::getParameterValueFromSnapshot(m_sharingHandler, m_profileBasicInfo.m_profileTrace.createTraceMsg(),
-                                                                idn, bufPtr, bufLen);
-}
-
 ///////////////////////////////////////////////////////////////////////////////////
 // ****************************** PRIVATE METHODS ****************************** //
 
 AxisProfileResult ScalingStrategySoEDrive::readPosScalingParamsSync()
 {
+  ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, S_0_0000_DUMMY, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
+
   std::vector<SercosParamStruct> readStructSet;
   readStructSet.reserve(5);
   readStructSet.emplace_back(S_0_0076_SCALING_POS_TYPE,       &m_scalingData.m_posScalingType,          sizeof(m_scalingData.m_posScalingType));  // S-0-0076 (Position data scaling type)
@@ -80,12 +74,13 @@ AxisProfileResult ScalingStrategySoEDrive::readPosScalingParamsSync()
   AxisProfileResult result{};
   for (const auto& SercosParamStruct : readStructSet)
   {
-    result = getParameterValueFromSnaphot(SercosParamStruct.m_requestIDN,  static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
+    requestData.idn = SercosParamStruct.m_requestIDN;
+    result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
     if (aprStatusFailed(result))
     {
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_READ_PARAM_FAILED,
                          m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                         "Position scaling, SoE IDN: %s, error: 0x%04X", idnToString(SercosParamStruct.m_requestIDN).c_str(), result);
+                         "Position scaling, SoE IDN: %s, error: 0x%04X", idnToString(requestData.idn).c_str(), result);
       return result;
     }
   }
@@ -196,6 +191,8 @@ AxisProfileResult ScalingStrategySoEDrive::calcPosScalingLSBWeight()
 
 AxisProfileResult ScalingStrategySoEDrive::readVelScalingParamsSync()
 {
+  ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, S_0_0000_DUMMY, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
+
   std::vector<SercosParamStruct> readStructSet;
   readStructSet.reserve(3);
   readStructSet.emplace_back(S_0_0044_SCALING_VEL_TYPE, &m_scalingData.m_velScalingType, sizeof(m_scalingData.m_velScalingType)); // S-0-0044 (Velocity data scaling type)
@@ -205,12 +202,13 @@ AxisProfileResult ScalingStrategySoEDrive::readVelScalingParamsSync()
   AxisProfileResult result{};
   for (const auto& SercosParamStruct : readStructSet)
   {
-    result = getParameterValueFromSnaphot(SercosParamStruct.m_requestIDN, static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
+    requestData.idn = SercosParamStruct.m_requestIDN;
+    result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
     if (aprStatusFailed(result))
     {
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_READ_PARAM_FAILED,
                          m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                         "Velocity scaling, SoE IDN: %s, error: 0x%04X", idnToString(SercosParamStruct.m_requestIDN).c_str(), result);
+                         "Velocity scaling, SoE IDN: %s, error: 0x%04X", idnToString(requestData.idn).c_str(), result);
       return result;
     }
   }
@@ -349,6 +347,8 @@ AxisProfileResult ScalingStrategySoEDrive::calcVelScalingLSBWeight()
 
 AxisProfileResult ScalingStrategySoEDrive::readTorqueScalingParamsSync()
 {
+  ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, S_0_0000_DUMMY, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
+
   std::vector<SercosParamStruct> readStructSet;
   readStructSet.reserve(7);
   readStructSet.emplace_back(S_0_0086_SCALING_TORQUE_TYPE,      &m_scalingData.m_torqueScalingType,     sizeof(m_scalingData.m_torqueScalingType));  // S-0-0086 (Torque data scaling type)
@@ -362,12 +362,13 @@ AxisProfileResult ScalingStrategySoEDrive::readTorqueScalingParamsSync()
   AxisProfileResult result{};
   for (const auto& SercosParamStruct : readStructSet)
   {
-    result = getParameterValueFromSnaphot(SercosParamStruct.m_requestIDN, static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
+    requestData.idn = SercosParamStruct.m_requestIDN;
+    result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
     if (aprStatusFailed(result))
     {
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_WRN, DETAILED_DIAG_READ_PARAM_FAILED,
                          m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                         "Torque scaling, SoE IDN: %s, error: 0x%04X", idnToString(SercosParamStruct.m_requestIDN).c_str(), result);
+                         "Torque scaling, SoE IDN: %s, error: 0x%04X", idnToString(requestData.idn).c_str(), result);
       return AxisProfileResult::STS_BOOTING_CONTINUE;
     }
   }
@@ -496,6 +497,8 @@ AxisProfileResult ScalingStrategySoEDrive::calcTorqueScalingLSBWeight()
 
 AxisProfileResult ScalingStrategySoEDrive::readAccScalingParamsSync()
 {
+  ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, S_0_0000_DUMMY, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
+
   std::vector<SercosParamStruct> readStructSet{};
   readStructSet.reserve(3);
   readStructSet.emplace_back(S_0_0160_SCALING_ACC_TYPE,     &m_scalingData.m_accScalingType,      sizeof(m_scalingData.m_accScalingType)); // S-0-0160 (Acceleration data scaling type)
@@ -505,14 +508,13 @@ AxisProfileResult ScalingStrategySoEDrive::readAccScalingParamsSync()
   AxisProfileResult result{};
   for (const auto& SercosParamStruct : readStructSet)
   {
-    result = getParameterValueFromSnaphot(SercosParamStruct.m_requestIDN,
-                                          static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData),
-                                          SercosParamStruct.dataSize);
+    requestData.idn = SercosParamStruct.m_requestIDN;
+    result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
     if (aprStatusFailed(result))
     {
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_READ_PARAM_FAILED,
                          m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                         "Acceleration scaling, SoE IDN: %s, error: 0x%04X", idnToString(SercosParamStruct.m_requestIDN).c_str(), result);
+                         "Acceleration scaling, SoE IDN: %s, error: 0x%04X", idnToString(requestData.idn).c_str(), result);
       return result;
     }
   }

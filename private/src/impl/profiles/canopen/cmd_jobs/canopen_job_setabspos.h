@@ -7,19 +7,16 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
 /// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
 #include "canopen_job_base.h"
-#include "profiles/signal_func/signal_func_cmd.h"
+#include "profiles/canopen/canopen_param_access.h"
+#include "profiles/canopen/drive/canopen_device_param_drive.h"
 
-// ---------------------------------------------------------------------------
-// Forward references
-// ---------------------------------------------------------------------------
-class TestCanopenJobSetAbsPos;
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -78,15 +75,6 @@ namespace comm::axisprofile::canopen
     /// @return Return value indicating success or error.
     AxisProfileResult setupWriteListToDevice();
 
-    /// @brief This method setup jobs that prepare set absolute position by device.
-    void setupPrepareSetAbsPosJobs();
-
-    /// @brief This method setup jobs that write configuration for set absolute position to device.
-    void setupWriteConfigJobs();
-
-    /// @brief This method setup jobs that activate set absolute position by device.
-    void setupActiveSetAbsPosJobs();
-
     /// @brief This method is used to determine handle-based
     /// @return Return value indicating success or error.
     AxisProfileResult judgmentHandleBased();
@@ -105,13 +93,12 @@ namespace comm::axisprofile::canopen
     AxisProfileResult setCmdStatusInDevice(CmdStatusInDevice status);
 
   private: // data
-    friend class::TestCanopenJobSetAbsPos;
+
     SetAbsPosData m_cmdData {};           ///< command date of set absolute position
 
     ObjectDirEntry m_newRefObj {};        ///< object of the new reference to be set to device
     std::int32_t m_newRefRaw {};          ///< raw value of the new reference to be set to device
     std::uint16_t m_ctrlWord {};          ///< value of 0x2510:02, control word of set absolute position
     WordStructure m_ctrlWordS448 {};      ///< value of S-0-0448 (0x2510:2), ctrlX drive only
-    SignalFuncCmd m_signalFuncCmd {{FunctionSupport::SET_ABS_POS_CMD_CYCLIC}};    ///< signal function command for set absolute position
   };
 }

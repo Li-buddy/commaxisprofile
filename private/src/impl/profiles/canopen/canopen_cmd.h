@@ -18,6 +18,7 @@
 #include "cmd_jobs/canopen_job_homing.h"
 #include "cmd_jobs/canopen_job_device_param.h"
 #include "cmd_jobs/canopen_job_setabspos.h"
+#include "cmd_jobs/canopen_job_setopmode.h"
 
 // ---------------------------------------------------------------------------
 // Forward references
@@ -57,11 +58,13 @@ namespace comm::axisprofile::canopen
       m_jobLookupTable[ENUM_TO_U16(CmdType::REFERENCE_POS)] = CanopenJobHoming::jobName();
       m_jobLookupTable[ENUM_TO_U16(CmdType::SET_ABS_POS)] = CanopenJobSetAbsPos::jobName();
       m_jobLookupTable[ENUM_TO_U16(CmdType::SET_NEW_REF_WITHOUT_MOVE)] = CanopenJobHoming::jobName();
+      m_jobLookupTable[ENUM_TO_U16(CmdType::SET_OPERATION_MODE)] = CanopenJobSetOpMode::jobName();
 
-      m_resetCmds.reserve(3);
+      m_resetCmds.reserve(4);
       m_resetCmds.emplace_back(CmdType::REFERENCE_POS);
       m_resetCmds.emplace_back(CmdType::SET_ABS_POS);
       m_resetCmds.emplace_back(CmdType::SET_NEW_REF_WITHOUT_MOVE);
+      m_resetCmds.emplace_back(CmdType::SET_OPERATION_MODE);
     };
 
     /// @brief Destructor

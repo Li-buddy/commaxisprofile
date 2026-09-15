@@ -136,7 +136,7 @@ namespace comm::axisprofile
     MasterRtDataRawValue m_rtDataRawValue {};         ///< Realtime data raw value
     MasterRtDataValue m_rtDataSIValue {};             ///< Realtime data SI value
     MasterRtDataInfo m_rtDataInfo {};                 ///< Memory information of realtime data
-    std::set<IAxisProfileInternal*> m_linkedProfiles; ///< Profiles linked to this master
+    std::set<IAxisProfileInternal*> m_profiles;       ///< Profiles lined to this master
     comm::datalayer::IDataLayerFactory* m_datalayer;  ///< Datalayer factory used to open/close datalayer realtime memory
     bool m_traceErrorAlreadySent = false;             ///< Flag to prevent sending same trace error message cyclical task
     double m_actDcBaseTime {0.0};                     ///< Actual distribution clock base time

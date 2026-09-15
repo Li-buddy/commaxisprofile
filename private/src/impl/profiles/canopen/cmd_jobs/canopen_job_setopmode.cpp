@@ -8,7 +8,7 @@
 #include "canopen_job_setopmode.h"
 #include "profiles/i_axisprofile_device_param_internal.h"
 #include "profiles/value_mapping/i_mapping_handler.h"
-
+#include <iostream>
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -40,12 +40,13 @@ AxisProfileResult CanopenJobSetOpMode::onSetArgument(IContainer* arg)
     return AxisProfileResult::ERR_EXEC_NULL;
   }
 
-  m_requestedOpMode = setOpModeArg->get();
+  m_requestedOpMode = setOpModeArg->get().mode;
   return determineCanopenOpMode(m_requestedOpMode, m_requestedCiaMode);
 }
 
 AxisProfileResult CanopenJobSetOpMode::onJobEnterActivating()
 {
+  std::cout << "CanopenJobSetOpMode::onJobEnterActivating" << std::endl;
   if (!m_telegramAT || !m_telegramMDT || !m_shareHandle ||
       !m_shareHandle->getMappingHandlerIF() || !m_shareHandle->getParamAccessIF())
   {
@@ -58,22 +59,24 @@ AxisProfileResult CanopenJobSetOpMode::onJobEnterActivating()
   m_writeOpModeReq.switchToCmdStartStep();
 
   const auto& assignedInfo = m_shareHandle->getMappingHandlerIF()->getProfileAssignedInfo();
-  m_outputModeMapped = assignedInfo.m_output.m_opMode;
-
   m_jobFuns.clear();
   m_jobStep = 0;
-  if (m_outputModeMapped)
+  if (assignedInfo.m_output.m_opMode)
   {
-    m_jobFuns.emplace_back(
-      [this]() { return writeModeToPdo(); });
+    m_jobFuns.emplace_back([this]() { return writeModeToPDO(); });
   }
   else
   {
-    m_jobFuns.emplace_back(
-      [this]() { return writeModeBySdo(); });
+    m_jobFuns.emplace_back([this]() { return writeModeBySDO(); });
   }
-  m_jobFuns.emplace_back(
-    [this]() { return verifyOperationMode(); });
+  if (assignedInfo.m_input.m_opModeDisplay)
+  {
+    m_jobFuns.emplace_back([this]() { return verifyOperationModeByPDO(); });
+  }
+  else
+  {
+    m_jobFuns.emplace_back([this]() { return verifyOperationModeBySDO(); });
+  }
 
   m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
   return CanopenJobBase::onJobEnterActivating();
@@ -81,6 +84,7 @@ AxisProfileResult CanopenJobSetOpMode::onJobEnterActivating()
 
 AxisProfileResult CanopenJobSetOpMode::onJobActivating()
 {
+  std::cout << "CanopenJobSetOpMode::onJobActivating" << std::endl;
   const auto result = runJobsInternal();
   if (result == AxisProfileResult::STS_OK)
   {
@@ -190,7 +194,7 @@ AxisProfileResult CanopenJobSetOpMode::determineCanopenOpMode(AxisProfileOperati
   return AxisProfileResult::STS_OK;
 }
 
-AxisProfileResult CanopenJobSetOpMode::writeModeToPdo()
+AxisProfileResult CanopenJobSetOpMode::writeModeToPDO()
 {
   if (!m_telegramMDT)
   {
@@ -202,7 +206,7 @@ AxisProfileResult CanopenJobSetOpMode::writeModeToPdo()
   return AxisProfileResult::STS_OK;
 }
 
-AxisProfileResult CanopenJobSetOpMode::writeModeBySdo()
+AxisProfileResult CanopenJobSetOpMode::writeModeBySDO()
 {
   return m_paramAccessIf->writeAndCheckParamAsync(
     getObjIndex(MODES_OF_OPERATION.index, m_profileInfo.m_driveNumber),
@@ -212,16 +216,14 @@ AxisProfileResult CanopenJobSetOpMode::writeModeBySdo()
     m_writeOpModeReq.getRequestState());
 }
 
-AxisProfileResult CanopenJobSetOpMode::verifyOperationMode()
+AxisProfileResult CanopenJobSetOpMode::verifyOperationModeByPDO()
 {
-  const auto& assignedInfo = m_shareHandle->getMappingHandlerIF()->getProfileAssignedInfo();
-  if (assignedInfo.m_input.m_opModeDisplay)
-  {
-    m_feedbackCiaMode = m_telegramAT->m_atData.m_opModeDisplay;
-    return (m_feedbackCiaMode == m_requestedCiaMode) ? AxisProfileResult::STS_OK
-                                                      : AxisProfileResult::STS_PENDING;
-  }
+  m_feedbackCiaMode = m_telegramAT->m_atData.m_opModeDisplay;
+  return (m_feedbackCiaMode == m_requestedCiaMode) ? AxisProfileResult::STS_OK : AxisProfileResult::STS_PENDING;
+}
 
+AxisProfileResult CanopenJobSetOpMode::verifyOperationModeBySDO()
+{
   const auto result = m_paramAccessIf->readAndCheckParamAsync(
     getObjIndex(MODES_OF_OPERATION_DISPLAY.index, m_profileInfo.m_driveNumber),
     MODES_OF_OPERATION_DISPLAY.subIndex,

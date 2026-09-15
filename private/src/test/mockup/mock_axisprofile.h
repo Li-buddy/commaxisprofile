@@ -40,7 +40,6 @@
 #include "mockup/mock_axisprofile_cmd.h"
 #include "mockup/mock_job_mgr.h"
 #include "mockup/mock_axisprofile_property.h"
-#include "mockup/mock_device_boot_parm_snapshot.h"
 
 // ---------------------------------------------------------------------------
 // Declaration of symbolic constants
@@ -68,15 +67,13 @@ namespace test
     /// @brief Constructor
     /// @param[in]   name   name of the profile
     /// @param[in]   type   type of the profile
-    explicit MockAxisProfile(const std::string& name, comm::axisprofile::AxisProfileType type)
-      : m_profileName(name), m_bootParamSnapshotMock(m_profileBasicInfo)
+    explicit MockAxisProfile(const std::string& name, comm::axisprofile::AxisProfileType type) 
+      : m_profileName(name)
     {
       m_mappingHandler = new MockAxisProfileMappingHandler();
       m_fieldbusAdapterMock = new MockFieldbusAdapterSoE();
       m_scalingMock = new MockScaling();
       m_dprPropertyMock.setProfileType(type);
-      m_profileBasicInfo.m_axisProfileType = type;
-      m_profileBasicInfo.m_profileName = name;
     }
     //! @brief Destructor
     virtual ~MockAxisProfile()
@@ -129,10 +126,6 @@ namespace test
     comm::axisprofile::IAxisProfileProbeInternal* getProbeInterface() override { return &m_dprProbeMock; }
     comm::axisprofile::IAxisProfileCmdInternal* getCmdInterface() override { return &m_dprCmdMock;}
     comm::axisprofile::IAxisProfilePropertyInternal* getPropertyInterface() override { return &m_dprPropertyMock; }
-    comm::axisprofile::IDeviceBootParamSnapshot* getDeviceBootParmSnapshotInterface() override
-    {
-      return m_bootParamSnapshotInterfaceMissing ? nullptr : &m_bootParamSnapshotMock;
-    }
     comm::axisprofile::AxisProfileResult setDeviceAddress(std::uint32_t deviceAddress) override { m_deviceAddress = deviceAddress; return m_returnValue; }
     std::uint32_t getDeviceAddress() const override { return m_deviceAddress; }
     const char* getDeviceName() const override { return m_strDeviceName.c_str(); }
@@ -170,22 +163,17 @@ namespace test
       if (deleteOrCreate) { m_mappingHandler = mappingHandler ? mappingHandler : new test::MockAxisProfileMappingHandler(); }
     }
 
-    /// @brief Enable/disable simulation of missing boot parameter snapshot interface.
-    /// @param[in] missing True to make getDeviceBootParmSnapshotInterface() return nullptr.
-    void setBootParamSnapshotInterfaceMissing(bool missing) { m_bootParamSnapshotInterfaceMissing = missing; }
-
   protected: // data
 
     comm::axisprofile::AxisProfileResult m_returnValue = comm::axisprofile::AxisProfileResult::STS_OK;   //!< Result of member functions
     std::string m_profileName;                                           ///< Name of this profile
-    comm::axisprofile::ProfileBasicInfo m_profileBasicInfo;              ///< Profile basic information
     std::uint32_t m_deviceAddress{};                                     ///< Address of the connected device
     std::string m_strDeviceName;                                         ///< Name of the connected device
     comm::axisprofile::IAxisProfileMappingHandler* m_mappingHandler{};   ///< Mockup of the mapping handler
     comm::axisprofile::IFieldbusAdapter* m_fieldbusAdapterMock{};        ///< Mockup of the fieldbus adapter class
     comm::axisprofile::IScaling* m_scalingMock{};                        ///< Mockup of the scaling class
     std::uint8_t m_driveNumber {};                                       ///< Drive number of the device
-    comm::axisprofile::AxisProfileCategory m_profileCategory {comm::axisprofile::AxisProfileCategory::CATEGORY_DRIVE};
+    comm::axisprofile::AxisProfileCategory m_profileCategory {comm::axisprofile::AxisProfileCategory::CATEGORY_DRIVE};	
 
     std::vector<std::function<comm::axisprofile::AxisProfileResult()>> m_initMethods  //!< Mockup of init methods
     {
@@ -195,7 +183,6 @@ namespace test
       {[this]()->comm::axisprofile::AxisProfileResult { return this->getStatusControlInterface()->booting(); } },
     };
     bool m_profileActivated{true};         ///< This property holds whether the profile is activated.
-    bool m_bootParamSnapshotInterfaceMissing{false};  ///< Simulation flag for missing boot parameter snapshot interface.
 
   private: // data
 
@@ -209,6 +196,5 @@ namespace test
     test::MockAxisProfileCmd m_dprCmdMock;                      //!< Mockup of the command interface
     test::MockJobMgr m_jobMgr;                                  ///< Mockup of the job manager
     test::MockAxisProfileProperty m_dprPropertyMock;            //!< Mockup of the property interface
-    test::MockDeviceBootParmSnapshot m_bootParamSnapshotMock;   //!< Mockup of the boot parameter snapshot interface
   };
 }

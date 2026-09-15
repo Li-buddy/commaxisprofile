@@ -144,20 +144,3 @@ AxisProfileResult AxisProfileCyclicDataEncoder::activeNewRefOperation(bool activ
   return AxisProfileResult::STS_OK;
 }
 
-AxisProfileResult AxisProfileCyclicDataEncoder::activeSignalFunc(std::uint8_t /*bitOffset*/)
-{
-  rejectCmdDiagnosis("activeSignalFunc");
-  return AxisProfileResult::ERR_NOT_SUPPORTED;
-}
-
-AxisProfileResult AxisProfileCyclicDataEncoder::resetSignalFuncBit(std::uint8_t /*bitOffset*/)
-{
-  rejectCmdDiagnosis("resetSignalFuncBit");
-  return AxisProfileResult::ERR_NOT_SUPPORTED;
-}
-
-AxisProfileResult AxisProfileCyclicDataEncoder::getSignalFuncState(std::uint8_t /*bitOffset*/, bool& /*value*/)
-{
-  rejectCmdDiagnosis("getSignalFuncState");
-  return AxisProfileResult::ERR_NOT_SUPPORTED;
-}

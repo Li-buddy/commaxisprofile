@@ -102,5 +102,13 @@ namespace comm::axisprofile
     /// @param[out] cmdType       type of the command that used to maintain (@ref getCmdState, @ref resetCmd, @ref abortCmd)
     /// @return Status of the function call, STS_OK or an error code on failure
     virtual AxisProfileResult setNewReferenceWithoutMovement(double newPos, AxisProfileEncoder encoder, RefMode refMode, CmdType& cmdType) = 0;
+
+    /// @brief This function sets the given operation mode to the device
+    /// @param[in] opMode the operation mode to be set
+    /// @return indicates the status of the function call, STS_OK or an error code on failure
+    virtual AxisProfileResult setOperationMode(AxisProfileOperationMode opMode) = 0;
+
+    
+    virtual AxisProfileResult setOperationModeCyclic(AxisProfileOperationMode opMode) = 0;
   };
 }

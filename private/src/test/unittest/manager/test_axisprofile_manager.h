@@ -37,10 +37,10 @@ class TestAxisProfileManager : public xTST_Test2
 {
 public:
   /// ctor
-  TestAxisProfileManager() noexcept = default;
+  TestAxisProfileManager();
 
   /// Destructor
-  virtual ~TestAxisProfileManager() noexcept = default;
+  virtual ~TestAxisProfileManager() noexcept override;
 
   //
   // interface functions
@@ -76,9 +76,9 @@ private: //methods
   /// @return  S_OK, when tests were successful
   HRESULT testFieldMgrInit();
 
-  /// @brief   this test will collect all necessary master and slave device information.
+  /// @brief   this test validates the initialization of the fieldbus master instance
   /// @return  S_OK, when tests were successful
-  HRESULT testForCollectAllDeviceInfo();
+  HRESULT testFieldbusMasterInstanceInit();
 
   /// @brief   this test validates the creation and destruction of axisprofiles via the axisprofile manager
   /// @return  S_OK, when tests were successful

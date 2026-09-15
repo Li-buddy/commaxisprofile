@@ -97,13 +97,3 @@ extern "C" AxisProfileCategory AXISPROFILE_getProfileCategoryPropertyMock(void* 
   }
   return mock->m_profileCateogry;
 }
-
-extern "C" const char* AXISPROFILE_getCfgedFieldbusMasterNameMock(void* handle)
-{
-  const AxisProfilePropertyMockHandle* mock = static_cast<AxisProfilePropertyMockHandle*>(handle);
-  if (!mock)
-  {
-    return nullptr;
-  }
-  return mock->m_ethercatName.c_str();
-}

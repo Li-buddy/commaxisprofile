@@ -18,7 +18,6 @@
 #include "profiles/i_axisprofile_sharing.h"
 #include "profiles/profile_defs.h"
 #include "profiles/i_axisprofile_state_switch.h"
-#include "signal_func/signal_func_handler.h"
 
 // ---------------------------------------------------------------------------
 // Forward references
@@ -78,7 +77,27 @@ namespace comm::axisprofile
     /// @brief This method get whether the device support probe latched times
     /// @return     Returns whether the device support this.
     virtual bool isLatchParamSupport() const = 0;
-    
+
+    /// @brief Is the function defined in signal status word.
+    /// @param[in,out]  func       The function to be checked, and the function details will be filled.
+    /// @param[out]     errorInfo  Dynamic error information when function is not supported, used for diagnosis of the caller.
+    /// @return  TRUE indicates that the function is supported, FALSE indicates not support.
+    virtual bool isFuncInSignalStatusWord(SignalStatusWordFunction& func, FunctionSupportErrorInfo& errorInfo) = 0;
+
+    /// @brief Read the configuration of signal status word.
+    /// @param[out]    params        The configured parameters of signal status word, same size with assignBits.
+    /// @param[out]    assignBits    The assign bit list of the signal status word, same size with params.
+    /// @return      Return value indicating success or error.
+    virtual AxisProfileResult readSignalStatusWordCfg(std::vector<std::uint32_t>& params, std::vector<std::uint16_t>& assignBits) = 0;
+
+    /// @brief Read the configuration of whether need to read booting parameters.
+    /// @return      Return value indicating whether need to read booting parameters.
+    virtual bool isNeedReadBootParams() const = 0;
+
+    /// @brief Read the device's checksum value if the device support the function.
+    /// @return      Return value indicating device's checksum value, return 0 if device not support the function.
+    virtual std::uint32_t getCheckSumValue() const = 0;
+
     /// @brief Read the device's checksum idn list. return empty
     /// @param[out]    params        The checksum idn list, assign empty if device not support checksum function.
     /// @return      Return value indicating success or error.
@@ -92,9 +111,5 @@ namespace comm::axisprofile
     /// @param[in]  homed             The new homed state of the axis, true for homed, false for not homed.
     /// @return      Return value indicating success or error.
     virtual AxisProfileResult setAxisHomed(bool homed) = 0;
-
-    /// @brief This method gets the signal function handler for the drive.
-    /// @return return the pointer to the signal function handler for the drive.
-    virtual SignalFuncHandler* getSignalFuncHandler() = 0;
   };
 }

@@ -8,8 +8,8 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2018 - 2025 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
-/// All rights reserved in the event of the grant of a patent, utility model or design.
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
+/// All rights reserved in the event of the grant of a patent, utility model or design.  
 
 // ---------------------------------------------------------------------------
 // Include Files
@@ -52,16 +52,15 @@ namespace comm::axisprofile
   // ---------------------------------------------------------------------------
   // Declaration of macros
   // ---------------------------------------------------------------------------
-
+    
   // ---------------------------------------------------------------------------
   // Declaration of data types
   // ---------------------------------------------------------------------------
-
+    
   // ---------------------------------------------------------------------------
   // Forward references
   // ---------------------------------------------------------------------------
   class IFieldbusAdapter;
-  class IDeviceBootParamSnapshot;
 
   // ---------------------------------------------------------------------------
   // Declaration of classes and structures
@@ -107,10 +106,6 @@ namespace comm::axisprofile
     /// @brief This method gets the interface for peoperty.
     /// @return  Pointer to the property interface.
     virtual IAxisProfilePropertyInternal* getPropertyInterface() = 0;
-
-    /// @brief This method gets the interface for boot parameter snapshot access.
-    /// @return Pointer to the boot parameter snapshot interface.
-    virtual IDeviceBootParamSnapshot* getDeviceBootParmSnapshotInterface() = 0;
 
     /// @brief This method initializes the configuration of the axis profile when profile is created
     /// @return  Return value indicating success or error.
@@ -167,12 +162,12 @@ namespace comm::axisprofile
     /// @return Pointer to the probe interface.
     virtual IAxisProfileProbeInternal* getProbeInterface() = 0;
 
-    /// @brief This method writes the drive number to the profile.
+    /// @brief This method writes the drive number to the profile. 
     /// @param[in]    driveNumber  drive number.
     /// @return       Return value indicating success or error.
     virtual AxisProfileResult setDriveNumber(const std::uint8_t driveNumber) = 0;
 
-    /// @brief This method return the drive number to the profile.
+    /// @brief This method return the drive number to the profile. 
     /// @return       Return the drive number.
     virtual std::uint8_t getDriveNumber() const = 0;
 

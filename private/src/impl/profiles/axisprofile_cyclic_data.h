@@ -77,6 +77,7 @@ namespace comm::axisprofile
     AxisProfileResult activeNewRefOperation(bool /*active*/) override;
 
 
+
   protected:
 
     /// @brief This method checks if the actual value is assigned in mapping.
