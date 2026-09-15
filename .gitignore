@@ -34,3 +34,4 @@ build/
 cdf.used.xml
 cdf.original.xml
 CMakePresets.json
+/.github/copilot-instructions.md

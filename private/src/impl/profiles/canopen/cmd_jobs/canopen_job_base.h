@@ -101,7 +101,7 @@ namespace comm::axisprofile::canopen
   protected: // data
 
     IAxisProfileDeviceParam* m_deviceParamIf {};      ///< device parameter interface
-    IAxisProfileStatusControl* m_statusControlIf {};  ///< status control interface
+    IAxisProfileStatusControlInternal* m_statusControlIf {};  ///< status control interface
     CanopenParamAccess* m_paramAccessIf {};           ///< CANOpen parameter access
 
     std::uint16_t m_u16Value {};                      ///< U16 value to be written

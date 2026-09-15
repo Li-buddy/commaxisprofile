@@ -71,6 +71,11 @@ const IAxisProfileStatusControlC* AxisProfileStatusControl::getCInterface() cons
   return &m_cInterface;
 }
 
+void AxisProfileStatusControl::confirmOperationModeFromDevice(AxisProfileOperationMode /*operationMode*/)
+{
+  // The concrete fieldbus implementation owns the operation-mode cache.
+}
+
 AxisProfileResult AxisProfileStatusControl::booting()
 {
   loadBootingTasks();

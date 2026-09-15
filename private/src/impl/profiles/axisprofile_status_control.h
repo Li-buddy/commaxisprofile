@@ -57,6 +57,7 @@ namespace comm::axisprofile
 
     const IAxisProfileStatusControlC* getCInterface() const final;
     AxisProfileResult booting() final;    
+    void confirmOperationModeFromDevice(AxisProfileOperationMode operationMode) override;
 
   protected: // methods
       

@@ -138,7 +138,10 @@ extern "C" {
     /// @return Status of the function call, STS_OK or an error code on failure
     ::comm::axisprofile::AxisProfileResult(*setOperationMode)(void* handle, const ::comm::axisprofile::AxisProfileOperationMode opMode);
 
+    /// @brief Cycle-invocable command for setting the operation mode.
     ///
+    /// The operation is non-blocking and may be called once per cycle until it
+    /// returns STS_OK or an error result.
     ::comm::axisprofile::AxisProfileResult(*setOperationModeCyclic)(void* handle, const ::comm::axisprofile::AxisProfileOperationMode opMode);
 
     void* reserved[99];  ///< reservation

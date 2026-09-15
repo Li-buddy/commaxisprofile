@@ -149,6 +149,14 @@ AxisProfileOperationMode CanopenStatusControlDrive::getOperationMode() const
   return result;
 }
 
+void CanopenStatusControlDrive::confirmOperationModeFromDevice(AxisProfileOperationMode operationMode)
+{
+  if (operationMode != AxisProfileOperationMode::UNDEFINED)
+  {
+    m_setAndCheckOpModeState.checkedOpMode = operationMode;
+  }
+}
+
 AxisProfileResult CanopenStatusControlDrive::readOperationMode(AxisProfileOperationMode& operationMode)
 {
   const AxisProfileResult result = checkOperationMode();
@@ -169,7 +177,6 @@ AxisProfileResult CanopenStatusControlDrive::checkOperationMode()
   else
   {
     // this part may affect job objects
-    // m_setAndCheckOpModeState.checkedOpMode = AxisProfileOperationMode::OPMODE_PENDING;
     // no cyclic data, need to asynchronous request the operation mode from drive.
     std::uint16_t objIndex = getObjIndex(MODES_OF_OPERATION_DISPLAY.index, m_profileBasicInfo.m_driveNumber);
     std::uint8_t objSubIdx = 0x0;

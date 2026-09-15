@@ -15,7 +15,6 @@
 #include "bundle/axisprofile_cmd_c.h"
 #include "profiles/job_mgr/i_job_mgr.h"
 #include "profiles/axisprofile_job_base.h"
-#include <iostream>
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -283,8 +282,6 @@ AxisProfileResult AxisProfileCmd::setOperationMode(AxisProfileOperationMode opMo
 
 AxisProfileResult AxisProfileCmd::setOperationModeCyclic(AxisProfileOperationMode opMode)
 {
-  std::cout << "AxisProfileCmd::setOperationModeCyclic" << std::endl;
-
   CmdType cmdType = CmdType::SET_OPERATION_MODE;
   CmdStatusInDevice cmdStatusInDev {};
   auto cmdState = getCmdState(cmdType);
@@ -292,23 +289,20 @@ AxisProfileResult AxisProfileCmd::setOperationModeCyclic(AxisProfileOperationMod
   {
     // profile command is idle and can be triggered
     ArgSetOperationMode arg({opMode});
-    std::cout << "start cmd set op mode" << std::endl;
     auto res = startCmd(cmdType, &arg);
     if (aprStatusFailed(res))
     {
-      std::cout << "failed to start cmd set op mode" << std::endl;
       return AxisProfileResult::ERR_COMMAND_EXECUTION;
     }
   }
-  else if (cmdState == CmdState::STATE_ACTIVE)
+  else if (cmdState == CmdState::STATE_ACTIVATING ||
+           cmdState == CmdState::STATE_ACTIVE ||
+           cmdState == CmdState::STATE_ABORTING)
   {
-    std::cout << "cmd state : "<<(std::int16_t)cmdState << std::endl;
     // wait until reset has completed in device
     cmdStatusInDev = getCmdStatusInDevice(cmdType);
-    std::cout << "cmd status : " << (std::int16_t)cmdStatusInDev << std::endl;
     if (cmdStatusInDev == CmdStatusInDevice::DEVICE_COMPLETED)
     {
-      std::cout << "complete cmd set op mode" << std::endl;
       // trigger abort reset, axisprofile handle following precess itself
       // can't be failed
       abortCmd(cmdType);

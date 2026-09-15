@@ -93,3 +93,15 @@ extern "C" AxisProfileResult AXISPROFILE_setNewReferenceWithoutMovementMockCmd(v
   const AxisProfileCmdMockHandle* mock = static_cast<AxisProfileCmdMockHandle*>(handle);
   return (mock) ? mock->m_retValue : AxisProfileResult::ERR_INVALID_ARGUMENT;
 }
+
+extern "C" AxisProfileResult AXISPROFILE_setOperationModeMockCmd(void* handle, AxisProfileOperationMode /*opMode*/)
+{
+  const AxisProfileCmdMockHandle* mock = static_cast<AxisProfileCmdMockHandle*>(handle);
+  return (mock) ? mock->m_retValue : AxisProfileResult::ERR_INVALID_ARGUMENT;
+}
+
+extern "C" AxisProfileResult AXISPROFILE_setOperationModeCyclicMockCmd(void* handle, AxisProfileOperationMode /*opMode*/)
+{
+  const AxisProfileCmdMockHandle* mock = static_cast<AxisProfileCmdMockHandle*>(handle);
+  return (mock) ? mock->m_retValue : AxisProfileResult::ERR_INVALID_ARGUMENT;
+}

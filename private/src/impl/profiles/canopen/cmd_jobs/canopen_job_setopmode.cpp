@@ -8,7 +8,6 @@
 #include "canopen_job_setopmode.h"
 #include "profiles/i_axisprofile_device_param_internal.h"
 #include "profiles/value_mapping/i_mapping_handler.h"
-#include <iostream>
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -46,7 +45,6 @@ AxisProfileResult CanopenJobSetOpMode::onSetArgument(IContainer* arg)
 
 AxisProfileResult CanopenJobSetOpMode::onJobEnterActivating()
 {
-  std::cout << "CanopenJobSetOpMode::onJobEnterActivating" << std::endl;
   if (!m_telegramAT || !m_telegramMDT || !m_shareHandle ||
       !m_shareHandle->getMappingHandlerIF() || !m_shareHandle->getParamAccessIF())
   {
@@ -84,10 +82,16 @@ AxisProfileResult CanopenJobSetOpMode::onJobEnterActivating()
 
 AxisProfileResult CanopenJobSetOpMode::onJobActivating()
 {
-  std::cout << "CanopenJobSetOpMode::onJobActivating" << std::endl;
   const auto result = runJobsInternal();
   if (result == AxisProfileResult::STS_OK)
   {
+    // The final PDO/SDO feedback is the value verified by this command.
+    // Commit it before publishing command completion so StatusControl does
+    // not retain a stale cache when no operation-mode PDO is mapped.
+    if (m_statusControlIf)
+    {
+      m_statusControlIf->confirmOperationModeFromDevice(convertFromCanopenOpMode(m_feedbackCiaMode));
+    }
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_COMPLETED);
   }
   else if (aprStatusFailed(result))

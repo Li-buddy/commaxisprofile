@@ -6,7 +6,6 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "canopen_job_getopmode.h"
-#include <iostream>
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -26,8 +25,7 @@ const IContainer* CanopenJobGetOpMode::getModeData()
 
 AxisProfileResult CanopenJobGetOpMode::onJobEnterActivating()
 {
-  std::cout << "CanopenJobGetOpMode::onJobEnterActivating()" << std::endl;
-  m_opModeData.getRef() = AxisProfileOperationMode::OPMODE_PENDING;
+  m_opModeData.getRef() = AxisProfileOperationMode::UNDEFINED;
   m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
 
   //
@@ -43,15 +41,11 @@ AxisProfileResult CanopenJobGetOpMode::onJobActivating()
 {
   if (m_isCyclicData)
   {
-    std::cout << "CanopenJobGetOpMode::onJobActivating()-> handle as cyclic" << std::endl;
     auto mode = m_statusControlIf->getOperationMode();
     m_opModeData.getRef() = mode;
-    std::cout << "mode : "<< axisProfileOpModeToString(mode) << std::endl;
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_COMPLETED);
     return AxisProfileResult::STS_OK;
   }
-
-  std::cout << "CanopenJobGetOpMode::onJobActivating()" << std::endl;
 
   AxisProfileResult result = m_paramAccessIf->readAndCheckParamAsync(
     getObjIndex(MODES_OF_OPERATION_DISPLAY.index, m_profileInfo.m_driveNumber),
@@ -59,10 +53,9 @@ AxisProfileResult CanopenJobGetOpMode::onJobActivating()
     &m_rawMode,
     sizeof(m_rawMode),
     m_smStatus);
-  std::cout << "reading result : " << (int)result << std::endl;
   if (result == AxisProfileResult::STS_PENDING)
   {
-    m_opModeData.getRef() = AxisProfileOperationMode::OPMODE_PENDING;
+    m_opModeData.getRef() = AxisProfileOperationMode::UNDEFINED;
     return result;
   }
 
@@ -80,7 +73,6 @@ AxisProfileResult CanopenJobGetOpMode::onJobActivating()
 
 AxisProfileResult CanopenJobGetOpMode::onJobEnterAborting()
 {
-  std::cout << "CanopenJobGetOpMode::onJobEnterAborting()" << std::endl;
   m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_NOT_SET);
   return AxisProfileResult::STS_OK;
 }
