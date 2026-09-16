@@ -6,6 +6,7 @@
 #include "mockup/mock_axisprofile_category.h"
 #include "profiles/data_sharing/sharing_handler.h"
 #include "test_profile_cmd.h"
+#include "comm/axisprofile/interfaces/i_axisprofile_cmd_c.h"
 
 using namespace test;
 using namespace comm::axisprofile;
@@ -181,6 +182,10 @@ HRESULT TestProfileCmd::testOfCmdInvokers()
   aprRes = m_testCmd->setNewReferenceWithoutMovement(0.0, AxisProfileEncoder::ENCODER_1, RefMode::SET_NONE, cmdType);
   LOG_TEST_RESULT(aprRes, L"\nGet an unexpected result!", mockJobMgr.m_retValue);
 
+  log(L"\n  Test of setOperationMode...");
+  aprRes = m_testCmd->setOperationMode(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"\nGet an unexpected result!", AxisProfileResult::STS_OK);
+
   return S_OK;
 }
 
@@ -237,6 +242,55 @@ HRESULT TestProfileCmd::testWrapperCmds()
   mockJobMgr.m_jobObj.m_objState = static_cast<CmdState>(-45);
   aprRes = m_testCmd->clearDeviceError2();
   LOG_TEST_RESULT(aprRes, L"\nGet an unexpected result!", AxisProfileResult::ERR_INVALID_STATE);
+
+  log(L"\nTest operation-mode cyclic wrapper: start, wait, confirm, and error paths...");
+  mockCategory.m_profileCategory = AxisProfileCategory::CATEGORY_DRIVE;
+  mockJobMgr.m_jobObj.m_objState = CmdState::STATE_IDLE;
+  mockJobMgr.m_retValue = AxisProfileResult::STS_OK;
+  aprRes = m_testCmd->switchOperationModeWithCheck(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"operation-mode wrapper should start and return pending", AxisProfileResult::STS_PENDING);
+
+  mockJobMgr.m_jobObj.m_objState = CmdState::STATE_ACTIVE;
+  deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
+  aprRes = m_testCmd->switchOperationModeWithCheck(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"operation-mode wrapper should wait for device confirmation", AxisProfileResult::STS_PENDING);
+
+  deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_COMPLETED);
+  aprRes = m_testCmd->switchOperationModeWithCheck(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"operation-mode wrapper should complete after confirmation", AxisProfileResult::STS_OK);
+
+  deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_ERROR);
+  aprRes = m_testCmd->switchOperationModeWithCheck(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"operation-mode wrapper should reject device errors", AxisProfileResult::ERR_INVALID_STATE);
+
+  deviceStatus.getRef().store(static_cast<CmdStatusInDevice>(99));
+  aprRes = m_testCmd->switchOperationModeWithCheck(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"operation-mode wrapper should reject unknown device status", AxisProfileResult::ERR_INVALID_STATE);
+
+  mockJobMgr.m_jobObj.m_jobData = nullptr;
+  aprRes = m_testCmd->switchOperationModeWithCheck(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"operation-mode wrapper should reject missing device-status data", AxisProfileResult::ERR_INVALID_STATE);
+  mockJobMgr.m_jobObj.m_jobData = &deviceStatus;
+
+  deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
+  mockJobMgr.m_jobObj.m_objState = CmdState::STATE_ERROR;
+  aprRes = m_testCmd->switchOperationModeWithCheck(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"operation-mode wrapper should reject an error command state", AxisProfileResult::ERR_INVALID_STATE);
+
+  mockJobMgr.m_jobObj.m_objState = static_cast<CmdState>(-45);
+  aprRes = m_testCmd->switchOperationModeWithCheck(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"operation-mode wrapper should reject an unknown command state", AxisProfileResult::ERR_INVALID_STATE);
+
+  mockJobMgr.m_jobObj.m_objState = CmdState::STATE_IDLE;
+  mockJobMgr.m_retValue = AxisProfileResult::ERR_COMMAND_EXECUTION;
+  aprRes = m_testCmd->switchOperationModeWithCheck(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"operation-mode wrapper should report a failed start", AxisProfileResult::ERR_COMMAND_EXECUTION);
+
+  log(L"\nTest the operation-mode wrapper through its C interface...");
+  mockJobMgr.m_retValue = AxisProfileResult::STS_OK;
+  const auto* cmdC = m_testCmd->getCInterface();
+  aprRes = cmdC->switchOperationModeWithCheck(cmdC->handle, AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(aprRes, L"C interface should call the operation-mode cyclic wrapper", AxisProfileResult::STS_PENDING);
 
   log(L"\n  test for encoder category...");
   mockCategory.m_profileCategory = AxisProfileCategory::CATEGORY_ENCODER;

@@ -219,6 +219,11 @@ HRESULT TestCanopenStatusControl::testSetOperationMode()
     hresult |= runTestSetOperationMode(&elem, testControlword, mockClient);
   }
 
+  testControlword.confirmOperationModeFromDevice(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(testControlword.getOperationMode(), L"confirmed non-PDO mode should be cached", AxisProfileOperationMode::VELOCITY);
+  testControlword.confirmOperationModeFromDevice(AxisProfileOperationMode::UNDEFINED);
+  LOG_TEST_RESULT(testControlword.getOperationMode(), L"undefined feedback must not erase the confirmed mode", AxisProfileOperationMode::VELOCITY);
+
   return hresult;
 }
 
