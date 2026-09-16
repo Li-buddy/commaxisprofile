@@ -127,5 +127,5 @@ namespace comm::axisprofile
   extern "C" AxisProfileResult AXISPROFILE_setOperationModeMockCmd(void* handle, AxisProfileOperationMode opMode);
 
   /// @brief Mockup of cycle-invocable command for setting the operation mode.
-  extern "C" AxisProfileResult AXISPROFILE_setOperationModeCyclicMockCmd(void* handle, AxisProfileOperationMode opMode);
+  extern "C" AxisProfileResult AXISPROFILE_switchOperationModeWithCheckMockCmd(void* handle, AxisProfileOperationMode opMode);
 }

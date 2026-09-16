@@ -43,7 +43,7 @@ namespace comm::axisprofile::canopen
     AxisProfileResult onSetArgument(IContainer* arg) final;
     AxisProfileResult onJobEnterActivating() final;
     AxisProfileResult onJobActivating() final;
-    AxisProfileResult onJobEnterAborting() final;
+    AxisProfileResult onJobAborting() final;
 
   private: // data
 

@@ -51,8 +51,7 @@ AxisProfileCmd::AxisProfileCmd(ProfileBasicInfo& profileInfo)
   m_cItf.referencingAxis = AXISPROFILE_referencingAxisCmd;
   m_cItf.fixedStop = AXISPROFILE_fixedStopCmd;
   m_cItf.setNewReferenceWithoutMovement = AXISPROFILE_setNewReferenceWithoutMovement;
-  m_cItf.setOperationMode = AXISPROFILE_setOperationModeCmd;
-  m_cItf.setOperationModeCyclic = AXISPROFILE_setOperationModeCyclicCmd;
+  m_cItf.switchOperationModeWithCheck = AXISPROFILE_switchOperationModeWithCheckCmd;
 }
 
 void AxisProfileCmd::setSharingHandler(IAxisProfileSharingHandler* handler)
@@ -276,17 +275,21 @@ AxisProfileResult AxisProfileCmd::setNewReferenceWithoutMovement(double newPos, 
 AxisProfileResult AxisProfileCmd::setOperationMode(AxisProfileOperationMode opMode)
 {
   ArgSetOperationMode arg({opMode});
-  CmdType cmdType = CmdType::SET_OPERATION_MODE;
+  CmdType cmdType = CmdType::SET_OPERATION_MODE_WITH_CHECK;
   return startCmd(cmdType, &arg);
 }
 
-AxisProfileResult AxisProfileCmd::setOperationModeCyclic(AxisProfileOperationMode opMode)
+#include <iostream>
+AxisProfileResult AxisProfileCmd::switchOperationModeWithCheck(AxisProfileOperationMode opMode)
 {
-  CmdType cmdType = CmdType::SET_OPERATION_MODE;
+  std::cout << "AxisProfileCmd::switchOperationModeWithCheck" << std::endl;
+  CmdType cmdType = CmdType::SET_OPERATION_MODE_WITH_CHECK;
   CmdStatusInDevice cmdStatusInDev {};
   auto cmdState = getCmdState(cmdType);
+  std::cout << "evaluate the switchOperationModeWithCheck cmd state :" << std::int16_t(cmdState) << std::endl;
   if (cmdState == CmdState::STATE_IDLE)
   {
+    std::cout << "trigger the switchOperationModeWithCheck" << std::endl;
     // profile command is idle and can be triggered
     ArgSetOperationMode arg({opMode});
     auto res = startCmd(cmdType, &arg);
@@ -295,17 +298,18 @@ AxisProfileResult AxisProfileCmd::setOperationModeCyclic(AxisProfileOperationMod
       return AxisProfileResult::ERR_COMMAND_EXECUTION;
     }
   }
-  else if (cmdState == CmdState::STATE_ACTIVATING ||
-           cmdState == CmdState::STATE_ACTIVE ||
-           cmdState == CmdState::STATE_ABORTING)
+  else if (cmdState == CmdState::STATE_ACTIVE)
   {
+    std::cout << "judge if command finished"<< std::endl;
     // wait until the requested operation mode has been confirmed by the device
     cmdStatusInDev = getCmdStatusInDevice(cmdType);
+    std::cout << "the device status "<< (std::int16_t)cmdStatusInDev << std::endl;
     if (cmdStatusInDev == CmdStatusInDevice::DEVICE_COMPLETED)
     {
       // trigger abort; the axisprofile job manager completes the cleanup
       // can't be failed
       abortCmd(cmdType);
+      std::cout << "the switchOperationModeWithCheck cmd ok" << std::endl;
       return AxisProfileResult::STS_OK;
     }    
   }

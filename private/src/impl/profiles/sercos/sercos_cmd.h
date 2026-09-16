@@ -57,14 +57,14 @@ namespace comm::axisprofile::sercos
       m_jobLookupTable[ENUM_TO_U16(CmdType::REFERENCE_POS)] = SercosJobHoming::jobName();
       m_jobLookupTable[ENUM_TO_U16(CmdType::FIXED_STOP)] = SercosJobFixedStop::jobName();
       m_jobLookupTable[ENUM_TO_U16(CmdType::SET_NEW_REF_WITHOUT_MOVE)] = SercosJobHoming::jobName();
-      m_jobLookupTable[ENUM_TO_U16(CmdType::SET_OPERATION_MODE)] = SercosJobSetOpMode::jobName();
+      m_jobLookupTable[ENUM_TO_U16(CmdType::SET_OPERATION_MODE_WITH_CHECK)] = SercosJobSetOpMode::jobName();
 
       m_resetCmds.reserve(5);
       m_resetCmds.emplace_back(CmdType::SET_ABS_POS);
       m_resetCmds.emplace_back(CmdType::REFERENCE_POS);
       m_resetCmds.emplace_back(CmdType::FIXED_STOP);
       m_resetCmds.emplace_back(CmdType::SET_NEW_REF_WITHOUT_MOVE);
-      m_resetCmds.emplace_back(CmdType::SET_OPERATION_MODE);
+      m_resetCmds.emplace_back(CmdType::SET_OPERATION_MODE_WITH_CHECK);
     };
 
     /// @brief Destructor

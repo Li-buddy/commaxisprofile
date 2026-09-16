@@ -8,6 +8,8 @@
 #include "canopen_job_setopmode.h"
 #include "profiles/i_axisprofile_device_param_internal.h"
 #include "profiles/value_mapping/i_mapping_handler.h"
+#include<iostream>
+
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -26,6 +28,7 @@ CanopenJobSetOpMode::CanopenJobSetOpMode(ProfileBasicInfo& profileInfo,
 
 AxisProfileResult CanopenJobSetOpMode::onSetArgument(IContainer* arg)
 {
+  std::cout << "CanopenJobSetOpMode::onSetArgument" << std::endl;
   auto setOpModeArg = ::comm::axisprofile::ArgSetOperationMode::safeCast(arg);
   if (!setOpModeArg)
   {
@@ -45,6 +48,8 @@ AxisProfileResult CanopenJobSetOpMode::onSetArgument(IContainer* arg)
 
 AxisProfileResult CanopenJobSetOpMode::onJobEnterActivating()
 {
+  std::cout << "CanopenJobSetOpMode::onJobEnterActivating" << std::endl;
+
   if (!m_telegramAT || !m_telegramMDT || !m_shareHandle ||
       !m_shareHandle->getMappingHandlerIF() || !m_shareHandle->getParamAccessIF())
   {
@@ -55,6 +60,15 @@ AxisProfileResult CanopenJobSetOpMode::onJobEnterActivating()
   m_readOpModeReq.switchToCmdStartStep();
   m_writeOpModeReq.resetCommandState();
   m_writeOpModeReq.switchToCmdStartStep();
+
+  // avoid unnecessary operation mode set
+  if (m_statusControlIf->getOperationMode() == m_requestedOpMode)
+  {
+    APR_TRACE_MESSAGE("%s; operation mode is already in %s, won't trigger new switch",
+                      m_profileInfo.m_profileTrace.createTraceMsg(),
+                      axisProfileOpModeToString(m_requestedOpMode));
+    return AxisProfileResult::STS_OK;
+  }
 
   const auto& assignedInfo = m_shareHandle->getMappingHandlerIF()->getProfileAssignedInfo();
   m_jobFuns.clear();
@@ -67,7 +81,7 @@ AxisProfileResult CanopenJobSetOpMode::onJobEnterActivating()
   {
     m_jobFuns.emplace_back([this]() { return writeModeBySDO(); });
   }
-  if (assignedInfo.m_input.m_opModeDisplay)
+  if (assignedInfo.m_output.m_opMode)
   {
     m_jobFuns.emplace_back([this]() { return verifyOperationModeByPDO(); });
   }
@@ -76,39 +90,45 @@ AxisProfileResult CanopenJobSetOpMode::onJobEnterActivating()
     m_jobFuns.emplace_back([this]() { return verifyOperationModeBySDO(); });
   }
 
-  m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
+  m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_NOT_SET);
   return CanopenJobBase::onJobEnterActivating();
 }
 
 AxisProfileResult CanopenJobSetOpMode::onJobActivating()
 {
-  const auto result = runJobsInternal();
-  if (result == AxisProfileResult::STS_OK)
+  std::cout << "CanopenJobSetOpMode::onJobActivating complete" << std::endl;
+  AxisProfileResult result = runJobsInternal();
+  // The final PDO/SDO feedback is the value verified by this command.
+  // Commit it before publishing command completion so StatusControl does
+  // not retain a stale cache when no operation-mode PDO is mapped.
+
+  if (m_statusControlIf && (AxisProfileResult::STS_OK == result))
   {
-    // The final PDO/SDO feedback is the value verified by this command.
-    // Commit it before publishing command completion so StatusControl does
-    // not retain a stale cache when no operation-mode PDO is mapped.
-    if (m_statusControlIf)
-    {
-      m_statusControlIf->confirmOperationModeFromDevice(convertFromCanopenOpMode(m_feedbackCiaMode));
-    }
+    std::cout << "CanopenJobSetOpMode::onJobActivating complete" << std::endl;
+    m_statusControlIf->confirmOperationModeFromDevice(m_requestedOpMode);
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_COMPLETED);
+    return AxisProfileResult::STS_OK;
   }
-  else if (aprStatusFailed(result))
+
+  if (aprStatusFailed(result))
   {
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_ERROR);
+    return AxisProfileResult::ERR_JOB_EXECUTION;
   }
+  m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
   return result;
 }
 
-AxisProfileResult CanopenJobSetOpMode::onJobEnterAborting()
+AxisProfileResult CanopenJobSetOpMode::onJobAborting()
 {
-  m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_INTERRUPTED);
+  std::cout << "CanopenJobSetOpMode::onJobAborting" << std::endl;
+
+  m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_NOT_SET);
   m_jobFuns.clear();
   m_jobStep = 0;
   m_readOpModeReq.resetCommandState();
   m_writeOpModeReq.resetCommandState();
-  return CanopenJobBase::onJobEnterAborting();
+  return AxisProfileResult::STS_OK;
 }
 
 bool CanopenJobSetOpMode::checkOpModeAvailable(AvailabilityInfo supported,

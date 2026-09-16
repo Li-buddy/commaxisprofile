@@ -117,4 +117,4 @@ extern "C" ::comm::axisprofile::AxisProfileResult AXISPROFILE_setNewReferenceWit
 /// @return Status of the function call, STS_OK or an error code on failure
 extern "C" ::comm::axisprofile::AxisProfileResult AXISPROFILE_setOperationModeCmd(void* handle, ::comm::axisprofile::AxisProfileOperationMode opMode);
 
-extern "C" ::comm::axisprofile::AxisProfileResult AXISPROFILE_setOperationModeCyclicCmd(void* handle, ::comm::axisprofile::AxisProfileOperationMode opMode);
+extern "C" ::comm::axisprofile::AxisProfileResult AXISPROFILE_switchOperationModeWithCheckCmd(void* handle, ::comm::axisprofile::AxisProfileOperationMode opMode);

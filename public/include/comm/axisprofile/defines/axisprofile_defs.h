@@ -238,10 +238,10 @@ namespace comm::axisprofile
     REFERENCE_POS,              ///< referencing axis (drive homing)
     FIXED_STOP,                 ///< fixed stop
     SET_NEW_REF_WITHOUT_MOVE,   ///< set new reference without movement
-    SET_OPERATION_MODE,         ///< set operation mode
+    SET_OPERATION_MODE_WITH_CHECK,         ///< set operation mode
   };
   constexpr std::uint16_t CMD_MIN = static_cast<std::uint16_t>(CmdType::CLEAR_DEV_ERR); ///< minimum type value
-  constexpr std::uint16_t CMD_MAX = static_cast<std::uint16_t>(CmdType::SET_OPERATION_MODE); ///< maximum type value
+  constexpr std::uint16_t CMD_MAX = static_cast<std::uint16_t>(CmdType::SET_OPERATION_MODE_WITH_CHECK); ///< maximum type value
 
   /// @brief state of an axisprofile command state
   enum class CmdState : std::int16_t

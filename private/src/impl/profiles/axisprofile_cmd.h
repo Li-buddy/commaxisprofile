@@ -76,7 +76,7 @@ namespace comm::axisprofile
     AxisProfileResult fixedStop(double clampingTorque, CmdType& cmdType) final;
     AxisProfileResult setNewReferenceWithoutMovement(double newPos, AxisProfileEncoder encoder, RefMode refMode, CmdType& cmdType) final;
     AxisProfileResult setOperationMode(AxisProfileOperationMode opMode) final;
-    AxisProfileResult setOperationModeCyclic(AxisProfileOperationMode opMode) final;
+    AxisProfileResult switchOperationModeWithCheck(AxisProfileOperationMode opMode) final;
 
   private: // methods
 

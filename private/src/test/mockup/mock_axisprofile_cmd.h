@@ -58,7 +58,7 @@ namespace test
     ::comm::axisprofile::AxisProfileResult fixedStop(double /*clampingTorque*/, ::comm::axisprofile::CmdType& /*cmdType*/) override { return m_returnValue; }
     ::comm::axisprofile::AxisProfileResult setNewReferenceWithoutMovement(double /*newPos*/, ::comm::axisprofile::AxisProfileEncoder /*encoder*/, ::comm::axisprofile::RefMode /*refMode*/, ::comm::axisprofile::CmdType& /*cmdType*/) override { return m_returnValue; }
     ::comm::axisprofile::AxisProfileResult setOperationMode(::comm::axisprofile::AxisProfileOperationMode /*opMode*/) override { return m_returnValue; }
-    ::comm::axisprofile::AxisProfileResult setOperationModeCyclic(::comm::axisprofile::AxisProfileOperationMode /*opMode*/) override { return m_returnValue; }
+    ::comm::axisprofile::AxisProfileResult switchOperationModeWithCheck(::comm::axisprofile::AxisProfileOperationMode /*opMode*/) override { return m_returnValue; }
     void setSharingHandler(comm::axisprofile::IAxisProfileSharingHandler* /*handler*/) override {}
     const IAxisProfileCmdC* getCInterface() const override { return m_cmdCInterface; }
 
