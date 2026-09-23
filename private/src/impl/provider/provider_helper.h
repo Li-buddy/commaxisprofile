@@ -10,7 +10,7 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2018-2025 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
 /// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ namespace comm::axisprofile::provider
     const std::string POSITION           = "/position";            ///< sub node for position values
     const std::string VELOCITY           = "/velocity";            ///< sub node for velocity values
     const std::string TORQUEFORCE        = "/torque-force";        ///< sub node for torque force values
-    const std::string DIAGMSG            = "/diagcode";            ///< sub node for diagnostic message
+    const std::string DIAGMSG            = "/diagcode";            ///< sub node for diagnostic message      
     const std::string SWITCHREF          = "/switch-ref";          ///< sub node for reference switch signal
     const std::string SWITCHPOSLIM       = "/switch-poslim";       ///< sub node for positive limit switch signal
     const std::string SWITCHNEGLIM       = "/switch-neglim";       ///< sub node for negative limit switch signal
@@ -122,7 +122,6 @@ namespace comm::axisprofile::provider
     const std::string SCALINGDENOMINATOR = "/scaling-denominator"; ///< sub node for profile scaling denominator
     const std::string SCALINGRESOLUTION  = "/resolution";          ///< sub node for profile scaling resolution
     const std::string VELOCITYFACTOR     = "/velocity-factor";     ///< sub node for profile scaling resolution
-    const std::string BOOTPARAMS         = "/boot-params";         ///< sub node for persisted boot parameter snapshot
     const std::string BOOTING            = "/boot-state";          ///< sub node for the boot state
     const std::string ADMIN              = "/admin";               ///< sub node for admin configuration items
     const std::string BOOTTIMEOUT        = "/boot-timeout";        ///< sub node for max booting timeout
@@ -130,12 +129,11 @@ namespace comm::axisprofile::provider
     const std::string STATE              = "/state";               ///< sub node for state
     const std::string DEVICEOFFSET       = "/device-pos-offset";   ///< sub node for device offset
     const std::string MAKEPERSISTENT     = "/make-persistent";     ///< sub node for make persistent
-    const std::string ACTIVATED          = "/activated";           ///< sub node for
+    const std::string ACTIVATED          = "/activated";           ///< sub node for 
     const std::string DEVICE_APP_DATA    = "/device-app-data";     ///< sub node for device-app-data
     const std::string USE_CHECKSUM       = "/use-checksum";        ///< sub node for use-checksum
     const std::string CHECKSUM_VALUE     = "/checksum-value";      ///< sub node for checksum-value
     const std::string CHECKSUM_IDN_LIST  = "/checksum-idn-list";   ///< sub node for checksum-idn-list
-    const std::string ETHERCAT_MASTER    = "/ethercat-master";     ///< sub node for ethercat-master-name
 
     // -----------------------------------------
     // ---------   axisprofile/admin   ---------
@@ -166,14 +164,14 @@ namespace comm::axisprofile::provider
 
     const std::string APR_PROFILES                                = AXISPROFILE + PROFILES;                                 ///< axisprofile/profiles
     const std::string APR_PROFILES_WC                             = APR_PROFILES + WILDCARD;                                ///< axisprofile/profiles/[name]
-
+        
     //subnode under cfg node
     const std::string APR_PROFILES_CFG                            = APR_PROFILES_WC + CFG;                                  ///< axisprofile/profiles/[name]/cfg
     const std::string APR_PROFILES_CFG_INBUFFER                   = APR_PROFILES_CFG + INBUFFER;                            ///< axisprofile/profiles/[name]/cfg/in-buffer-uri
-    const std::string APR_PROFILES_CFG_OUTBUFFER                  = APR_PROFILES_CFG + OUTBUFFER;                           ///< axisprofile/profiles/[name]/cfg/out-buffer-uri
+    const std::string APR_PROFILES_CFG_OUTBUFFER                  = APR_PROFILES_CFG + OUTBUFFER;                           ///< axisprofile/profiles/[name]/cfg/out-buffer-uri 
 
     const std::string APR_PROFILES_CFG_SAVE                       = APR_PROFILES_CFG + SAVE;                                ///< axisprofile/profiles/[name]/cfg/save
-    const std::string APR_PROFILES_CFG_LOAD                       = APR_PROFILES_CFG + LOAD;                                ///< axisprofile/profiles/[name]/cfg/load
+    const std::string APR_PROFILES_CFG_LOAD                       = APR_PROFILES_CFG + LOAD;                                ///< axisprofile/profiles/[name]/cfg/load 
 
     const std::string APR_PROFILES_CFG_INMAPPING                  = APR_PROFILES_CFG + INMAPPING;                           ///< axisprofile/profiles/[name]/cfg/input-mapping
     const std::string APR_PROFILES_CFG_INMAPPING_MODE             = APR_PROFILES_CFG_INMAPPING + WILDCARD;                  ///< axisprofile/profiles/[name]/cfg/input-mapping/*
@@ -187,7 +185,6 @@ namespace comm::axisprofile::provider
     const std::string APR_PROFILES_CFG_DRIVENUMBER                = APR_PROFILES_CFG + DRIVENUMBER;                         ///< axisprofile/profiles/[name]/cfg/drive-number
     const std::string APR_PROFILES_CFG_CATEGORY                   = APR_PROFILES_CFG + CATEGORY;                            ///< axisprofile/profiles/[name]/cfg/profile category
     const std::string APR_PROFILES_CFG_USE_CHECKSUM               = APR_PROFILES_CFG + DEVICE_APP_DATA + USE_CHECKSUM;      ///< axisprofile/profiles/[name]/cfg/device-app-data/use-checksum
-    const std::string APR_PROFILES_CFG_ETHERCAT                   = APR_PROFILES_CFG + ETHERCAT_MASTER;                     ///< axisprofile/profiles/[name]/cfg/ethercat-master-name
 
     const std::string APR_PROFILES_CFG_SCALINGINFO                = APR_PROFILES_CFG + SCALINGINFO;                         ///< axisprofile/profiles/[name]/cfg/profile-scaling-strategy-configuration
     const std::string APR_PROFILES_CFG_SCALINGINFO_STRATEGY       = APR_PROFILES_CFG_SCALINGINFO + ScalingStrategy;         ///< axisprofile/profiles/[name]/cfg/profile-scaling-strategy
@@ -196,16 +193,16 @@ namespace comm::axisprofile::provider
     const std::string APR_PROFILES_CFG_SCALINGINFO_DENOMINATOR    = APR_PROFILES_CFG_SCALINGINFO + SCALINGDENOMINATOR;      ///< axisprofile/profiles/[name]/cfg/profile-scaling-denominator
     const std::string APR_PROFILES_CFG_SCALINGINFO_RESOLUTION     = APR_PROFILES_CFG_SCALINGINFO + SCALINGRESOLUTION;       ///< axisprofile/profiles/[name]/cfg/profile-encoder-resolution
     const std::string APR_PROFILES_CFG_SCALINGINFO_VELOCITYFACTOR = APR_PROFILES_CFG_SCALINGINFO + VELOCITYFACTOR;          ///< axisprofile/profiles/[name]/cfg/velocity-factor
+    
 
     // -----------------------------------------------------
     // ----------   axisprofile/profiles/state/  -----------
     // -----------------------------------------------------
-    const std::string APR_PROFILES_STATE                          = APR_PROFILES_WC + STATE;                                 ///< axisprofile/profiles/[name]/state
+    const std::string APR_PROFILES_STATE                          = APR_PROFILES_WC + STATE;                                 ///< axisprofile/profiles/[name]/state  
     const std::string APR_PROFILES_DEVICEOFFSET                   = APR_PROFILES_STATE + DEVICEOFFSET;                       ///< axisprofile/profiles/[name]/state/device-pos-offset
     const std::string APR_PROFILES_ACTIVATED                      = APR_PROFILES_STATE + ACTIVATED;                          ///< axisprofile/profiles/[name]/state/activated
     const std::string APR_PROFILES_CHECKSUM_VALUE                 = APR_PROFILES_STATE + DEVICE_APP_DATA + CHECKSUM_VALUE;   ///< axisprofile/profiles/[name]/state/device-app-data/checksum-value
     const std::string APR_PROFILES_CHECKSUM_IDN_LIST              = APR_PROFILES_STATE + DEVICE_APP_DATA + CHECKSUM_IDN_LIST;///< axisprofile/profiles/[name]/state/device-app-data/checksum-idn-list
-    const std::string APR_PROFILES_CFG_BOOTPARAMS                 = APR_PROFILES_STATE + BOOTPARAMS;                         ///< axisprofile/profiles/[name]/state/boot-params
 
   } NodeTree; ///< the node tree that stores all strings as data layer addresses
 
@@ -292,7 +289,7 @@ namespace comm::axisprofile::provider
     /// @param[in]      maindiag          Main diagnosis
     /// @param[in]      detaileddiag      Detailed diagnosis
     /// @param[in]      dynmicdescription Additional diagnosis
-    /// @result         status of function call
+    /// @result         status of function call 
     static bool sendDlErrorResponse(const comm::datalayer::IClient::ResponseCallback& callback, comm::datalayer::DlResult result, const std::uint32_t maindiag, const std::uint32_t detaileddiag, const char* dynmicdescription, ...);
 
     /// @brief get the last node name from the address string

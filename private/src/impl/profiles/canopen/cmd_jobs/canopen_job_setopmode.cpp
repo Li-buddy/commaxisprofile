@@ -8,6 +8,7 @@
 #include "canopen_job_setopmode.h"
 #include "profiles/i_axisprofile_device_param_internal.h"
 #include "profiles/value_mapping/i_mapping_handler.h"
+#include<iostream>
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -40,7 +41,7 @@ AxisProfileResult CanopenJobSetOpMode::onSetArgument(IContainer* arg)
     return AxisProfileResult::ERR_EXEC_NULL;
   }
 
-  m_requestedOpMode = setOpModeArg->get();
+  m_requestedOpMode = setOpModeArg->get().mode;
   return determineCanopenOpMode(m_requestedOpMode, m_requestedCiaMode);
 }
 
@@ -57,50 +58,70 @@ AxisProfileResult CanopenJobSetOpMode::onJobEnterActivating()
   m_writeOpModeReq.resetCommandState();
   m_writeOpModeReq.switchToCmdStartStep();
 
-  const auto& assignedInfo = m_shareHandle->getMappingHandlerIF()->getProfileAssignedInfo();
-  m_outputModeMapped = assignedInfo.m_output.m_opMode;
+  // avoid unnecessary operation mode set
+  if (m_statusControlIf->getOperationMode() == m_requestedOpMode)
+  {
+    APR_TRACE_MESSAGE("%s; operation mode is already in %s, won't trigger new switch",
+                      m_profileInfo.m_profileTrace.createTraceMsg(),
+                      axisProfileOpModeToString(m_requestedOpMode));
+    return AxisProfileResult::STS_OK;
+  }
 
+  const auto& assignedInfo = m_shareHandle->getMappingHandlerIF()->getProfileAssignedInfo();
   m_jobFuns.clear();
   m_jobStep = 0;
-  if (m_outputModeMapped)
+  if (assignedInfo.m_output.m_opMode)
   {
-    m_jobFuns.emplace_back(
-      [this]() { return writeModeToPdo(); });
+    m_jobFuns.emplace_back([this]() { return writeModeToPDO(); });
   }
   else
   {
-    m_jobFuns.emplace_back(
-      [this]() { return writeModeBySdo(); });
+    m_jobFuns.emplace_back([this]() { return writeModeBySDO(); });
   }
-  m_jobFuns.emplace_back(
-    [this]() { return verifyOperationMode(); });
+  if (assignedInfo.m_input.m_opModeDisplay)
+  {
+    m_jobFuns.emplace_back([this]() { return verifyOperationModeByPDO(); });
+  }
+  else
+  {
+    m_jobFuns.emplace_back([this]() { return verifyOperationModeBySDO(); });
+  }
 
-  m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
+  m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_NOT_SET);
   return CanopenJobBase::onJobEnterActivating();
 }
 
 AxisProfileResult CanopenJobSetOpMode::onJobActivating()
 {
-  const auto result = runJobsInternal();
-  if (result == AxisProfileResult::STS_OK)
+  AxisProfileResult result = runJobsInternal();
+  // The final PDO/SDO feedback is the value verified by this command.
+  // Commit it before publishing command completion so StatusControl does
+  // not retain a stale cache when no operation-mode PDO is mapped.
+
+  if (m_statusControlIf && (AxisProfileResult::STS_OK == result))
   {
+    m_statusControlIf->confirmOperationModeFromDevice(m_requestedOpMode);
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_COMPLETED);
+    return AxisProfileResult::STS_OK;
   }
-  else if (aprStatusFailed(result))
+
+  if (aprStatusFailed(result))
   {
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_ERROR);
+    return AxisProfileResult::ERR_JOB_EXECUTION;
   }
+  m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
   return result;
 }
 
-AxisProfileResult CanopenJobSetOpMode::onJobEnterAborting()
+AxisProfileResult CanopenJobSetOpMode::onJobAborting()
 {
-  m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_INTERRUPTED);
+  m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_NOT_SET);
   m_jobFuns.clear();
   m_jobStep = 0;
   m_readOpModeReq.resetCommandState();
   m_writeOpModeReq.resetCommandState();
-  return CanopenJobBase::onJobEnterAborting();
+  return AxisProfileResult::STS_OK;
 }
 
 bool CanopenJobSetOpMode::checkOpModeAvailable(AvailabilityInfo supported,
@@ -190,7 +211,7 @@ AxisProfileResult CanopenJobSetOpMode::determineCanopenOpMode(AxisProfileOperati
   return AxisProfileResult::STS_OK;
 }
 
-AxisProfileResult CanopenJobSetOpMode::writeModeToPdo()
+AxisProfileResult CanopenJobSetOpMode::writeModeToPDO()
 {
   if (!m_telegramMDT)
   {
@@ -202,7 +223,7 @@ AxisProfileResult CanopenJobSetOpMode::writeModeToPdo()
   return AxisProfileResult::STS_OK;
 }
 
-AxisProfileResult CanopenJobSetOpMode::writeModeBySdo()
+AxisProfileResult CanopenJobSetOpMode::writeModeBySDO()
 {
   return m_paramAccessIf->writeAndCheckParamAsync(
     getObjIndex(MODES_OF_OPERATION.index, m_profileInfo.m_driveNumber),
@@ -212,16 +233,14 @@ AxisProfileResult CanopenJobSetOpMode::writeModeBySdo()
     m_writeOpModeReq.getRequestState());
 }
 
-AxisProfileResult CanopenJobSetOpMode::verifyOperationMode()
+AxisProfileResult CanopenJobSetOpMode::verifyOperationModeByPDO()
 {
-  const auto& assignedInfo = m_shareHandle->getMappingHandlerIF()->getProfileAssignedInfo();
-  if (assignedInfo.m_input.m_opModeDisplay)
-  {
-    m_feedbackCiaMode = m_telegramAT->m_atData.m_opModeDisplay;
-    return (m_feedbackCiaMode == m_requestedCiaMode) ? AxisProfileResult::STS_OK
-                                                      : AxisProfileResult::STS_PENDING;
-  }
+  m_feedbackCiaMode = m_telegramAT->m_atData.m_opModeDisplay;
+  return (m_feedbackCiaMode == m_requestedCiaMode) ? AxisProfileResult::STS_OK : AxisProfileResult::STS_PENDING;
+}
 
+AxisProfileResult CanopenJobSetOpMode::verifyOperationModeBySDO()
+{
   const auto result = m_paramAccessIf->readAndCheckParamAsync(
     getObjIndex(MODES_OF_OPERATION_DISPLAY.index, m_profileInfo.m_driveNumber),
     MODES_OF_OPERATION_DISPLAY.subIndex,

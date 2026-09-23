@@ -43,7 +43,7 @@ namespace comm::axisprofile::canopen
     AxisProfileResult onSetArgument(IContainer* arg) final;
     AxisProfileResult onJobEnterActivating() final;
     AxisProfileResult onJobActivating() final;
-    AxisProfileResult onJobEnterAborting() final;
+    AxisProfileResult onJobAborting() final;
 
   private: // data
 
@@ -51,14 +51,15 @@ namespace comm::axisprofile::canopen
                               OpModeErrorInfo& errorInfo) const;
     bool checkOperationModeSupported(AxisProfileOperationMode opMode, OpModeErrorInfo& errorInfo) const;
     AxisProfileResult determineCanopenOpMode(AxisProfileOperationMode opMode, std::uint8_t& mode) const;
-    AxisProfileResult writeModeToPdo();
-    AxisProfileResult writeModeBySdo();
-    AxisProfileResult verifyOperationMode();
+    AxisProfileResult writeModeToPDO();
+    AxisProfileResult writeModeBySDO();
+    AxisProfileResult verifyOperationModeByPDO();
+    AxisProfileResult verifyOperationModeBySDO();
 
     AxisProfileOperationMode m_requestedOpMode {AxisProfileOperationMode::UNDEFINED};  ///< Requested operation mode
     std::uint8_t m_requestedCiaMode {};                                                ///< Converted CiA-402 mode
     std::uint8_t m_feedbackCiaMode {};                                                 ///< Mode read back from the drive
-    bool m_outputModeMapped {false};                                                    ///< True when operation mode is PDO-mapped
+    bool m_outputModeMapped {false};                                                   ///< True when operation mode is PDO-mapped
     AsyncCommandStatemachine m_readOpModeReq {};                                       ///< Async read state
     AsyncCommandStatemachine m_writeOpModeReq {};                                      ///< Async write state
     const AcknowledgeTelegram* m_telegramAT {};                                        ///< AT telegram

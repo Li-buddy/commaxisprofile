@@ -23,11 +23,6 @@
 namespace comm::axisprofile
 {
   // ---------------------------------------------------------------------------
-  // Forward function references
-  // ---------------------------------------------------------------------------
-  class SignalFuncHandler;
-
-  // ---------------------------------------------------------------------------
   // Declaration of symbolic constants
   // ---------------------------------------------------------------------------
 
@@ -56,10 +51,7 @@ namespace comm::axisprofile
     /// @brief Destructor
     virtual ~AxisprofileJobBase() noexcept override = default;
 
-    JobIDType getID() override
-    {
-      return "AxisprofileJobObjBase";
-    }
+    JobIDType getID() override {return "AxisprofileJobObjBase"; }
     void onReset() override;
     void onJobStateChanged(JobState state, JobState oldState);
     const IContainer* getJobData() override;
@@ -85,11 +77,6 @@ namespace comm::axisprofile
     /// @return Return value indicating success or error.
     virtual AxisProfileResult onUpdateStatusInDevice();
 
-    /// @brief This method is used to get the signal function handler for the job.
-    /// @param[out] handler the pointer to the signal function handler, if available.
-    /// @return return value indicating success or error.
-    AxisProfileResult getSignalFuncHandler(SignalFuncHandler*& handler);
-
   protected: // data
 
     ProfileBasicInfo& m_profileInfo;            ///< profile basic information
@@ -98,8 +85,7 @@ namespace comm::axisprofile
     std::uint32_t m_waitCycleCnt {0};           ///< wait cycle count for @ref initWaitTimeToStanstill
     std::uint16_t m_jobStep {};                 ///< current job step in homing
     std::vector<JobFunc> m_jobFuns {};          ///< function list of activating homing
-    JobDataDeviceStatus m_deviceStatus {};      ///< job data of status in device
+    JobDataDeviceStatus m_deviceStatus{};       ///< job data of status in device
     CmdStatusInDevice m_oldDeviceStatus {};     ///< old command status in device
-    bool m_isSignalFuncCmd {false};             ///< flag to indicate whether the command is a signal function command
   };
 }

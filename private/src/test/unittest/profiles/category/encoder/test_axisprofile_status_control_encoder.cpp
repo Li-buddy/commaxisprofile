@@ -49,31 +49,63 @@ HRESULT TestAxisProfileStatusControlEncoder::doTest()
   RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::STS_OK);
 
   log(L"\n\t Test of checkError...");
-  m_category->getStatusControlInternal()->checkError();
+  if (m_category->getStatusControlInternal()->checkError())
+  {
+    error(L"\nUnexpected checkError value. Expected false.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of checkOperationMode...");
-  AxisProfileOperationMode opMode {};
-  m_category->getStatusControlInternal()->checkOperationMode(opMode);
+  AxisProfileOperationMode opMode { AxisProfileOperationMode::POSITIONING };
+  if (m_category->getStatusControlInternal()->checkOperationMode(opMode))
+  {
+    error(L"\nUnexpected checkOperationMode value. Expected false.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of checkOperationModeSupported...");
   OpModeErrorInfo info {};
-  m_category->getStatusControlInternal()->checkOperationModeSupported(opMode, info);
+  if (m_category->getStatusControlInternal()->checkOperationModeSupported(opMode, info))
+  {
+    error(L"\nUnexpected checkOperationModeSupported value. Expected false.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of checkPowerMode...");
-  AxisProfilePowerMode powerMode {};
-  m_category->getStatusControlInternal()->checkPowerMode(powerMode);
+  AxisProfilePowerMode powerMode { AxisProfilePowerMode::POWER_ON };
+  if (m_category->getStatusControlInternal()->checkPowerMode(powerMode))
+  {
+    error(L"\nUnexpected checkPowerMode value. Expected false.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of checkReadyToOperate...");
-  m_category->getStatusControlInternal()->checkReadyToOperate();
+  if (m_category->getStatusControlInternal()->checkReadyToOperate() != ReadyToOperate::UNDEF_OPERATION)
+  {
+    error(L"\nUnexpected checkReadyToOperate value.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of cyclicStandStillCheck...");
-  m_category->getStatusControlInternal()->cyclicStandStillCheck();
+  if (m_category->getStatusControlInternal()->cyclicStandStillCheck())
+  {
+    error(L"\nUnexpected cyclicStandStillCheck value. Expected false.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of deviceHasWarning...");
-  m_category->getStatusControlInternal()->deviceHasWarning();
+  if (m_category->getStatusControlInternal()->deviceHasWarning())
+  {
+    error(L"\nUnexpected deviceHasWarning value. Expected false.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of getCInterface...");
-  m_category->getStatusControlInternal()->getCInterface();
+  if (!m_category->getStatusControlInternal()->getCInterface())
+  {
+    error(L"\nUnexpected nullptr C interface.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of getDriveHaltMode...");
   bool isHalt {};
@@ -81,16 +113,32 @@ HRESULT TestAxisProfileStatusControlEncoder::doTest()
   RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
 
   log(L"\n\t Test of getOperationMode...");
-  m_category->getStatusControlInternal()->getOperationMode();
+  if (m_category->getStatusControlInternal()->getOperationMode() != AxisProfileOperationMode::UNDEFINED)
+  {
+    error(L"\nUnexpected getOperationMode value.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of getPowerMode...");
-  m_category->getStatusControlInternal()->getPowerMode();
+  if (m_category->getStatusControlInternal()->getPowerMode() != AxisProfilePowerMode::UNDEFINED)
+  {
+    error(L"\nUnexpected getPowerMode value.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of getStatusWord...");
-  m_category->getStatusControlInternal()->getStatusWord();
+  if (m_category->getStatusControlInternal()->getStatusWord() != 0U)
+  {
+    error(L"\nUnexpected getStatusWord value. Expected 0.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of isDeviceFollowsControl...");
-  m_category->getStatusControlInternal()->isDeviceFollowsControl();
+  if (m_category->getStatusControlInternal()->isDeviceFollowsControl())
+  {
+    error(L"\nUnexpected isDeviceFollowsControl value. Expected false.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of setControlWord...");
   uint16_t controlWord {};
@@ -100,6 +148,16 @@ HRESULT TestAxisProfileStatusControlEncoder::doTest()
   log(L"\n\t Test of setDriveHaltMode...");
   result = m_category->getStatusControlInternal()->setDriveHaltMode(isHalt);
   RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
+
+  log(L"\n\t Test of getDriveHaltMode output behavior...");
+  isHalt = true;
+  result = m_category->getStatusControlInternal()->getDriveHaltMode(isHalt);
+  RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
+  if (!isHalt)
+  {
+    error(L"\ngetDriveHaltMode should not modify output argument for unsupported encoder profile.");
+    res = E_FAIL;
+  }
 
   log(L"\n\t Test of setOperationMode...");
   result = m_category->getStatusControlInternal()->setOperationMode(opMode);

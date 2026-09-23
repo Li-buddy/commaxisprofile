@@ -69,13 +69,11 @@ namespace comm::axisprofile
     void setActSyncTime(double absSync0Time, double fieldbusCycleTime) final;
     double getEffectiveTimeOfActOutput() final;
     double getLatchTimeOfActInput() final;
-    void checkForFPUError() final;
     const StateMachineState*& getStatemachine() final;
     AxisProfileResult setStateMachineStatusIF(const StateMachineState* const stateMachineState) final;
     AxisProfileResult booting() override;
     AxisProfileResult setNewRefPosition(std::int32_t /*newRefPos*/) override;
     AxisProfileResult activeNewRefOperation(bool /*active*/) override;
-
 
   protected:
 

@@ -631,9 +631,6 @@ AxisProfileResult AxisProfileMappingHandler::determineOutputAssigned()
       case OutputMappingValueID::IO_REFERENCE_OFFSET:
         m_profileAssignedInfo.m_output.m_referenceOffset = true;
         break;
-      case OutputMappingValueID::SIGNAL_CONTROL_WORD:
-        m_profileAssignedInfo.m_output.m_signalControlWord = true;
-        break;
       case OutputMappingValueID::UNKNOWN:
       default:
         result = AxisProfileResult::ERR_WRONGDATATYPE;

@@ -61,8 +61,6 @@ public:
   /// @return  S_OK, when tests were successful
   HRESULT testClass();
 
-  HRESULT testForFPUError() const;
-
 private: // Data
 
   std::string m_profileName = "testProfile";                                                                        //!< Profile name used in this test
@@ -102,10 +100,6 @@ private: // types
     comm::axisprofile::AxisProfileResult processDataMdt(std::uint8_t* /*dataByteArray*/)  final { return comm::axisprofile::AxisProfileResult::STS_OK; }
     std::vector<std::unique_ptr<IJobObj>> onGetJobList() { std::vector<std::unique_ptr<IJobObj>> jobs; return jobs; }
     comm::axisprofile::ICategoryAdapter* getCategoryPtr(){return m_profileCategory;}
-    void checkForFPUError()
-    {
-      AxisProfile::checkForFPUError();
-    }
 
   public: // Data
         

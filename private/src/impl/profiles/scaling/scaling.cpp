@@ -112,6 +112,13 @@ double Scaling::getHomeOffset() const
 
 AxisProfileResult Scaling::booting()
 {
+  bool needReadParamsFromDrive = m_sharingHandler->getDeviceParamIF()->isNeedReadBootParams();
+  bool isNodeChecksumEnable = m_sharingHandler->getPropertyIF()->isChecksumEnabled();
+  if (!needReadParamsFromDrive && isNodeChecksumEnable)
+  {
+    APR_TRACE_MESSAGE("%s; The checksum mechanism is activated, and scaling parameter reading is skipped.", m_profileBasicInfo.m_profileTrace.createTraceMsg());
+    return AxisProfileResult::STS_OK;
+  }
   loadBootingTasks();
   return calcScalingLSBWeights();
 }

@@ -76,9 +76,6 @@ namespace comm::axisprofile
     /// @brief This method reset the FPU error member.
     virtual void resetFPUFlag() = 0;
 
-    /// @brief This method check for FPU errors.
-    virtual void checkForFPUError() = 0;
-
     ///@brief The method set new reference position to device by cyclic data (if the related cycle data is mapped)
     /// @param[in]    newRefPos       New reference position
     virtual AxisProfileResult setNewRefPosition(std::int32_t newRefPos) = 0;

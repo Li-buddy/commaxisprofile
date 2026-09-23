@@ -165,6 +165,7 @@ namespace comm::axisprofile
       m_profileCmdMock.referencingAxis = AXISPROFILE_referencingAxisMockCmd;
       m_profileCmdMock.fixedStop = AXISPROFILE_fixedStopMockCmd;
       m_profileCmdMock.setNewReferenceWithoutMovement = AXISPROFILE_setNewReferenceWithoutMovementMockCmd;
+      m_profileCmdMock.switchOperationModeWithCheck = AXISPROFILE_switchOperationModeWithCheckMockCmd;
 
       // Profile property mockup
       m_profilePropertyMock.handle = &m_propertyMockHandle;
@@ -174,7 +175,6 @@ namespace comm::axisprofile
       m_profilePropertyMock.getDeviceState = AXISPROFILE_getDeviceStatePropertyMock;
       m_profilePropertyMock.getDeviceScalingType = AXISPROFILE_getDeviceScalingTypePropertyMock;
       m_profilePropertyMock.getProfileCategory = AXISPROFILE_getProfileCategoryPropertyMock;
-      m_profilePropertyMock.getCfgedFieldbusMasterName = AXISPROFILE_getCfgedFieldbusMasterNameMock;
     }
 
     /// @brief Set the return value of class methods.

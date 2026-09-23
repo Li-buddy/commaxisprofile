@@ -264,24 +264,6 @@ double AxisProfileCyclicData::getLatchTimeOfActInput()
   return m_actInputLatchTime;
 };
 
-void AxisProfileCyclicData::checkForFPUError()
-{
-  // LCOV_EXCL_START The following code has been tested by other code.
-  AxisProfileResult result = AxisProfileResult::STS_OK;
-  if (!fpu::g_FPUError)
-  {
-    result = fpu::checkForFPUError(AxisProfileResult::STS_OK, AxisProfileResult::ERR_FPU_DIV_BY_ZERO);
-    if (aprStatusFailed(result))
-    {
-      Dia::sendDiagnosis(MAIN_DIAG_SCALING_ERR, DETAILED_DIAG_FPU_SCALING_VALUE_ERROR,
-                         m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                         "please check scaling configurations");
-      fpu::g_FPUError = true;
-    }
-  }
-  // LCOV_EXCL_STOP to exclude specific lines of the code
-}
-
 const StateMachineState*& AxisProfileCyclicData::getStatemachine()
 {
   return m_stateMachineState;

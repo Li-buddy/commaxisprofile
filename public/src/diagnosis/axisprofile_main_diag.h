@@ -68,6 +68,7 @@ namespace comm::axisprofile
   constexpr std::uint32_t MAIN_DIAG_SCALING_ERR       = 0x090F0007;
   constexpr std::uint32_t MAIN_DIAG_FIELDBUS_ERR      = 0x090F0008;
   constexpr std::uint32_t MAIN_DIAG_COMMAND_ERR       = 0x090F0009;
+  constexpr std::uint32_t MAIN_DIAG_SYSTEM_ERR        = 0x090F000A; ///< system get error, e.g. FPU error or memory leak
   constexpr std::uint32_t MAIN_DIAG_BOOTING_ERR       = 0x090F0010;
 
   // Trace main diagnosis , no entry in axisprofile_main_diag.cpp needed

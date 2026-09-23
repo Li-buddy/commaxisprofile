@@ -2,7 +2,6 @@
 #include "helper/result_helper.h"
 #include "mockup/mock_axisprofile_mapping_handler.h"
 #include "mockup/mock_axisprofile_property.h"
-#include "mockup/mock_axisprofile_cyclic_data.h"
 
 using namespace test;
 using namespace comm::axisprofile;
@@ -125,11 +124,11 @@ HRESULT TestAxisProfileDeviceParamEncoder::doTest()
   result = m_category->getDeviceParamInternal()->getPositionDataFormat(format);
   RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
 
-  log(L"\n\t Test of readDriveSignalStatusWordCfg...");  
-  test::MockAxisProfileCyclicData cyclicData {};
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CYCLICDATA, &cyclicData);
-  auto signalFuncMgr = m_category->getDeviceParamInternal()->getSignalFuncHandler();
-  RETURN_TEST_RESULT_PTR(signalFuncMgr, L"\nUnexpected return value", nullptr);
+  log(L"\n\t Test of readSignalStatusWordCfg...");
+  std::vector<std::uint32_t> params;
+  std::vector<std::uint16_t> assignBits;
+  result = m_category->getDeviceParamInternal()->readSignalStatusWordCfg(params, assignBits);
+  RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
 
   log(L"\n\t Test of getOpModeAvailInfo...");
   m_category->getDeviceParamInternal()->getOpModeAvailInfo();

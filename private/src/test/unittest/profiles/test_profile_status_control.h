@@ -99,6 +99,7 @@ private: // Types
 
     comm::axisprofile::AxisProfileResult analyzeStatusWord() final { return comm::axisprofile::AxisProfileResult::STS_OK; }
     void loadBootingTasks() override {}
+    void confirmOperationModeFromDevice(comm::axisprofile::AxisProfileOperationMode /*operationMode*/) override {}
 
   public: // Data
 

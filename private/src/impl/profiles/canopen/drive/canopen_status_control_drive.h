@@ -82,6 +82,7 @@ namespace comm::axisprofile::canopen
     bool cyclicStandStillCheck() const final;
     bool checkOperationModeSupported(const AxisProfileOperationMode opMode, OpModeErrorInfo& errorInfo) final;
     AxisProfileOperationMode getOperationMode() const final;
+    void confirmOperationModeFromDevice(AxisProfileOperationMode operationMode) final;
     AxisProfileResult analyzeStatusWord() final;
     bool isDeviceFollowsControl() const final;
     bool deviceHasWarning() const final {return m_canStatusWord.m_warning;}

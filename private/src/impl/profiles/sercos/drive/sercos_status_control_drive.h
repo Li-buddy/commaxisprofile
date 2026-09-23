@@ -68,11 +68,6 @@ namespace comm::axisprofile::sercos
     /// @brief Destructor
     virtual ~SercosStatusControlDrive() noexcept override = default;
 
-    /// @brief This methods toggles the control unit synchronization bit of the controlword.
-    ///
-    /// @return      Return value indicating success or error.
-    AxisProfileResult toggleIpoSyncBit();
-
     // -------------------------------------- Statusword ----------------------------------------
 
     std::uint16_t getStatusWord() const final;
@@ -80,6 +75,7 @@ namespace comm::axisprofile::sercos
     bool cyclicStandStillCheck() const final;
     bool checkOperationModeSupported(const AxisProfileOperationMode opMode, OpModeErrorInfo& errorInfo) final;
     AxisProfileOperationMode getOperationMode() const final;
+    void confirmOperationModeFromDevice(AxisProfileOperationMode operationMode) final;
     AxisProfileResult analyzeStatusWord() final;
     bool isDeviceFollowsControl() const final;
     bool deviceHasWarning() const final {return m_sercosStatusWord.m_warningInC2D;}

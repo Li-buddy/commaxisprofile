@@ -65,5 +65,11 @@ namespace comm::axisprofile
     /// @brief This method extracts all information from the actual raw status word (current cycle).
     /// @return   Return value indicating success or error.
     virtual AxisProfileResult analyzeStatusWord() = 0;
+
+    /// @brief Commits an operation mode which has been verified against the device.
+    /// @param[in] operationMode Operation mode confirmed by the command job.
+    ///
+    /// This synchronization hook is internal and is not exposed through the C interface.
+    virtual void confirmOperationModeFromDevice(AxisProfileOperationMode operationMode) = 0;
   };
 }

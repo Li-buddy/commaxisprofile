@@ -107,17 +107,6 @@ private:  // test methods
   /// @return S_OK, if test was successful
   HRESULT testCheckNeedReadBootParams();
 
-  /// @brief Test the checkAxisHomed function
-  /// @return S_OK, if test was successful
-  HRESULT testCheckAxisHomed();
-
-  /// @brief Test the loadBootingTasks function
-  /// @return S_OK, if test was successful
-  HRESULT testLoadBootingTasks();
-
-  /// @brief Test the getDeviceParamJobObj function
-  /// @return S_OK, if test was successful
-  HRESULT testGetDeviceParamJobObj();
 private: // data
 
   const std::string m_profileName = "testProfile";   ///< Name of the test axis profile

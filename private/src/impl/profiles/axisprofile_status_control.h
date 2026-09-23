@@ -56,7 +56,7 @@ namespace comm::axisprofile
     virtual ~AxisProfileStatusControl() noexcept override = default;
 
     const IAxisProfileStatusControlC* getCInterface() const final;
-    AxisProfileResult booting() final;    
+    AxisProfileResult booting() final;
 
   protected: // methods
       

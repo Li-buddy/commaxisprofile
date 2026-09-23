@@ -76,6 +76,7 @@ namespace comm::axisprofile
 
   protected: // methods
 
+    AxisProfileResult readSignalStatusWordCfg(std::vector<std::uint32_t>& params, std::vector<std::uint16_t>& assignBits) final;
     OpModeAvailInfo* getOpModeAvailInfo() final;
     bool checkFunctionSupported(const FunctionSupport function, FunctionSupportErrorInfo& errorInfo) final;
     void loadBootingTasks() final;
@@ -88,8 +89,9 @@ namespace comm::axisprofile
     AxisProfileResult checkAndSetModulo(double modValue, std::string& dynErrTxt) final;
     
     AxisProfileResult checkStandstill(bool& standStill) final;
+    bool checkNeedReadBootParams() final;
+    AxisProfileResult getDeviceInformation() final;
     AxisProfileResult checkAxisHomed(bool& homed) final;
-    SignalFuncHandler* getSignalFuncHandler() final;
 
   private: // methods
 

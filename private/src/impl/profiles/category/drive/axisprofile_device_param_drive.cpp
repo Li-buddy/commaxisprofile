@@ -6,8 +6,8 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2021 - 2025 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
-/// All rights reserved in the event of the grant of a patent, utility model or design.
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
+/// All rights reserved in the event of the grant of a patent, utility model or design.  
 
 // ---------------------------------------------------------------------------
 // Include Files
@@ -17,7 +17,6 @@
 #include "common/string_helper.h"
 #include "diagnosis/dia.h"
 #include "helper/device_id_helper.h"
-#include "profiles/i_device_boot_param_snapshot.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -43,28 +42,6 @@ using namespace comm::axisprofile;
 AxisProfileDeviceParamDrive::AxisProfileDeviceParamDrive(ProfileBasicInfo& profileBasicInfo, const AcknowledgeTelegram* at, MasterDataTelegram* mdt)
   :AxisProfileDeviceParam(profileBasicInfo), m_telegramAT(at), m_telegramMDT(mdt)
 {
-}
-
-AxisProfileResult AxisProfileDeviceParamDrive::booting()
-{
-  getDeviceInformation(); // calculate software version before using checksum parameter
-
-  bool isNodeChecksumEnable = m_sharingHandler->getPropertyIF()->isChecksumEnabled();
-  m_needReadBootParams = isNodeChecksumEnable ? checkNeedReadBootParams() : true;
-  APR_TRACE_MESSAGE("%s, m_needReadBootParams: %d, node checksumEnable:%d", m_profileBasicInfo.m_profileTrace.createTraceMsg(), m_needReadBootParams, isNodeChecksumEnable);
-
-  return AxisProfileDeviceParam::booting();
-}
-
-bool AxisProfileDeviceParamDrive::isNeedReadBootParams() const
-{
-  return m_needReadBootParams;
-}
-
-AxisProfileDeviceParamDrive::~AxisProfileDeviceParamDrive() noexcept
-{
-  delete m_signalFuncHandler;
-  m_signalFuncHandler = nullptr;
 }
 
 bool AxisProfileDeviceParamDrive::checkBrakeDelaySupport() const
@@ -149,38 +126,18 @@ bool AxisProfileDeviceParamDrive::isLatchParamSupport() const
   return m_prbLatTimesSupport;
 }
 
-AxisProfileResult AxisProfileDeviceParamDrive::prepareSignalFuncHandler()
-{
-  if (!m_signalFuncHandler||!m_sharingHandler)
-  {
-    return AxisProfileResult::ERR_EXEC_NULL;
-  }
-  m_signalFuncHandler->init(m_sharingHandler);
-  return AxisProfileResult::STS_OK;
-}
-
-SignalFuncHandler* AxisProfileDeviceParamDrive::getSignalFuncHandler()
-{
-  return m_signalFuncHandler;
-}
-
 bool AxisProfileDeviceParamDrive::isHomedInCyclicData()
 {
-  SignalFunction func;
+  SignalStatusWordFunction func;
   func.function = FunctionSupport::HOMING_STATUS_CYCLIC;
   FunctionSupportErrorInfo errorInfo;
-  if (m_signalFuncHandler->isFuncInSignalStatusWord(func, errorInfo))
+  if (isFuncInSignalStatusWord(func, errorInfo))
   {
-    // S-0-0403.0 / 0x2508:01 Status of position feedback value of reference encoder (encoder 1 or 2)
+    // S-0-0403.0 / 0x2508:01 Status of position feedback value of reference encoder (encoder 1 or 2) 
     // 0: Relative 1: Homed
-    bool homed = (m_telegramAT->m_signalStatusword & MASK1(16, 1, func.statusBitOffset)) != 0;
+    bool homed = (m_telegramAT->m_signalStatusword & MASK1(16, 1, func.bitOffset)) != 0;
     m_homed.store(homed);
     return true;
-  }
-
-  if (!m_sharingHandler || !m_sharingHandler->getPropertyIF() || !m_sharingHandler->getMappingHandlerIF())
-  {
-    return false;
   }
 
   auto* propertyIf = m_sharingHandler->getPropertyIF();
@@ -201,7 +158,7 @@ bool AxisProfileDeviceParamDrive::isHomedInCyclicData()
 
 bool AxisProfileDeviceParamDrive::checkNeedReadBootParams()
 {
-  //1. check whether the drive support the checksum
+  //1. check whether the drive support the checksum 
   if (!isDriveSupportChecksum())
   {
     APR_TRACE_WARNING("%s, the drive not has checksum ability", m_profileBasicInfo.m_profileTrace.createTraceMsg());
@@ -217,20 +174,11 @@ bool AxisProfileDeviceParamDrive::checkNeedReadBootParams()
     return true;
   }
 
-  IDeviceBootParamSnapshot* snapshotIF = m_sharingHandler->getBootParamSnapshotIF();
-  if (!snapshotIF)
-  {
-    APR_TRACE_WARNING("%s, boot parameter snapshot interface not found", m_profileBasicInfo.m_profileTrace.createTraceMsg());
-    return true;
-  }
-
-  BootParamSnapshot snapshot = snapshotIF->getBootParamSnapshot();
-  bool checksumValueDiff = (snapshot.checksumValue != checkSum);
+  bool checksumValueDiff = (m_checksum != checkSum);
   if (checksumValueDiff)
   {
-    APR_TRACE_MESSAGE("%s, update the checksum value:0x%X -> 0x%X", m_profileBasicInfo.m_profileTrace.createTraceMsg(), snapshot.checksumValue, checkSum);
-    snapshot.checksumValue = checkSum;
-    snapshotIF->setBootParamSnapshot(snapshot);
+    APR_TRACE_MESSAGE("%s, update the checksum value:0x%X -> 0x%X", m_profileBasicInfo.m_profileTrace.createTraceMsg(), m_checksum, checkSum);
+    m_checksum = checkSum;
     //return true;
   }
   APR_TRACE_MESSAGE("%s, whether the checksum value changed: %d", m_profileBasicInfo.m_profileTrace.createTraceMsg(), checksumValueDiff);
@@ -252,5 +200,5 @@ bool AxisProfileDeviceParamDrive::isDriveSupportChecksum()
   APR_TRACE_MESSAGE("%s, isDriveSupportChecksum version: %d.%d, series: %d. profileType: %d", m_profileBasicInfo.m_profileTrace.createTraceMsg(),
                     majorV, minorV, series, profileType);
 
-  return DeviceIdHelper::deviceSupportCheckSum(majorV, minorV, series, profileType);
+  return DeviceIdHelper::deviceSupportCheckSum(majorV, minorV, series, profileType); 
 }

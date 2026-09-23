@@ -52,6 +52,9 @@ extern "C" {
     bool(*checkOperationMode)(void* handle, const ::comm::axisprofile::AxisProfileOperationMode opMode);
 
     /// @brief This function get acutal operation mode
+    /// Note: for SoE, this interface return current operation mode
+    ///       for CoE with cyclic operation data configuration, this interface return current operation mode
+    ///       for CoE without cyclic operation data configuration, return the cached operation mode.
     ///
     /// @param[in]  handle          Handle of the interface
     /// @return The actual operation mode

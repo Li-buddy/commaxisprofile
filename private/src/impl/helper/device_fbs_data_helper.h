@@ -17,6 +17,7 @@
 // ---------------------------------------------------------------------------
 #include "comm/axisprofile/defines/axisprofile_statusdefs.h"
 #include "comm/ethercat/master/fbs/parameter_generated.h"
+#include "comm/ethercat/master/fbs/slave_config_info_generated.h"
 #include "fieldbuses/fieldbus_defs.h"
 
 // ---------------------------------------------------------------------------

@@ -135,9 +135,9 @@ const char* ProfileTrace::createTraceMsg(const char* messageText)
 
   // Check message length
   size_t messageTextSize = messageText ? std::strlen(messageText) : 0;
-  if ((m_profileBasicInfoSize + messageTextSize) > common::log::trace::MAXIMUM_STRING_LENGTH_64_CHARS)
+  if ((m_profileBasicInfoSize + messageTextSize) > common::log::trace::MAXIMUM_STRING_LENGTH_128_CHARS)
   {
-    APR_TRACE_WARNING("Following trace message is too long (will be truncated after %d characters)", common::log::trace::MAXIMUM_STRING_LENGTH_64_CHARS)
+    APR_TRACE_WARNING("Following trace message is too long (will be truncated after %d characters)", common::log::trace::MAXIMUM_STRING_LENGTH_128_CHARS)
   }
 
   return m_traceMsgBuffer;

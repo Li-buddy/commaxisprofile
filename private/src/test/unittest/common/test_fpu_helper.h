@@ -73,4 +73,8 @@ private: // methods
   /// @brief run all test cases for check valid
   /// @return  S_OK, when tests were successful
   HRESULT runAllTestCasesValid();
+
+  /// @brief run test case of Maros
+  /// @return  S_OK, when tests were successful
+  HRESULT runTestOfMacros();
 };

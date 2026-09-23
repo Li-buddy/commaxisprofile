@@ -57,6 +57,7 @@ namespace comm::axisprofile
     AxisProfilePowerMode getPowerMode() const final;
     bool checkPowerMode(const AxisProfilePowerMode powerMode) const final;
     AxisProfileResult analyzeStatusWord() final;
+    void confirmOperationModeFromDevice(AxisProfileOperationMode operationMode) final;
 
     // -------------------------------------- Statusword ----------------------------------------
     std::uint16_t getStatusWord() const final;

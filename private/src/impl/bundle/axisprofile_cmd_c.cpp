@@ -104,3 +104,10 @@ extern "C" AxisProfileResult AXISPROFILE_setNewReferenceWithoutMovement(void* ha
   RETURN_HANDLE_INVALIDE(cmdIf, AxisProfileResult::ERR_EXEC_NULL, "setNewReferenceWithoutMovement");
   return cmdIf->setNewReferenceWithoutMovement(newPos, encoder, refMode, cmdType);
 }
+
+extern "C" AxisProfileResult AXISPROFILE_switchOperationModeWithCheckCmd(void* handle, AxisProfileOperationMode opMode)
+{
+  IAxisProfileCmd* cmdIf = static_cast<IAxisProfileCmd*>(handle);
+  RETURN_HANDLE_INVALIDE(cmdIf, AxisProfileResult::ERR_EXEC_NULL, "setOperationModeCyclicCmd");
+  return cmdIf->switchOperationModeWithCheck(opMode);
+}

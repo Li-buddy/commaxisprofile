@@ -122,4 +122,7 @@ namespace comm::axisprofile
   /// @param[out] cmdType       type of the command that used to maintain (@ref getCmdState, @ref resetCmd, @ref abortCmd)
   /// @return Status of the function call, STS_OK or an error code on failure
   extern "C" AxisProfileResult AXISPROFILE_setNewReferenceWithoutMovementMockCmd(void* handle, double newPos, AxisProfileEncoder encoder, RefMode refMode, CmdType& cmdType);
+
+  /// @brief Mockup of cycle-invocable command for setting the operation mode.
+  extern "C" AxisProfileResult AXISPROFILE_switchOperationModeWithCheckMockCmd(void* handle, AxisProfileOperationMode opMode);
 }

@@ -69,7 +69,7 @@ private: // Methods
 
   /// @brief Test the interface isFuncInSignalStatusWord.
   /// @return S_OK, when tests were successful
-  //HRESULT testFuncInSignalStatusWord() const;
+  HRESULT testFuncInSignalStatusWord() const;
 
   /// @brief Test of miscellaneous methods.
   /// @return S_OK, when tests were successful
@@ -99,6 +99,8 @@ private: //Types
 
     OpModeAvailInfo* getOpModeAvailInfo() final { return nullptr; };
     bool checkFunctionSupported(const FunctionSupport /*function*/, FunctionSupportErrorInfo& /*errorInfo*/) final { return m_funcSupported; };
+    AxisProfileResult readSignalStatusWordCfg(std::vector<std::uint32_t>& /*params*/, std::vector<std::uint16_t>& /*assignBits*/) final { return AxisProfileResult::STS_OK; };
+
     /// @brief This method can be used by tests to change the behavior of the supported functionality.
     /// @param[out] data  configuration data.
     virtual void setFuncSupportResult(bool supported) { m_funcSupported = supported; }

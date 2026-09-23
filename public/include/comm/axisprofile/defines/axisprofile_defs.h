@@ -24,7 +24,7 @@ namespace comm::axisprofile
   // Declaration of symbolic constants
   // ---------------------------------------------------------------------------
   constexpr std::uint32_t MAX_PROFILE_NAME_LENGTH = 64u;   ///< maximum length of profile names (including the trailing '\0')
-  constexpr std::uint32_t MAX_NUMBER_OF_PROFILES = 256u;   ///< maximum number of profiles, 256 real axis
+  constexpr std::uint32_t MAX_NUMBER_OF_PROFILES = 128u;   ///< maximum number of profiles, 128 real axis
 
   // ---------------------------------------------------------------------------
   // Declaration of macros
@@ -238,9 +238,10 @@ namespace comm::axisprofile
     REFERENCE_POS,              ///< referencing axis (drive homing)
     FIXED_STOP,                 ///< fixed stop
     SET_NEW_REF_WITHOUT_MOVE,   ///< set new reference without movement
+    SET_OPERATION_MODE_WITH_CHECK,         ///< set operation mode
   };
   constexpr std::uint16_t CMD_MIN = static_cast<std::uint16_t>(CmdType::CLEAR_DEV_ERR); ///< minimum type value
-  constexpr std::uint16_t CMD_MAX = static_cast<std::uint16_t>(CmdType::SET_NEW_REF_WITHOUT_MOVE); ///< maximum type value
+  constexpr std::uint16_t CMD_MAX = static_cast<std::uint16_t>(CmdType::SET_OPERATION_MODE_WITH_CHECK); ///< maximum type value
 
   /// @brief state of an axisprofile command state
   enum class CmdState : std::int16_t
@@ -332,11 +333,7 @@ namespace comm::axisprofile
     HOMING_STATUS_CYCLIC,  ///< The homing status information is from cyclic data.
     HOMING_CMD_CYCLIC,     ///< The homing command trigger is from cyclic data.
     ERROR_CODE_CYCLIC,     ///< The diagnostic message from cyclic data
-    CLEAR_DEVERR_CMD_CYCLIC,  ///< The clear device error command trigger is from cyclic data.
-    SET_ABS_POS_CMD_CYCLIC,   ///< The set absolute position command trigger is from cyclic data.    
-    PROBE1_ENABLE_CYCLIC,     ///< The probe 1 command trigger is from cyclic data.
-    PROBE2_ENABLE_CYCLIC,     ///< The probe 2 command trigger is from cyclic data.
-    MAX_VALUE                 ///< Maximum value of this enumeration, put new value above.
+    MAX_VALUE              ///< Maximum value of this enumeration, put new value above.
   };
 
   /// @brief This is the error types of a function not supported.

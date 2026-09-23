@@ -67,6 +67,11 @@ AxisProfileResult AxisProfileStatusControlEncoder::analyzeStatusWord()
   return AxisProfileResult::STS_OK;
 }
 
+void AxisProfileStatusControlEncoder::confirmOperationModeFromDevice(AxisProfileOperationMode /*operationMode*/)
+{
+  rejectCmdDiagnosis("confirmOperationModeFromDevice");
+}
+
 std::uint16_t AxisProfileStatusControlEncoder::getStatusWord() const
 {
   rejectCmdDiagnosis("getStatusWord");

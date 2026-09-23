@@ -102,13 +102,6 @@ namespace comm::axisprofile::canopen
     /// @return Return value indicating success or error.
     AxisProfileResult readTorqueScalingParamsSync();
 
-    /// @brief Read one CoE boot parameter from snapshot cache first, then drive.
-    /// @param[in] objEntry CoE object entry.
-    /// @param[out] bufPtr Raw target buffer.
-    /// @param[in] bufLen Raw target buffer size.
-    /// @return Return value indicating success or error.
-    AxisProfileResult getParameterValueFromSnapshot(const ObjectDirEntry& objEntry, std::uint8_t* bufPtr, std::size_t bufLen);
-
   private: // data
 
     friend class  ::TestCanopenScalingStrategyDrive;

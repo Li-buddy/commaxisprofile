@@ -125,16 +125,6 @@ AxisProfileResult SercosJobHoming::onJobEnterActivating()
   }
 
   m_asyncSm.setCommandTimeout(0); // disable timeout check since homing movement duration is unknown
-
-  // decide command execution way
-  SignalFuncHandler* signalFuncHandler {};
-  getSignalFuncHandler(signalFuncHandler);
-
-  m_signalFuncCmd.initSignalFuncHandler(signalFuncHandler);
-  FunctionSupportErrorInfo errorInfo {};
-  m_isSignalFuncCmd = m_signalFuncCmd.isSignalFuncSupported(errorInfo);
-  APR_TRACE_MESSAGE(m_isSignalFuncCmd ? "homing command : handled as signal function." : "homing command : handled as normal command.");
-
   return SercosJobBase::onJobEnterActivating();
 }
 
@@ -181,7 +171,6 @@ AxisProfileResult SercosJobHoming::setupWriteListToDevice()
   m_devData.ctrlWordS448.m_bits.bit7 = true;
   m_paramList.emplace_back(ReadWriteType::WRITE, S_0_0448_SET_ABSOLUTE_POSITION_CONTROL, &m_devData.ctrlWordS448, sizeof(std::uint16_t));
   m_paramList.emplace_back(ReadWriteType::WRITE, m_devData.idnRefDist, &m_devData.cmdPosRaw, sizeof(std::int32_t));
-  m_paramList.emplace_back(ReadWriteType::WRITE, m_devData.idnRefOffset, &m_devData.offsetPosRaw, sizeof(std::int32_t));
   return AxisProfileResult::STS_OK;
 }
 
@@ -195,7 +184,7 @@ AxisProfileResult SercosJobHoming::validateHomingSupport()
   // very special case when reset new reference without any movement or switch searching
   if (m_devData.ctrlWordS147.m_bits.bit5 == false ||  // homing switch evaluation: disable
       m_devData.ctrlWordS147.m_bits.bit6 == false ||  // reference mark evaluation: disable
-      m_devData.ctrlWordS147.m_bits.bit9 == true ||   // range evaluation: enable
+      m_devData.ctrlWordS147.m_bits.bit9 == true  ||  // range evaluation: enable
       m_devData.ctrlWordS147.m_bits.bit10 == true)    // axis blocking evaluation: enable
   {
     Dia::sendDiagnosis(MAIN_DIAG_COMMAND_ERR, DETAILED_DIAG_DEVICE_HOMING_PARAMETER,
@@ -226,15 +215,7 @@ AxisProfileResult SercosJobHoming::exeParamListAccess()
 
 AxisProfileResult SercosJobHoming::activeHomingByDevice()
 {
-  AxisProfileResult res {AxisProfileResult::STS_PENDING};
-  if (m_isSignalFuncCmd)
-  {
-    res = m_signalFuncCmd.onJobActivating(m_asyncSm);
-  }
-  else
-  {
-    res = m_paramAccess->setSercosProcedureCommandAsync(m_command, m_asyncSm);
-  }
+  auto res = m_paramAccess->setSercosProcedureCommandAsync(m_command, m_asyncSm);
   if (res == AxisProfileResult::STS_OK)
   {
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
@@ -244,15 +225,7 @@ AxisProfileResult SercosJobHoming::activeHomingByDevice()
 
 AxisProfileResult SercosJobHoming::abortHomingByDevice()
 {
-  AxisProfileResult res {AxisProfileResult::STS_PENDING};
-  if (m_isSignalFuncCmd)
-  {
-    res = m_signalFuncCmd.onJobAborting();
-  }
-  else
-  {
-    res = m_paramAccess->clearSercosProcedureCommandAsync(m_command, m_asyncSm);
-  }
+  auto res = m_paramAccess->clearSercosProcedureCommandAsync(m_command, m_asyncSm);
   if (res == AxisProfileResult::STS_OK)
   {
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_NOT_SET);

@@ -19,7 +19,30 @@ impl\profiles\category\encoder\scaling_strategy_encoder.cpp:85
 impl\profiles\sercos\sercos_boot_params.h:80
 
 # TODO: unit test in future
+impl\profiles\sercos\cmd_jobs\sercos_job_homing.cpp:0
+impl\profiles\sercos\cmd_jobs\sercos_job_homing.h:0
+impl\profiles\sercos\cmd_jobs\sercos_job_setabspos.cpp:0
+impl\profiles\sercos\cmd_jobs\sercos_job_setabspos.h:0
+impl\profiles\sercos\cmd_jobs\sercos_job_fixed_stop.cpp:0
+impl\profiles\sercos\cmd_jobs\sercos_job_fixed_stop.h:0
+impl\profiles\sercos\cmd_jobs\sercos_job_device_param.cpp:0
+impl\profiles\sercos\cmd_jobs\sercos_job_device_param.h:0
+impl\profiles\axisprofile_param_helper.h:0
+
+impl\profiles\canopen\cmd_jobs\canopen_job_base.h:0
+impl\profiles\canopen\cmd_jobs\canopen_job_homing.cpp:0
+impl\profiles\canopen\cmd_jobs\canopen_job_homing.h:0
+impl\profiles\canopen\cmd_jobs\canopen_job_reset.cpp:0
+impl\profiles\canopen\cmd_jobs\canopen_job_reset.h:0
+impl\profiles\canopen\cmd_jobs\canopen_job_device_param.cpp:0
+impl\axisprofile_internal_defs.h:80
+impl\profiles\canopen\cmd_jobs\canopen_job_device_param.h:0
+impl\profiles\canopen\cmd_jobs\canopen_job_setabspos.cpp:0
 impl\profiles\axisprofile_job_base.cpp:50
+
+impl\profiles\canopen\drive\canopen_device_param_drive.cpp:80
+impl\profiles\canopen\drive\canopen_device_param_drive.h:30
+impl\profiles\sercos\drive\sercos_device_param_drive.cpp:80
 
 # files from motion core
 impl\provider\nodes\profiles\templates\node_state_simple.h:0

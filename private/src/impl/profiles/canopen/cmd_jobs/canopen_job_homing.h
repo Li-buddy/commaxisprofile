@@ -7,19 +7,14 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2025 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
 /// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
 #include "canopen_job_base.h"
-#include "profiles/signal_func/signal_func_cmd.h"
 
-// ---------------------------------------------------------------------------
-// Forward references
-// ---------------------------------------------------------------------------
-class TestCanopenJobHoming;
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -79,15 +74,6 @@ namespace comm::axisprofile::canopen
     /// @return Return value indicating success or error.
     AxisProfileResult setupWriteListToDevice();
 
-    /// @brief This method setup jobs that activate homing by device.
-    void setupHomingByDeviceJobs();
-
-    /// @brief This method setup jobs that clear reference point in device.
-    void setupClearReferencePointJobs();
-
-    /// @brief This method setup jobs that start homing by device.
-    void setupActiveHomingByDeviceJobs();
-
     /// @brief This method switch and check operation mode
     /// @param[in]  toHome    True if switch to home mode, false if switch to position mode
     /// @return Return value indicating success or error.
@@ -97,7 +83,7 @@ namespace comm::axisprofile::canopen
     /// @return Return value indicating success or error.
     AxisProfileResult startHomingProcedure();
 
-    /// @brief This method check homing
+    /// @brief This method check homing 
     /// @return Return value indicating success or error.
     AxisProfileResult checkHomingProcedure();
 
@@ -113,19 +99,12 @@ namespace comm::axisprofile::canopen
     /// @return Return value indicating success or error.
     AxisProfileResult setHomingState(bool state);
 
-    /// @brief This method is used to set new status in device.
-    /// @param[in]  status  The new status in device
-    /// @return Return value indicating success or error.
-    AxisProfileResult setCmdStatusInDevice(CmdStatusInDevice status);
-
   private: // data
-    friend class::TestCanopenJobHoming;
+
     HomingData m_cmdData {};                ///< command input data from motion
     std::int32_t m_cmdPosRaw {};            ///< reference position in raw that to be set when homed
     std::int32_t m_posOffsetRaw {};         ///< reference offset in raw that to be set
     std::int8_t m_homingAtCurrentPos {37};  ///< method of homing on current position (without movement)
     WordStructure m_ctrlWordS448 {};        ///< value of S-0-0448 (0x2510:2), ctrlX drive only
-
-    SignalFuncCmd m_signalFuncCmd {{FunctionSupport::HOMING_CMD_CYCLIC}};    ///< signal function command for homing
   };
 }

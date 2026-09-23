@@ -171,12 +171,6 @@ AxisProfileResult SercosStatusControlDrive::setControlWord(std::uint16_t control
   return AxisProfileResult::STS_OK;
 }
 
-AxisProfileResult SercosStatusControlDrive::toggleIpoSyncBit()
-{
-  m_telegramMDT->m_controlWord.m_word ^= 1UL << SERCOS_CTRLWORD_SYNC_BIT_OFFSET;
-  return AxisProfileResult::STS_OK;
-}
-
 AxisProfileResult SercosStatusControlDrive::setOperationMode(const comm::axisprofile::AxisProfileOperationMode opMode)
 {
   OperationMode sercosOpMode{};
@@ -204,6 +198,14 @@ AxisProfileResult SercosStatusControlDrive::setOperationMode(const comm::axispro
 AxisProfileOperationMode SercosStatusControlDrive::getOperationMode() const
 {
   return m_checkedOperationMode;
+}
+
+void SercosStatusControlDrive::confirmOperationModeFromDevice(AxisProfileOperationMode operationMode)
+{
+  if (operationMode != AxisProfileOperationMode::UNDEFINED)
+  {
+    m_checkedOperationMode = operationMode;
+  }
 }
 
 AxisProfileResult SercosStatusControlDrive::setPowerMode(const AxisProfilePowerMode powerMode)

@@ -121,15 +121,3 @@ AxisProfileResult AxisprofileJobBase::onUpdateStatusInDevice()
 {
   return AxisProfileResult::STS_OK;
 }
-
-AxisProfileResult AxisprofileJobBase::getSignalFuncHandler(SignalFuncHandler*& handler)
-{
-  if (!m_shareHandle->getDeviceParamIF())
-  {
-    return AxisProfileResult::ERR_EXEC_NULL;
-  }
-
-  auto deviceParam = m_shareHandle->getDeviceParamIF();
-  handler = deviceParam->getSignalFuncHandler();
-  return AxisProfileResult::STS_OK;
-}

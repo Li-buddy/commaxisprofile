@@ -102,5 +102,20 @@ namespace comm::axisprofile
     /// @param[out] cmdType       type of the command that used to maintain (@ref getCmdState, @ref resetCmd, @ref abortCmd)
     /// @return Status of the function call, STS_OK or an error code on failure
     virtual AxisProfileResult setNewReferenceWithoutMovement(double newPos, AxisProfileEncoder encoder, RefMode refMode, CmdType& cmdType) = 0;
+    
+    /// @brief This function sets the given operation mode to the device, and then check if the operation mode is set to the target value.
+    ///        It combines the set operation mode command and the check of the operation mode in one function, which is useful for cyclic calls.
+    /// note:  This function is intended for use in real-time control loops where non-blocking behavior is required.
+    ///        why need cyclic:
+    ///        In CoE protocol, the operation mode is set by writing to the operation mode object in the device.
+    ///        This progress can be done by SDO or PDO, so this interface is provided to support both methods.
+    ///        The SDO progress need more than one cycle to finish, before finish, will return STS_PENDING.
+    ///        if the operation mode data is set by PDO, this function will return STS_OK with much less cycles.
+    ///        
+    /// @param[in] opMode The target operation mode to be set on the device. This should be a valid AxisProfileOperationMode value.
+    /// @return STS_OK will be returned if the operation mode is already set to the desired value, allowing for efficient cyclic calls.
+    ///         STS_OK will be returned if the operation mode already in target mode before command execution.
+    ///         STS_PENDING if the operation mode is not set to the target value yet.
+    virtual AxisProfileResult switchOperationModeWithCheck(AxisProfileOperationMode opMode) = 0;
   };
 }

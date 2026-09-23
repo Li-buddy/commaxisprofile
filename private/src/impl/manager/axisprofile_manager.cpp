@@ -29,11 +29,10 @@
 #include "profiles/value_mapping/i_mapping_handler.h"
 #include "profiles/axisprofile_factory.h"
 #include "diagnosis/dia.h"
-#include "fieldbuses/i_fieldbus_master.h"
+#include "fieldbuses/fieldbus_master.h"
 #include "helper/datalayer_helper.h"
 #include "component/background_thread/i_background_thread.h"
-#include "common/fpu_helper.h"
-#include <future>
+#include "common/axisprofile_fpu_helper.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -98,45 +97,43 @@ AxisProfileManager::~AxisProfileManager()
 // ---------------------------- Internal Interface -------------------------------
 // -------------------------------------------------------------------------------
 
-AxisProfileResult AxisProfileManager::validatePdoCfg()
+AxisProfileResult AxisProfileManager::validateMappingCfg()
 {
   std::vector<IAxisProfile*> activatedProfiles;
   getActivatedProfiles(activatedProfiles);
-  if (activatedProfiles.empty())
+  if (!activatedProfiles.empty())
   {
-    return AxisProfileResult::STS_OK;
+    Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_VALIDATE_MAPPING_CFG, __FILE__, __FUNCTION__, __LINE__, "");
+
+    // for further check for duplication items
+    size_t nCount{};                             // record mapping count for all profile
+    std::set<std::string> setMapping{};          // record mapping string for all profile
+
+    // CHECK NAME consistence in mapping and device name
+    for ( const auto& it : m_mapAxisProfiles )
+    {
+      auto profile = it.second.m_axisProfile;
+      if (!profile || !profile->checkProfileActivated())
+      {
+        continue;
+      }
+
+      IAxisProfileMappingHandler* pMapping = profile->getMappingHandler();
+      // check for all input mapping items
+      AxisProfileResult resCheckMappItem = pMapping->checkInputMappingItems(profile, nCount, setMapping);
+      if ( AxisProfileResult::STS_OK != resCheckMappItem )
+      {
+        return resCheckMappItem;
+      }
+
+      // check for all output mapping items
+      resCheckMappItem = pMapping->checkOutputMappingItems(profile, nCount, setMapping);
+      if ( AxisProfileResult::STS_OK != resCheckMappItem )
+      {
+        return resCheckMappItem;
+      }
+    }
   }
-  
-  Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_VALIDATE_MAPPING_CFG, __FILE__, __FUNCTION__, __LINE__, "");
-
-  // for further check for duplication items
-  size_t nCount{};                             // record mapping count for all profile
-  std::set<std::string> setMapping{};          // record mapping string for all profile
-
-  // CHECK NAME consistence in mapping and device name
-  for ( const auto& it : m_mapAxisProfiles )
-  {
-    auto profile = it.second.m_axisProfile;
-    if (!profile || !profile->checkProfileActivated())
-    {
-      continue;
-    }
-
-    IAxisProfileMappingHandler* pMapping = profile->getMappingHandler();
-    // check for all input mapping items
-    AxisProfileResult resCheckMappItem = pMapping->checkInputMappingItems(profile, nCount, setMapping);
-    if ( AxisProfileResult::STS_OK != resCheckMappItem )
-    {
-      return resCheckMappItem;
-    }
-
-    // check for all output mapping items
-    resCheckMappItem = pMapping->checkOutputMappingItems(profile, nCount, setMapping);
-    if ( AxisProfileResult::STS_OK != resCheckMappItem )
-    {
-      return resCheckMappItem;
-    }
-  }  
   return AxisProfileResult::STS_OK;
 }
 
@@ -212,16 +209,86 @@ AxisProfileResult AxisProfileManager::initManager(const bool& abortInitializatio
   return result;
 }
 
-AxisProfileResult AxisProfileManager::validateFieldbusMasterInfo()
+AxisProfileResult AxisProfileManager::browseFieldbusMasterInstance(const bool& abortInitialization)
 {
-  std::vector<ProfileInfo> activatedProfilesInfo;
-  getActivatedProfilesInfo(activatedProfilesInfo);
-  if (activatedProfilesInfo.empty())
+  std::vector<IAxisProfile*> profiles;
+  getActivatedProfiles(profiles);
+  if (!profiles.empty())
   {
-    return AxisProfileResult::STS_OK;
+    Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_WAIT_FOR_FIELDBUS_INSTANCES, __FILE__, __FUNCTION__, __LINE__, "");
+
+    comm::datalayer::Variant data {};
+    const comm::datalayer::Variant* convData = &data;
+    comm::datalayer::DlResult dlResult;
+    std::uint16_t timeout = 10;      // 10 seconds timeout
+    std::uint16_t pollingMs = 100;   // 100 MS every polling
+    std::uint16_t nTimeout = timeout * 1000 / 100;
+
+    // try to browse master instance, when no usable data(not timeout)
+    while (true)
+    {
+      if (abortInitialization)
+      {
+        Dia::sendDiagnosis(MAIN_DIAG_BOOTING_WRN, DETAILED_DIAG_BOOT_ABORTED,
+                           __FILE__, __FUNCTION__, __LINE__, "By Web or System");
+        return AxisProfileResult::STS_BOOTING_ABORT;
+      }
+
+      // Browse should return DL_INVALID_ADDRESS as long as EthercatMaster boot has not been finished.
+      // Afterwards it could return with success but without any instances (empty list). We can not continue here without a valid instance.
+      dlResult = m_datalayerClient->browseSync(DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES, &data);
+      if ((comm::datalayer::STATUS_FAILED(dlResult)) && (dlResult != comm::datalayer::DlResult::DL_INVALID_ADDRESS))
+      {
+        APR_TRACE_ERROR("Could not browse %s! DlResult: %s", DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES.c_str(), dlResult.toString());
+        return AxisProfileResult::ERR_DATALAYER_BROWSE_NODE;
+      }
+      nTimeout--;
+      if ((dlResult == comm::datalayer::DlResult::DL_OK) || (nTimeout == 0 && data.getCount() == 0))
+      {
+        break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(pollingMs));
+    }
+    if (data.getCount() == 0)
+    {
+      Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BOOT_MASTER_NOT_EXIT, __FILE__, __FUNCTION__, __LINE__,
+                         "Master URL: %s, DL_Result: %s", DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES.c_str(), dlResult.toString());
+      return AxisProfileResult::ERR_FIELDBUS_NO_MASTER;
+    }
+    // Convert data
+    const char** instanceNames = *convData;
+    for (auto const& profile : m_mapAxisProfiles)
+    {
+      if (!profile.second.m_axisProfile->checkProfileActivated())
+      {
+        continue;
+      }
+      for (std::uint8_t i = 0; i < data.getCount(); i++)
+      {
+        std::string instanceName(instanceNames[i]);
+        std::string address = DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES + '/' + instanceName + '/';
+        if (profile.second.m_outputBufferUri.find(address) != std::string::npos)
+        {
+          address.pop_back(); // Remove last character (slash)
+          m_deviceInfoMgr.addFieldbusInstance(instanceName, profile.second.m_axisProfile);
+          profile.second.m_axisProfile->getFieldbusAdapter()->setFieldbusMasterAddress(address);
+          APR_TRACE_MESSAGE("Configure fieldbus instance '%s' for profile '%s'", address.c_str(), profile.first.c_str());
+          break;
+        }
+        else
+        {
+          Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BOOT_FIELDBUS_INCONSISTENCE, __FILE__, __FUNCTION__, __LINE__,
+                             "%s: configured URL: %s, master URL: %s",
+                             profile.first.c_str(),
+                             profile.second.m_outputBufferUri.c_str(),
+                             address.c_str());
+          return AxisProfileResult::ERR_PROFILE_CONFIG;
+        }
+      }
+    }
+    Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_FIELDBUS_INSTANCES_READY, __FILE__, __FUNCTION__, __LINE__, "");
   }
-  // only need the activated profiles, not all profiles
-  return m_deviceInfoMgr.checkEtherCATConsistency(activatedProfilesInfo);
+  return AxisProfileResult::STS_OK;
 }
 
 void AxisProfileManager::setDataLayer(comm::datalayer::IDataLayerFactory* datalayer, IBackgroundThread* bkThread)
@@ -246,7 +313,7 @@ void AxisProfileManager::setDataLayer(comm::datalayer::IDataLayerFactory* datala
 
 AxisProfileResult AxisProfileManager::processDataAt()
 {
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_GEN(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE, "axisprofile.adaption");
   for ( auto& memoryInfo : m_vecCyclicMemoryAccessAT )
   {
     std::uint8_t* data;
@@ -307,14 +374,15 @@ AxisProfileResult AxisProfileManager::processDataAt()
       profile->getCyclicDataInterface()->setActSyncTime(absSync0Time, master.second->getFieldbusCycleTime());
     }
   }
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_GEN(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_DURING_AXISPROFILE, "axisprofile.adaption");
 
   return AxisProfileResult::STS_OK;
 }
 
 AxisProfileResult AxisProfileManager::processDataMdt()
 {
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_GEN(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE, "axisprofile.distribution");
+
   for ( auto& memoryInfo : m_vecCyclicMemoryAccessMDT )
   {
     std::uint8_t* data;
@@ -353,7 +421,7 @@ AxisProfileResult AxisProfileManager::processDataMdt()
 
     m_traceErrorAlreadySentMDT = false;
   }
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_GEN(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_DURING_AXISPROFILE, "axisprofile.distribution");
 
   return AxisProfileResult::STS_OK;
 }
@@ -839,12 +907,12 @@ ProfileInfo* AxisProfileManager::getProfileInfoByName(const char* profileName)
 
 AxisProfileResult AxisProfileManager::processAuxJobs()
 {
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_GEN(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_DURING_AXISPROFILE, "processAuxJobs");
   for ( auto& it : m_mapAxisProfiles )
   {
     it.second.m_axisProfile->runAllAuxJobs();
   }
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_GEN(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_DURING_AXISPROFILE, "processAuxJobs");
 
   return AxisProfileResult::STS_OK;
 }
@@ -878,22 +946,6 @@ void AxisProfileManager::resetRtInputData()
   {
     profile.second.m_axisProfile->resetRtInputData();
   }
-}
-
-void AxisProfileManager::checkForFPUError()
-{
-  // LCOV_EXCL_START The following code has been tested by other code.
-  AxisProfileResult result = AxisProfileResult::STS_OK;
-  if (!fpu::g_FPUError)
-  {
-    result = fpu::checkForFPUError(AxisProfileResult::STS_OK, AxisProfileResult::ERR_FPU_DIV_BY_ZERO);
-    if (aprStatusFailed(result))
-    {
-      APR_TRACE_ERROR("FPU error occurred.");
-      fpu::g_FPUError = true;
-    }
-  }
-  // LCOV_EXCL_STOP to exclude specific lines of the code
 }
 
 void AxisProfileManager::runAllJobs()
@@ -940,77 +992,4 @@ void AxisProfileManager::getActivatedProfiles(std::vector<IAxisProfile*> &profil
       profiles.push_back(profile.second.m_axisProfile);
     }
   }
-}
-
-void AxisProfileManager::getActivatedProfilesInfo(std::vector<ProfileInfo>& profilesInfo)
-{
-  profilesInfo.clear();
-  for (auto& profile : m_mapAxisProfiles)
-  {
-    if (profile.second.m_axisProfile->checkProfileActivated())
-    {
-      profilesInfo.push_back(profile.second);
-    }
-  }
-}
-
-AxisProfileResult AxisProfileManager::collectAllDeviceInfo(const bool& abortInitialization)
-{
-  initDeviceInfoMgr();
-
-  Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_COLLECTING_DEVICE_INFO, __FILE__, __FUNCTION__, __LINE__, "");
-
-  std::vector<IAxisProfile*> vecProfiles {};
-  getActivatedProfiles(vecProfiles);
-  if (vecProfiles.empty())
-  {
-    return AxisProfileResult::STS_OK;
-  }
-
-  auto res = m_deviceInfoMgr.collectAllDeviceInfo(abortInitialization);
-  if (aprStatusOkay(res))
-  {
-    Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_COLLECT_DEVICE_INFO_FINISH, __FILE__, __FUNCTION__, __LINE__, "");
-  }
-  return res;
-}
-
-AxisProfileResult AxisProfileManager::checkConsistency()
-{
-  std::vector<IAxisProfile*> vecProfiles {};
-  getActivatedProfiles(vecProfiles);
-  if (vecProfiles.empty())
-  {
-    return AxisProfileResult::STS_OK;
-  }
-
-  Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_VALIDATE_DATA_CONSISTENCY, __FILE__, __FUNCTION__, __LINE__, "");
-
-  AxisProfileResult result = validateFieldbusMasterInfo();
-  if (aprStatusFailed(result))
-  {
-    return result;
-  }
-  result = updateProfileAddress();
-  if (aprStatusFailed(result))
-  {
-    return result;
-  }
-
-  // accelerate the non-dependency task by concurrency
-  auto protocol = std::async(std::launch::async, &AxisProfileManager::validateProtocolInfo, this);
-  auto pdoCfg = std::async(std::launch::async, &AxisProfileManager::validatePdoCfg, this);
-  AxisProfileResult resProtocol = protocol.get();
-  if (aprStatusFailed(resProtocol))
-  {
-    return resProtocol;
-  }
-  AxisProfileResult resPdoCfg = pdoCfg.get();
-  if (aprStatusFailed(resPdoCfg))
-  {
-    return resPdoCfg;
-  }
-
-  Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_VALIDATE_DATA_CONSISTENCY_FINISH, __FILE__, __FUNCTION__, __LINE__, "");
-  return result;
 }

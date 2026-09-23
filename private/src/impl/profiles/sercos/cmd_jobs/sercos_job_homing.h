@@ -14,12 +14,6 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "sercos_job_base.h"
-#include "profiles/signal_func/signal_func_cmd.h"
-
-// ---------------------------------------------------------------------------
-// Forward references
-// ---------------------------------------------------------------------------
-class TestSercosJobHoming; 
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -116,13 +110,10 @@ namespace comm::axisprofile::sercos
     AxisProfileResult abortHomingByDevice();
 
   private: // data
-    friend class::TestSercosJobHoming;
 
     HomingData m_cmdData {};      ///< command input data from motion
     HomingDevData m_devData {};   ///< device related data that used during homing process
 
     std::list<SercosParamStruct> m_paramList {}; ///< parameter list to be access asynchronously
-
-    SignalFuncCmd m_signalFuncCmd {{FunctionSupport::HOMING_CMD_CYCLIC}};    ///< signal function command for homing
   };
 }

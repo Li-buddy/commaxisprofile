@@ -328,7 +328,7 @@ HRESULT TestConfigurationBootManager::testCheckFieldbusAndDeviceStatus()
 
   log(L"\nCreate a fieldbus master for further testing.");
   IAxisProfileInternal* profile = static_cast<IAxisProfileInternal*>(profileMgr->getProfileByName(profileName.c_str()));
-  profileMgr->m_deviceInfoMgr.linkProfileToFieldbusInstance(masterName.c_str(), profile);
+  profileMgr->m_deviceInfoMgr.addFieldbusInstance(masterName.c_str(), profile);
   test::MockFieldbusAdapterSoE* adapter = static_cast<test::MockFieldbusAdapterSoE*>(profile->getFieldbusAdapter());
   adapter->setDatalayer(testClass.m_datalayerClient);
 

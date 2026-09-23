@@ -75,28 +75,10 @@ private:  //test methods
   /// @return S_OK, if test was successful
   HRESULT testCheckNeedReadBootParams();
 
-  /// @brief Test the checkStandstill function
-  /// @return S_OK, if test was successful 
-  HRESULT testCheckStandstill();
-  /// @brief Test the loadBootingTasks function
-  /// @return S_OK, if test was successful
-  HRESULT testLoadBootingTasks();
-
-  /// @brief Test the getDeviceParamJobObj function
-  /// @return S_OK, if test was successful
-  HRESULT testGetDeviceParamJobObj();
-
   /// @brief Test the checkAxisHomed function
   /// @return S_OK, if test was successful
   HRESULT testCheckAxisHomed();
 
-  /// @brief Test the deviceParamCoE function
-  /// @return S_OK, if test was successful
-  HRESULT testConstructDeviceParamCoE();
-
-  /// @brief Test the readEncoderTypes function
-/// @return S_OK, if test was successful
-  HRESULT testReadEncoderTypes();
 private: //data
 
   const std::string m_profileName = "testProfile";   ///< Name of the test axis profile

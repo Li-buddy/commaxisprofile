@@ -52,7 +52,6 @@ namespace comm::axisprofile
     AxisProfileType m_profileType = AxisProfileType::UNDEFINED;                           ///< Type of the profile
     AxisProfileDeviceScalingType m_deviceType = AxisProfileDeviceScalingType::UNDEFINED;  ///< Scaling type of device
     AxisProfileCategory m_profileCateogry = AxisProfileCategory::CATEGORY_DRIVE;          ///< axis profile category
-    std::string m_ethercatName {};                                                        ///< name of configured EtherCAT instance
   };
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // -------------------------------------- C-Interface Method-Mockups ---------------------------------------- //
@@ -88,9 +87,4 @@ namespace comm::axisprofile
   /// @param[in] handle  Handle of the interface.
   /// @return The category of profile.
   extern "C" AxisProfileCategory AXISPROFILE_getProfileCategoryPropertyMock(void* handle);
-
-  /// @brief This method return the configured EtherCAT instance name of current axisprofile.
-  /// @param[in] handle  Handle of the interface.
-  /// @return The name of EtherCAT master instance.
-  extern "C" const char* AXISPROFILE_getCfgedFieldbusMasterNameMock(void* handle);
 }

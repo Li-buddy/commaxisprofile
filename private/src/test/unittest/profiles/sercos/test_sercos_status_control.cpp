@@ -197,6 +197,16 @@ HRESULT TestSercosStatusControl::testControlword()
   {
     hresult |= runTestcaseControlword(&elem);
   }
+
+  ProfileBasicInfo profileInfo {};
+  AcknowledgeTelegram atData {};
+  MasterDataTelegram mdtData {};
+  sercos::SercosStatusControlDrive confirmedModeControl(profileInfo, &atData, &mdtData);
+  confirmedModeControl.confirmOperationModeFromDevice(AxisProfileOperationMode::VELOCITY);
+  LOG_TEST_RESULT(confirmedModeControl.getOperationMode(), L"confirmed Sercos mode should be cached", AxisProfileOperationMode::VELOCITY);
+  confirmedModeControl.confirmOperationModeFromDevice(AxisProfileOperationMode::UNDEFINED);
+  LOG_TEST_RESULT(confirmedModeControl.getOperationMode(), L"undefined feedback must not erase the confirmed Sercos mode", AxisProfileOperationMode::VELOCITY);
+
   return hresult;
 }
 
