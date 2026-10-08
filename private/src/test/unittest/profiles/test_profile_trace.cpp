@@ -138,7 +138,7 @@ HRESULT TestProfileTrace::testDifferentTraceMessages()
 
   log(L"\nTestCase 2: Initialize profile trace data");
   const std::uint32_t deviceAddress = 0;
-  char expectedResult[common::log::trace::MAXIMUM_STRING_LENGTH_128_CHARS];
+  char expectedResult[common::log::trace::MAXIMUM_STRING_LENGTH_64_CHARS];
   std::memset(expectedResult, 0, sizeof(expectedResult));
   snprintf(expectedResult, sizeof(expectedResult), "Name: %s; Type: SoE; Addr: %u", m_testProfileName.c_str(), deviceAddress);
   testClass.setConstantProfileData(m_testProfileName.c_str(), AxisProfileType::SERVODRIVE_OVER_ETHERCAT);

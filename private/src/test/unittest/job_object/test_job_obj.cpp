@@ -1,4 +1,4 @@
-
+#include "profiles/axisprofile_job_base.h"
 #include "helper/result_helper.h"
 #include "mockup/mock_fieldbus_adapter_soe.h"
 #include "mockup/mock_profile_trace.h"
@@ -26,13 +26,22 @@ HRESULT TestJobObj::doTest()
   log(L"\n----------------------------------------------------------------\n");
 
   res |= testNewRequest();
-
+  res |= testJobBase();
   return res;
 }
 
 HRESULT TestJobObj::doEnd()
 {
   deleteThread();
+  return S_OK;
+}
+
+HRESULT TestJobObj::testJobBase()
+{
+  ProfileBasicInfo info {};
+  AxisprofileJobBase jobBase {info};
+  auto res = jobBase.getID();
+  LOG_TEST_RESULT_STRING(res, L"Unexpected return value", std::string {"AxisprofileJobObjBase"});
   return S_OK;
 }
 

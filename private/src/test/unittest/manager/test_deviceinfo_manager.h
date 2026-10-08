@@ -83,18 +83,7 @@ private: // Methods
   /// @return  S_OK, when tests were successful 
   HRESULT TestValidateProtocolInfo();
 
-  /// @brief   this method used to generate configured slave name variant data.
-  /// @param[out]  variantCfgedSlaveInfo  The variant need generate for slave information.
-  /// @param[in]   slaveName              The slave name for variant data.
-  void generateCfgSlaveInfo(comm::datalayer::Variant& variantCfgedSlaveInfo, std::string& slaveName);
-
   /// @brief This method used to generate unique pointer to device manager
   /// @return unique_ptr pointer to the new object
   std::unique_ptr<comm::axisprofile::DeviceInfoManager> getNewDeviceInforMgr();
-
-  /// @brief Test the generation of slave address mapping data with response field.
-  /// @param[in] addressCnt                 the address count to been mock.
-  /// @param[out] mappingResponse           The mocked data.
-  /// @return  S_OK, when tests were successful
-  void generateSlaveAddressMappingResponse(std::uint16_t addressCnt, comm::datalayer::Variant& mappingResponse);
 };

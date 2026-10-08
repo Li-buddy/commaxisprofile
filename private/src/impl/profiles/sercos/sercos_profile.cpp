@@ -6,7 +6,7 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2018 - 2025 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
 /// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
@@ -17,7 +17,6 @@
 #include "comm/axisprofile/defines/axisprofile_defs.h"
 #include "comm/axisprofile/defines/axisprofile_statusdefs.h"
 #include "common/axisprofile_fpu_helper.h"
-#include "drive/sercos_status_control_drive.h"
 #include "helper/datalayer_helper.h"
 #include "profiles/axisprofile.h"
 #include "profiles/axisprofile_diag_msg.h"
@@ -25,6 +24,7 @@
 #include "profiles/profile_defs.h"
 #include "profiles/scaling/scaling_strategy.h"
 #include "profiles/sercos/sercos_defs.h"
+#include "profiles/sercos/sercos_boot_param_snapshot.h"
 #include "sercos_cmd.h"
 #include "sercos_param_access.h"
 #include "sercos_profile.h"
@@ -60,14 +60,18 @@ SercosProfile::SercosProfile(const std::string& profileName, const NetworkTechno
   // Create SercosCmd
   m_cmdIf = new SercosCmd(m_profileBasicInfo);
 
+  // Create boot parameter snapshot interface
+  m_bootParamSnapshotInterface = new SercosBootParamSnapshot(m_profileBasicInfo);
+
   // create profile category object
   m_profileCategory = new DriveCategoryAdapterSoE(m_profileBasicInfo, &m_telegramAT, &m_telegramMDT);
-  
+
   // Create sharing handler and register interfaces
   m_profileCategory->registerSharingITFs(m_sharingHandler);
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY,      m_profileCategory);
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_PARAMACCESS,   m_paramAccess);
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CMD,           m_cmdIf);
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY,          m_profileCategory);
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_PARAMACCESS,       m_paramAccess);
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CMD,               m_cmdIf);
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, m_bootParamSnapshotInterface);
 
   // add init methods
   loadInitMethod();
@@ -263,6 +267,9 @@ AxisProfileResult SercosProfile::processDataMdt(std::uint8_t* dataByteArray)
     case OutputMappingValueID::USER_PDO_OUTPUT_6:
       data = reinterpret_cast<std::uint8_t*>(&(m_telegramMDT.m_userPDOOutputs[5]));
       break;
+    case OutputMappingValueID::SIGNAL_CONTROL_WORD:
+      data = reinterpret_cast<std::uint8_t*>(&(m_telegramMDT.m_signalControlword));
+      break;
     default:
       result = AxisProfileResult::ERR_WRONGDATATYPE;
       break;
@@ -279,7 +286,7 @@ AxisProfileResult SercosProfile::getDeviceState()
 }
 
 AxisProfileScalingStrategyCfg SercosProfile::getProfileScalingStrategyCfg() const
-{  
+{
   ScalingStrategy* scaling = static_cast<ScalingStrategy*>(m_profileCategory->getScalingInternal());
   return AxisProfileScalingStrategyCfg{scaling->getScalingStrategy(), getDeviceScalingType(AxisProfileDeviceValueType::POSITION),
     scaling->getScalingNumerator(), scaling->getScalingDenominator(), scaling->getEncoderResolution(), scaling->getVelocityFactorCfg()};

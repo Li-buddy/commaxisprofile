@@ -107,5 +107,9 @@ namespace comm::axisprofile
     /// @brief This method get the software version string
     /// @return     Return software version string.
     virtual const std::string& getDeviceSoftwareVersion() const = 0;
+
+    /// @brief This method return the EtherCAT instance name of current axisprofile.
+    /// @return The EtherCAT instance name.
+    virtual const char* getEtherCATName() const = 0;
   };
 }

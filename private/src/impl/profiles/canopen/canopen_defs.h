@@ -37,6 +37,7 @@ namespace comm::axisprofile::canopen
   constexpr ObjectDirEntry ENCODER_2_PROPERTY             = {0x24A0, 1};     ///< object of Property of Encoder 2 of ctrlX drive
   constexpr ObjectDirEntry ENCODER_1_PROPERTY             = {0x24A2, 1};     ///< object of Property of Encoder 1 of ctrlX drive
   constexpr ObjectDirEntry CANCEL_REF_POINT               = {0x2500, 1};     ///< object of C1500 command of cancel reference point
+  constexpr ObjectDirEntry HOMING_DRIVE_CONTROLLED_CMD    = {0x2501, 1};     ///< object of command of homing for ctrlX drive
   constexpr ObjectDirEntry HOMING_OFFSET_CTRLX_DRIVE      = {0x2505, 2};     ///< object of reference homing offset of ctrlX drive
   constexpr ObjectDirEntry HOMING_FEEDBACK_VALUE_STATUS   = {0x2508, 1};     ///< object of homing status: Feedback value status
   constexpr ObjectDirEntry ENCODER_2_REF_DISTANCE         = {0x2506, 1};     ///< object of reference distance for homing for Encoder 2 of ctrlX drive
@@ -48,9 +49,12 @@ namespace comm::axisprofile::canopen
   constexpr ObjectDirEntry SCALING_TORQUE_EXPONENT        = {0x2906, 3};     ///< object of torque scaling exponent
   constexpr ObjectDirEntry CHECKSUM_PARAMETERS            = {0x2B60, 4};     ///< object of checksum parameters of loading parameter values 
   constexpr ObjectDirEntry CHECKSUM_VALUE                 = {0x2B60, 0x0E};  ///< object of checksum of loading parameter values
+  constexpr ObjectDirEntry RESET_CLASS_1_DIAGNOSTIC       = {0x2B87, 2};     ///< object of reset class 1 diagnostic command
   constexpr ObjectDirEntry SIGNAL_STATUS_WORD             = {0x2C82, 1};     ///< object of signal status word value
   constexpr ObjectDirEntry SIGNAL_STATUS_WORD_CONFIG_LIST = {0x2C82, 2};     ///< object of signal status word configuration list
   constexpr ObjectDirEntry SIGNAL_STATUS_WORD_ASSIGN_LIST = {0x2C82, 3};     ///< object of signal status word assign list signal
+  constexpr ObjectDirEntry SIGNAL_CONTROL_WORD_CONFIG_LIST = {0x2C80, 2};    ///< object of signal control word configuration list
+  constexpr ObjectDirEntry SIGNAL_CONTROL_WORD_ASSIGN_LIST = {0x2C80, 3};    ///< object of signal control word assign list signal
   constexpr ObjectDirEntry STATUS_WORD_INDRA_DRIVE        = {0x3073, 0};     ///< object of device status word for indra drive
   constexpr ObjectDirEntry QUICK_STOP_OPTION              = {0x605A, 0};     ///< object of quick stop option code
   constexpr ObjectDirEntry MODES_OF_OPERATION             = {0x6060, 0};     ///< object of operation mode
@@ -140,7 +144,8 @@ namespace comm::axisprofile::canopen
     {OutputMappingValueID::TORQUE_VEL_LIMIT_HIGH, {MappingGroup::TORQUE_FORCE, false}}, {OutputMappingValueID::TORQUE_VEL_LIMIT_LOW, {MappingGroup::TORQUE_FORCE, false}},
     {OutputMappingValueID::USER_PDO_OUTPUT_1,     {MappingGroup::USER_PDO,     false}}, {OutputMappingValueID::USER_PDO_OUTPUT_2,    {MappingGroup::USER_PDO,     false}},
     {OutputMappingValueID::USER_PDO_OUTPUT_3,     {MappingGroup::USER_PDO,     false}}, {OutputMappingValueID::USER_PDO_OUTPUT_4,    {MappingGroup::USER_PDO,     false}},
-    {OutputMappingValueID::USER_PDO_OUTPUT_5,     {MappingGroup::USER_PDO,     false}}, {OutputMappingValueID::USER_PDO_OUTPUT_6,    {MappingGroup::USER_PDO,     false}}
+    {OutputMappingValueID::USER_PDO_OUTPUT_5,     {MappingGroup::USER_PDO,     false}}, {OutputMappingValueID::USER_PDO_OUTPUT_6,    {MappingGroup::USER_PDO,     false}},
+    {OutputMappingValueID::SIGNAL_CONTROL_WORD,   {MappingGroup::SIGNAL_WORD,  false}}
   };
 
   // ---------------------------------------------------------------------------

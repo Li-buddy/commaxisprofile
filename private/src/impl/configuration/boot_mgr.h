@@ -79,6 +79,8 @@ namespace comm::axisprofile
 
     /// @brief Constructor
     BootMgr();
+    BootMgr(const BootMgr&) = delete;
+    BootMgr& operator=(const BootMgr&) = delete;
     /// @brief Destructor
     virtual ~BootMgr() noexcept override;
 
@@ -101,7 +103,7 @@ namespace comm::axisprofile
 
     /// @brief This method calls the loadSystemCfg() method of the backup/restore manager.
     /// @return   Return value indicating success or error.
-    AxisProfileResult loadSystemCfg();
+    AxisProfileResult loadSystemCfgAndDriveParams();
 
     /// @brief This method checks fieldbus and device status,
     /// @return   Return value indicating success or error.
@@ -110,7 +112,7 @@ namespace comm::axisprofile
     /// @brief This method checks fieldbus status
     /// @param[in]     adapter      Field bus instance adapter
     /// @return   Return value indicating STS_OK for status check success, STS_PENGDING for still checking, ERR_xxx for error
-    AxisProfileResult checkFieldbusStatus(const std::string& masterName, IFieldbusAdapter* adapter);
+    static AxisProfileResult checkFieldbusStatus(const std::string& masterName, IFieldbusAdapter* adapter);
 
     /// @brief This method checks device status
     /// @param[in]     profileName   Profile name
@@ -125,6 +127,10 @@ namespace comm::axisprofile
     /// @return   Return value indicating success or error.
     AxisProfileResult resetAllProfiles();
 
+    /// @brief This method loads boot parameters for all profiles.
+    /// @return   Return value indicating success or error.
+    AxisProfileResult loadProfilesBootParams();
+    
   private: // types
 
     /// @brief Struct that stores function pointers of methods which need to be executed on every booting process

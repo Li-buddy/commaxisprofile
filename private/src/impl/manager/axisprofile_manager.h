@@ -46,6 +46,11 @@ namespace comm
     class IDataLayerFactory;
     class IClientInternal;
   }
+
+  namespace axisprofile
+  {
+    class IBootParamBackupRestoreMgr;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -101,12 +106,8 @@ namespace comm
       // ------------------------------------ Internal Interface -------------------------------------
 
       void setDataLayer(comm::datalayer::IDataLayerFactory* datalayer, IBackgroundThread* bkThread) override;
-      void getFieldbusInstances(ContainerFieldbusInst& mapInstances) final;
-      AxisProfileResult validateMappingCfg() final;
-      AxisProfileResult updateProfileAddress() final;
-      AxisProfileResult validateProtocolInfo() final;
-      AxisProfileResult initManager(const bool& abortInitialization, double cycleTime = STD_CYCLE_TIME) final;
-      AxisProfileResult browseFieldbusMasterInstance(const bool& abortInitialization) final;
+      void getFieldbusInstances(ContainerFieldbusInst& mapInstances) final;      
+      AxisProfileResult initManager(const bool& abortInitialization, double cycleTime = STD_CYCLE_TIME) final;      
       AxisProfileResult processDataAt() final;
       AxisProfileResult processDataMdt() final;
       IAxisProfile* getProfileByName(const char* profileName) final;
@@ -119,6 +120,9 @@ namespace comm
       AxisProfileResult resetAllFPUFlag() final;
       AxisProfileResult execExternalChecking() final;
       void getActivatedProfiles(std::vector<IAxisProfile*> &profiles) final;
+      AxisProfileResult collectAllDeviceInfo(const bool& abortInitialization) final;
+      AxisProfileResult checkConsistency() final;
+      void setBootParamBackupRestoreMgr(const IBootParamBackupRestoreMgr* bootParamBackupRestoreMgr) final;
 
       // ------------------------------------- External Interface -------------------------------------
 
@@ -145,7 +149,7 @@ namespace comm
 
       /// @brief This method initializes the device information manager.
       /// @return  Return value indicating success (>=0) or error (<0).
-      AxisProfileResult initDeviceInfoMgr() final;
+      AxisProfileResult initDeviceInfoMgr();
 
       //! @brief This method closes all realtime memory´s
       //! @return  Return value indicating success or error.
@@ -159,6 +163,37 @@ namespace comm
       /// @brief This method reset all realtime data
       void resetRtInputData();
 
+
+      /// @brief This method will validate all mapping item in each profile.
+      /// @return Return value indicating success (>=0) or error (<0).
+      AxisProfileResult validatePdoCfg();
+
+      /// @brief This method will update device address according to corresponding device name.
+      AxisProfileResult updateProfileAddress();
+
+      /// @brief This function will validate protocol information between device and profile
+      /// @return Return value indicating success (>=0) or error (<0).
+      AxisProfileResult validateProtocolInfo();
+
+      /// @brief This method browses the fieldbus master instances node via datalayer to get the correct address string.
+      ///        Note: If more than one instance is available, the one that matches the configured output buffer URI will be used.
+      /// @return  Return value indicating success or error.
+      AxisProfileResult validateFieldbusMasterInfo();
+
+      /// @brief Get all activated profile infomation.
+      /// @param[out] profiles  Holds all activated profiles information.
+      void getActivatedProfilesInfo(std::vector<ProfileInfo>& profilesInfo);
+
+      /// @brief Save boot parameters if needed.
+      /// @param[in] profileInternal Pointer to the profile internal interface.
+      /// @param[in] profileName Name of the profile.
+      void saveBootParamsIfNeed(IAxisProfileInternal* profileInternal, const std::string& profileName);
+
+      /// @brief Check whether the profile's boot parameters should be auto-saved after booting.
+      /// @param[in] profile Pointer to the profile.
+      /// @return true when auto-save should be triggered.
+      bool shouldTriggerAutoBootParamsSave(IAxisProfileInternal* profile);
+      
     private: // data
 
       /// @brief The central data container which contains all existing axisprofiles.
@@ -173,6 +208,7 @@ namespace comm
       // Datalayer
       comm::datalayer::IDataLayerFactory* m_datalayer = nullptr;         ///< ServiceDependency - Pointer to datalayer
       comm::datalayer::IClientInternal* m_datalayerClient = nullptr;     ///< Internal wrapped datalayer client
+      const IBootParamBackupRestoreMgr* m_bootParamBackupRestoreMgr{};   ///< Boot parameter backup helper for auto-save
 
       // Unittest
       friend class ::TestAxisProfileManager;           ///< Unittest of the internal interface methods

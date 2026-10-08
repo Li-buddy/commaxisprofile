@@ -67,6 +67,7 @@ public:
 
   HRESULT doInit() final;
   HRESULT doTest() final;
+  HRESULT doEnd() final;
 
 private: // methods
   // ----------------------------------------- Tests ---------------------------------------------

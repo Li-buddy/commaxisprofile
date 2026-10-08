@@ -79,88 +79,6 @@ void AxisProfileDeviceParam::setSharingHandler(IAxisProfileSharingHandler* handl
   m_sharingHandler = handler;
 }
 
-bool AxisProfileDeviceParam::isFuncInSignalStatusWord(SignalStatusWordFunction& func, FunctionSupportErrorInfo& errorInfo)
-{
-  if (!m_sharingHandler)
-  {
-    errorInfo = {FuncSupportErrorType::ERROR_NOT_DEFINED, "invalid mapping handler"};
-    return false;
-  }
-
-  // Checking signal status word mapping configuration
-  const ProfileAssignedInfo& profileAssignedInfo = m_sharingHandler->getMappingHandlerIF()->getProfileAssignedInfo();
-  if (!profileAssignedInfo.m_input.m_signalStatusWord)
-  {
-    errorInfo = {FuncSupportErrorType::ERROR_CYCLIC_DATA_CONFIG_NOT_SUPPORT, "signal status word not assigned"};
-    return false;
-  }
-
-  // Checking Signal status word support information
-  const auto& itFound = std::find_if(m_signalStatusWordFuncs.begin(),
-                                     m_signalStatusWordFuncs.end(),
-                                     [&func] (const auto& item)
-                                     {
-                                       return func.function == item.function;
-                                     });
-  if (itFound == m_signalStatusWordFuncs.end())
-  {
-    errorInfo.errorType = FuncSupportErrorType::ERROR_CHECK_POINT_NOT_IMPLEMENTED;
-    errorInfo.addInfo = "not implemented";
-    return false;
-  }
-
-  func.bitOffset = itFound->bitOffset;
-  func.supported = itFound->supported;
-  if (itFound->supported == false)
-  {
-    errorInfo.errorType = FuncSupportErrorType::ERROR_DEVICE_NOT_SUPPORT;
-    errorInfo.addInfo = "device configuration not support";
-    return false;
-  }
-  return true;
-}
-
-void AxisProfileDeviceParam::registerSignalStatusWordFuncs(const FunctionSupport& function, const SignalStatusWordValidator& validator)
-{
-  m_signalStatusWordFuncs.emplace_back(function, validator);
-}
-
-AxisProfileResult AxisProfileDeviceParam::checkSignalStatusWord()
-{
-  // validates signal status word configuration
-  std::vector<std::uint32_t> sourceParams{};
-  std::vector<std::uint16_t> assignBits{};
-  AxisProfileResult res = this->readSignalStatusWordCfg(sourceParams, assignBits);
-  if (aprStatusFailed(res) || sourceParams.size() != assignBits.size())
-  {
-    Dia::sendDiagnosis(MAIN_DIAG_BOOTING_WRN, DETAILED_DIAG_READ_PARAM_FAILED, m_profileBasicInfo.m_profileName.c_str(),
-                       __FILE__, __FUNCTION__, __LINE__, "ErrorCode:0x%X, configured params: %d, bits: %d",
-                       res, sourceParams.size(), assignBits.size());
-  }
-  else
-  {
-    auto sizeOfParams = sourceParams.size();
-    for (auto& f : m_signalStatusWordFuncs)
-    {
-      for (std::size_t i = 0; i < sizeOfParams; ++i)
-      {
-        f.bitOffset = static_cast<std::uint8_t>(i);
-        f.supported = f.validator(sourceParams[i], assignBits[i]);
-        if (f.supported)
-        {
-          break;
-        }
-      }
-
-      APR_TRACE_MESSAGE("%s; Function 0x%X %s at signal status word, offset %d checked",
-                        m_profileBasicInfo.m_profileTrace.createTraceMsg(),
-                        f.function, (f.supported ? "supported" : "not supported"), f.bitOffset);
-    }
-  }
-
-  return comm::axisprofile::AxisProfileResult::STS_OK;
-}
-
 AxisProfileResult AxisProfileDeviceParam::getDCSync0ShiftTime(double& sync0)
 {
   if (m_dcSupport)
@@ -202,15 +120,6 @@ AxisProfileResult AxisProfileDeviceParam::getOutputEffectiveDelay(double& delay)
 
 AxisProfileResult AxisProfileDeviceParam::booting()
 {
-  getDeviceInformation(); // calculate software version before using checksum parameter
-  
-  bool isNodeChecksumEnable = m_sharingHandler->getPropertyIF()->isChecksumEnabled();
-  m_needReadBootParams = isNodeChecksumEnable ? (checkNeedReadBootParams() || m_firstBootup) : true;
-  APR_TRACE_MESSAGE("%s, m_firstBootup: %d, m_needReadBootParams: %d, node checksumEnable:%d",
-                    m_profileBasicInfo.m_profileTrace.createTraceMsg(), m_firstBootup, m_needReadBootParams, isNodeChecksumEnable);
-
-  m_firstBootup = false;
-
   loadBootingTasks();
   AxisProfileResult result {AxisProfileResult::STS_OK};
   for (auto const& method : m_initDeviceParam)
@@ -236,16 +145,6 @@ AxisProfileResult AxisProfileDeviceParam::getRateTorqueForce(double& rateTorqueF
   const IScaling* scaling = m_sharingHandler->getScalingIF();
   rateTorqueForce = scaling->getRateTorqueForce();
   return AxisProfileResult::STS_OK;
-}
-
-bool AxisProfileDeviceParam::isNeedReadBootParams() const
-{
-  return m_needReadBootParams;
-}
-
-std::uint32_t AxisProfileDeviceParam::getCheckSumValue() const
-{
-  return m_checksum;
 }
 
 AxisProfileResult AxisProfileDeviceParam::checkAxisHomed(bool& homed)

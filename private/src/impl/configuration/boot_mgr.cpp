@@ -21,6 +21,7 @@
 #include "fieldbuses/i_fieldbus_master.h"
 #include "manager/i_axisprofile_manager_internal.h"
 #include "profiles/i_axisprofile_internal.h"
+#include "i_boot_param_backup_restore_mgr.h"
 #include <cfenv>
 
 // ---------------------------------------------------------------------------
@@ -47,14 +48,11 @@ using namespace comm::axisprofile;
 BootMgr::BootMgr()
 {
   // The methods will be executed in the order they are added to the vector
-  m_bootMethods.reserve(12);
-  m_bootMethods.emplace_back("Loading system configuration",          "loadSystemCfg",                 [this]()->AxisProfileResult { return loadSystemCfg(); });
+  m_bootMethods.reserve(9);
+  m_bootMethods.emplace_back("Loading system configuration",          "loadSystemCfgAndDriveParams",   [this]()->AxisProfileResult { return loadSystemCfgAndDriveParams(); });
   m_bootMethods.emplace_back("Executing external checking",           "execExternalChecking",          [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->execExternalChecking(); });
-  m_bootMethods.emplace_back("Initiating device information manager", "initDeviceInfoMgr",             [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->initDeviceInfoMgr(); });
-  m_bootMethods.emplace_back("Browses fieldbus-master instance",      "browsesFieldbusMasterInstance", [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->browseFieldbusMasterInstance(m_abortBooting); });
-  m_bootMethods.emplace_back("update device address",                 "updateProfileAddress",          [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->updateProfileAddress(); });
-  m_bootMethods.emplace_back("Validate protocol consistency",         "validateProtocolInfo",          [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->validateProtocolInfo(); });
-  m_bootMethods.emplace_back("Validate mapping configuration",        "validateMappingCfg",            [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->validateMappingCfg(); });
+  m_bootMethods.emplace_back("collect fieldbus master information",   "collectAllDeviceInfo",          [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->collectAllDeviceInfo(m_abortBooting); });
+  m_bootMethods.emplace_back("check Consistency ",                    "checkConsistency",              [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->checkConsistency(); });
   m_bootMethods.emplace_back("Checking fieldbus and device status",   "checkFieldbusAndDeviceStatus",  [this]()->AxisProfileResult { return checkFieldbusAndDeviceStatus(); });
   m_bootMethods.emplace_back("Initiating axisprofile manager",        "initManager",                   [this]()->AxisProfileResult { return m_component->getAxisProfileManager()->initManager(m_abortBooting, m_component->getCycleTime()); });
   m_bootMethods.emplace_back("Checking scheduler state",              "isSchedulerCallableInRunState", [this]()->AxisProfileResult { return isSchedulerCallableInRunState(); });
@@ -364,7 +362,7 @@ void BootMgr::wakeup()
   m_triggerBootThread.notify();
 }
 
-AxisProfileResult BootMgr::loadSystemCfg()
+AxisProfileResult BootMgr::loadSystemCfgAndDriveParams()
 {
   AxisProfileResult result = AxisProfileResult::STS_OK;
   if ( m_initialBootup )
@@ -380,6 +378,7 @@ AxisProfileResult BootMgr::loadSystemCfg()
     }
   }
 
+  loadProfilesBootParams(); //the return value is skipped, because the boot parameters are not critical for booting
   m_initialBootup = false;
   return result;
 }
@@ -439,7 +438,13 @@ AxisProfileResult BootMgr::checkFieldbusAndDeviceStatus()
     for (masterIt = fieldbusInstances.begin(); masterIt != fieldbusInstances.end();)
     {
       IFieldbusAdapter* fieldbusAdapter = nullptr;
-      auto linkedProfiles = masterIt->second->getLinkedProfiles();
+      const auto& linkedProfiles = masterIt->second->getLinkedProfiles();
+      // skip if current master not linked by any profile
+      if (linkedProfiles.empty())
+      {
+        ++masterIt;
+        continue;
+      }
       for (const auto profile : linkedProfiles)
       {
         if (profile->checkProfileActivated())
@@ -524,6 +529,12 @@ AxisProfileResult BootMgr::checkFieldbusAndDeviceStatus()
 
 AxisProfileResult BootMgr::checkFieldbusStatus(const std::string& masterName, IFieldbusAdapter* adapter)
 {
+  if (!adapter)
+  {
+    APR_TRACE_ERROR("Master of %s is nullptr.", masterName.c_str());
+    return AxisProfileResult::ERR_EXEC_NULL;
+  }
+
   MasterStatus status;
   AxisProfileResult result = adapter->readFieldbusMasterStatusSync(status.m_status);
   if (aprStatusFailed(result))
@@ -673,5 +684,27 @@ AxisProfileResult BootMgr::resetAllProfiles()
     }
   }
 
+  return AxisProfileResult::STS_OK;
+}
+
+AxisProfileResult BootMgr::loadProfilesBootParams()
+{
+  const IBootParamBackupRestoreMgr* bootParamBackupRestoreMgr = m_component->getBootParamBackupRestoreMgr();
+  if (bootParamBackupRestoreMgr == nullptr)
+  {
+    APR_TRACE_WARNING("Boot parameter backup/restore manager not available, skip loading boot params.");
+    return AxisProfileResult::ERR_EXEC_NULL;
+  }
+  
+  std::vector<std::string> profileNames;
+  m_component->getAxisProfileManager()->getProfileNames(profileNames);
+  for (const auto& profileName : profileNames)
+  {
+    AxisProfileResult loadResult = bootParamBackupRestoreMgr->loadBootParams(profileName);
+    if (aprStatusFailed(loadResult))
+    {
+      APR_TRACE_WARNING("Loading boot params for profile %s failed. retCode: %#010x. Mabybe not has params file.", profileName.c_str(), loadResult);
+    }
+  }
   return AxisProfileResult::STS_OK;
 }

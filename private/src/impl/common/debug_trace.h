@@ -89,7 +89,7 @@ namespace comm::axisprofile
 
     /// @brief Remove the trace pointer from the bundle and use buffered trace again
     /// @param[in]  traceRegistration  pointer to the trace registration
-    void removeTrace(common::log::trace::IRegistrationRealTime3* traceRegistration);
+    static void removeTrace(common::log::trace::IRegistrationRealTime3* traceRegistration);
 
     /// @brief Get the current trace object
     /// @return the current trace object

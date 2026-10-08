@@ -64,8 +64,8 @@ private: // Types
 
   struct TestTorqueData
   {
-    std::uint16_t m_translPosScalingFactor;                     ///< S-0-0077 (scaling factor for translation position data: related to feed constant conversion)
-    std::int16_t m_translPosScalingExponent;                    ///< S-0-0078 (scaling exponent for translation position data: related to feed constant conversion)
+    std::uint16_t m_translPosScalingFactor{};                   ///< S-0-0077 (scaling factor for translation position data: related to feed constant conversion)
+    std::int16_t m_translPosScalingExponent{};                  ///< S-0-0078 (scaling exponent for translation position data: related to feed constant conversion)
     std::uint16_t m_torqueScalingType{};                        ///< S-0-0086 (Torque data scaling type)
     std::uint16_t m_torqueScalingFactor{};                      ///< S-0-0093 (Torque data scaling factor)
     std::int16_t  m_torqueScalingExponent{};                    ///< S-0-0094 (Torque data scaling exponent)

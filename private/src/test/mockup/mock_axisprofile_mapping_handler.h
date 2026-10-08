@@ -63,14 +63,14 @@ namespace test
     comm::axisprofile::AxisProfileResult configureInputValues(const std::vector<comm::axisprofile::InputMappingEntry>& /*inputConfig*/) override { return m_returnValue; }
 
     //! @brief This method returns a vector of all current input mappings.
-    //! @return Vector of all current input mappings.    
+    //! @return Vector of all current input mappings.
     const std::vector< comm::axisprofile::InputMappingEntry> getConfiguredInputs() const override { return {}; }
 
     //! @brief This method returns a vector of all available input mappings.
-    //! @return Vector of all available input mappings.    
+    //! @return Vector of all available input mappings.
     const std::vector< comm::axisprofile::InputMappingEntry> getAvailableInputs() const override { return {}; }
 
-    //! @brief This method clears the current input mapping configuration.   
+    //! @brief This method clears the current input mapping configuration.
     void clearInputConfiguration() override {}
 
     //! @brief This method returns the URI that is currently mapped to an input value. If no configuration could be found it returns a nullptr.
@@ -86,14 +86,14 @@ namespace test
     comm::axisprofile::AxisProfileResult configureOutputValues(const std::vector<comm::axisprofile::OutputMappingEntry>& /*outputConfig*/) override { return m_returnValue; }
 
     //! @brief This method returns a vector of all current output mappings.
-    //! @return Vector of all current output mappings.    
+    //! @return Vector of all current output mappings.
     const std::vector< comm::axisprofile::OutputMappingEntry> getConfiguredOutputs() const override { return {}; }
 
     //! @brief This method returns a vector of all available output mappings.
-    //! @return Vector of all available output mappings.    
+    //! @return Vector of all available output mappings.
     const std::vector< comm::axisprofile::OutputMappingEntry> getAvailableOutputs() const override { return {}; }
 
-    //! @brief This method clears the current output mapping configuration. 
+    //! @brief This method clears the current output mapping configuration.
     void clearOutputConfiguration() override {}
 
     //! @brief This method returns the URI that is currently mapped to an output value. If no configuration could be found it returns a nullptr.
@@ -111,7 +111,7 @@ namespace test
 
     //! @brief This methods return the 'm_inputMappingRT' vector that contains the realtime information of all input values.
     //! @return Pointer to the vector that contains the realtime information of all inpute values.
-    const std::vector< comm::axisprofile::InputMappingInfoRT>& getInputRealtimeInfo() const override { static std::vector< comm::axisprofile::InputMappingInfoRT> dummy{}; return dummy; }
+    const std::vector< comm::axisprofile::InputMappingInfoRT>& getInputRealtimeInfo() const override { return m_inputMappingRT; }
 
     //! @brief This methods return the 'm_outputMappingRT' vector that contains the realtime information of all output values.
     //! @return Pointer to the vector that contains the realtime information of all output values.
@@ -128,7 +128,7 @@ namespace test
     comm::axisprofile::ProfileAssignedInfo& getProfileAssignedInfo() { return m_profileAssignedInfo; }
     comm::axisprofile::AxisProfileResult checkInputMappingItems(comm::axisprofile::IAxisProfileInternal* const /*pProfile*/, size_t& /*nCount*/, std::set<std::string>& /*setMapping*/)override { return m_returnValue; }
     comm::axisprofile::AxisProfileResult checkOutputMappingItems(comm::axisprofile::IAxisProfileInternal* const /*pProfile*/, size_t& /*nCount*/, std::set<std::string>& /*setMapping*/)override { return m_returnValue; }
-    
+
     // ----------------------------- Test methods ---------------------------------
 
     //! @brief This method can be used by tests to change the behavior of the member functions by changing the returned value.
@@ -143,10 +143,15 @@ namespace test
     /// @param[in]    mappingGroup Mapping type to be set
     void setMappingType(comm::axisprofile::MappingGroup mappingGroup) { m_mappingType = mappingGroup; }
 
+    /// @brief This method can be used by tests to set input realtime mapping information.
+    /// @param[in]    inputMappingRT Input realtime mapping information to be returned by getInputRealtimeInfo().
+    void setInputRealtimeInfo(const std::vector<comm::axisprofile::InputMappingInfoRT>& inputMappingRT) { m_inputMappingRT = inputMappingRT; }
+
   protected: // data
 
     comm::axisprofile::AxisProfileResult m_returnValue = comm::axisprofile::AxisProfileResult::STS_OK; ///< Result of member functions
-    comm::axisprofile::ProfileAssignedInfo m_profileAssignedInfo{ false };                               ///< Check if profile variable is assigned 
-    comm::axisprofile::MappingGroup m_mappingType{ comm::axisprofile::MappingGroup::BASE };               ///< Mapping type
+    comm::axisprofile::ProfileAssignedInfo m_profileAssignedInfo{ false };                             ///< Check if profile variable is assigned
+    comm::axisprofile::MappingGroup m_mappingType{ comm::axisprofile::MappingGroup::BASE };            ///< Mapping type
+    std::vector<comm::axisprofile::InputMappingInfoRT> m_inputMappingRT{};                             ///< Input realtime mapping information
   };
 }

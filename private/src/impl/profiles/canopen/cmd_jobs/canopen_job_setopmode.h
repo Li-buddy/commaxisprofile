@@ -2,7 +2,14 @@
 
 /// @file
 ///
-/// @brief This file is part of the axisprofile library and defines CanOpen set operation mode job.
+/// @brief This file is part of the axisprofile library and defines the Canopen operation-mode command job.
+///
+/// SPDX-FileCopyrightText: Copyright (c) 2026 Bosch Rexroth AG
+///
+/// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
+/// All rights reserved in the event of the grant of a patent, utility model or design.
+
 
 // ---------------------------------------------------------------------------
 // Include Files

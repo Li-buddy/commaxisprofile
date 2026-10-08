@@ -163,7 +163,7 @@ HRESULT TestSercosCommand::testCmdGernalProcuder()
   {
     std::wstring m_testName;                // test name
     std::function<AxisProfileResult(sercos::SercosParamAccess& paramAccess, const sercos::ProcedureCommands paramIDN, AsyncCommandStatemachine& asyncState)> m_testFun;
-    std::uint16_t m_setDataState;           // set datalayer data
+    std::uint16_t m_setDataState{};         // set datalayer data
     AxisProfileResult m_expectedResult;     // set expected return value
   };
 
@@ -231,9 +231,9 @@ HRESULT TestSercosCommand::testSimpleCommands()
     std::wstring m_testName;              // test name
     AxisProfileCommandType m_cmdType;     // command type
     std::function<AxisProfileResult(sercos::SercosCommandDrive& cmd)> m_testFun;
-    std::uint16_t m_encoderOneType;       // set of encoder type1
-    std::uint16_t m_encoderTwoType;       // set of encoder type2    
-    std::uint16_t m_setDataState;         // set of datalayer value
+    std::uint16_t m_encoderOneType{};     // set of encoder type1
+    std::uint16_t m_encoderTwoType{};     // set of encoder type2
+    std::uint16_t m_setDataState{};       // set of datalayer value
     AxisProfileResult m_expectedResult;   // expected return value
    };
 
@@ -351,7 +351,7 @@ HRESULT TestSercosCommand::testParameterCommands()
     std::wstring m_testName;                    // test name
     std::function<AxisProfileResult(sercos::SercosCommandDrive& cmd)> m_testFun;
     TorqueScalingType m_torqueScalingType;      // set of torque scaling type
-    std::uint16_t m_setDataState;               // set of datalayer value
+    std::uint16_t m_setDataState{};             // set of datalayer value
     AxisProfileResult m_expectedResult;         // expected return value
    };
 

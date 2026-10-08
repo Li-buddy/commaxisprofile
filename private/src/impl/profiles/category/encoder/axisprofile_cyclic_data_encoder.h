@@ -46,6 +46,9 @@ namespace comm::axisprofile
     AxisProfileResult setNewRefPosition(std::int32_t newRefPos) override;
 
     AxisProfileResult activeNewRefOperation(bool active) override;
+    AxisProfileResult activeSignalFunc(std::uint8_t bitOffset) final;
+    AxisProfileResult resetSignalFuncBit(std::uint8_t bitOffset) final;
+    AxisProfileResult getSignalFuncState(std::uint8_t bitOffset, bool& value) final;
 
   private:
 

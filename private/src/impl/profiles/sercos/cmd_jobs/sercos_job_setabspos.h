@@ -14,6 +14,12 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "sercos_job_base.h"
+#include "profiles/signal_func/signal_func_cmd.h"
+
+// ---------------------------------------------------------------------------
+// Forward references
+// ---------------------------------------------------------------------------
+class TestSercosJobSetAbsPos;
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -94,7 +100,7 @@ namespace comm::axisprofile::sercos
     AxisProfileResult resetIoEncoderData();
 
   private: // data
-
+    friend class::TestSercosJobSetAbsPos;
     double m_cmdPos {};                   ///< position in IS that to be set to device
     AxisProfileEncoder m_encoder {};      ///< encoder selector
     bool m_allowPowerEnabled {};          ///< allow power on after set absolute position
@@ -105,5 +111,7 @@ namespace comm::axisprofile::sercos
     std::uint16_t m_ctrlWordS448 {};      ///< value of S-0-0448, control word of set absolute position
 
     std::list<SercosParamStruct> m_paramList {}; ///< parameter list to be access asynchronously
+
+    SignalFuncCmd m_signalFuncCmd {{FunctionSupport::SET_ABS_POS_CMD_CYCLIC}};    ///< signal function command for set absolute position
   };
 }

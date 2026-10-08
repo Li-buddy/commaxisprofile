@@ -68,13 +68,10 @@ namespace comm::axisprofile
 
     const IAxisProfileBootingConfigC* getDeprecatedCInterface() const final;
     const IAxisProfileDeviceParamC* getCInterface() const final;
-    AxisProfileResult booting() final;
+    AxisProfileResult booting() override;
     AxisProfileResult getDCSync0ShiftTime(double& sync0) final;
     AxisProfileResult getOutputEffectiveDelay(double& delay) final;
-    bool isFuncInSignalStatusWord(SignalStatusWordFunction& func, FunctionSupportErrorInfo& errorInfo) final;
     AxisProfileResult getRateTorqueForce(double& rateTorqueForce, std::string& dynErrTxt) final;
-    bool isNeedReadBootParams() const override final;
-    std::uint32_t getCheckSumValue() const override final;
     AxisProfileResult checkAxisHomed(bool& homed) override;
     AxisProfileResult setAxisHomed(bool homed) final;
 
@@ -85,27 +82,10 @@ namespace comm::axisprofile
     /// @brief This method read distribution clock config information of the slave
     /// @return      Return value indicating success or error.
     AxisProfileResult readDcConfigInfo();
-
-    /// @brief Register the predefined functions supported by signal status word.
-    /// @param[in] function  The predefined function.
-    /// @param[in] validator The validator, which will be called at booting.
-    void registerSignalStatusWordFuncs(const FunctionSupport& function, const SignalStatusWordValidator& validator);
-
-    /// @brief Check and validate the signal status word configuration.
-    /// @return      Return value indicating success or error.
-    AxisProfileResult checkSignalStatusWord();
-
+    
     /// @brief This method reset the control-based home flag to false during booting.
     /// @return Return value indicating success or error.
     AxisProfileResult initHomeState();
-
-    /// @brief This method check whether need read drive booting parameters
-    /// @return      Return value indicating whether need read or not.
-    virtual bool checkNeedReadBootParams() = 0;
-
-    /// @brief Get some device information during startup
-    /// @return      Return value indicate succeed read or not
-    virtual AxisProfileResult getDeviceInformation() = 0;
 
   protected: // data
 
@@ -120,15 +100,11 @@ namespace comm::axisprofile
 
     bool m_hasOutputEffectiveDelay {false};                                     ///< If the device has output delay
     double m_outputEffectiveDelay {0.0};                                        ///< Output latch delay of the device, in second    
-    std::uint32_t m_checksum {};                                                ///< Parameter checksum
-    bool m_needReadBootParams {true};                                           ///< whether read drive booting parameters
     std::atomic_bool m_homed {false};                                           ///< whether axis is homed             
 
   private:  // data
 
     IAxisProfileBootingConfigC m_cDeprecatedInterface {};                       ///< Deprecated C-Interface for external usage
-    IAxisProfileDeviceParamC m_cInterface{};                                    ///< C-Interface for external usage
-    std::vector<SignalStatusWordFunction> m_signalStatusWordFuncs{};            ///< The predefined functions supported by signal status word.
-    bool m_firstBootup {true};                                                  ///< whether is the first time to boot up
+    IAxisProfileDeviceParamC m_cInterface{};                                    ///< C-Interface for external usage    
   };
 }

@@ -1,6 +1,12 @@
 /// @file
 ///
-/// @brief This file is part of the axisprofile library and implements the CanOpen set operation mode job.
+/// @brief This file is part of the axisprofile library and implement the Canopen operation-mode command job.
+///
+/// SPDX-FileCopyrightText: Copyright (c) 2026 Bosch Rexroth AG
+///
+/// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
+/// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
 // Include Files
@@ -8,7 +14,6 @@
 #include "canopen_job_setopmode.h"
 #include "profiles/i_axisprofile_device_param_internal.h"
 #include "profiles/value_mapping/i_mapping_handler.h"
-#include<iostream>
 
 // ---------------------------------------------------------------------------
 // Name Spaces

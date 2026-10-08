@@ -371,7 +371,7 @@ AxisProfileResult FieldbusAdapter::readSingleParamSync(const ParamReqDataBase& r
   {
     return res;
   }
-  if (readLen != bufLen)
+  if (readLen > bufLen)
   {
     return AxisProfileResult::ERR_WRONGDATASIZE;
   }
@@ -381,7 +381,7 @@ AxisProfileResult FieldbusAdapter::readSingleParamSync(const ParamReqDataBase& r
 ///////////////////////////////////////////////////////////////////////////////////
 // ****************************** PRIVATE METHODS ****************************** //
 
-comm::datalayer::IClient::ResponseCallback FieldbusAdapter::parameterRequestCallback(ParameterResponseCallbackData* const responseData) const
+comm::datalayer::IClient::ResponseCallback FieldbusAdapter::parameterRequestCallback(ParameterResponseCallbackData* const responseData)
 {
   return [responseData](comm::datalayer::DlResult status, const comm::datalayer::Variant* data)
   {

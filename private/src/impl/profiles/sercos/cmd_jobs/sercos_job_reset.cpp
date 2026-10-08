@@ -38,11 +38,34 @@ using namespace comm::axisprofile::sercos;
 SercosJobReset::SercosJobReset(ProfileBasicInfo& profileInfo, IAxisProfileSharingHandler* shareHandle)
   : SercosJobBase(ProcedureCommands::S_0_0099_RESET_CLASS_1_DIAGNOSTIC, profileInfo, shareHandle),
   m_statusControlIf(m_shareHandle->getStatusControlIF())
-{}
+{
+   
+}
+
+AxisProfileResult SercosJobReset::onJobEnterActivating()
+{
+  SignalFuncHandler* signalFuncHandler {};
+  getSignalFuncHandler(signalFuncHandler);
+  m_signalFuncCmd.initSignalFuncHandler(signalFuncHandler);
+
+  FunctionSupportErrorInfo errorInfo {};
+  // nullptr handled inside the support check
+  m_isSignalFuncCmd = m_signalFuncCmd.isSignalFuncSupported(errorInfo);
+  APR_TRACE_MESSAGE(m_isSignalFuncCmd ? "reset command : handled as signal function." : "reset command : handled as normal command.");
+  return SercosJobBase::onJobEnterActivating();
+}
 
 AxisProfileResult SercosJobReset::onJobActivating()
 {
-  auto res = m_paramAccess->setSercosProcedureCommandAsync(m_command, m_asyncSm);
+  AxisProfileResult res {AxisProfileResult::STS_PENDING};
+  if(m_isSignalFuncCmd)
+  {
+    res = m_signalFuncCmd.onJobActivating(m_asyncSm);
+  }
+  else
+  {
+    res = m_paramAccess->setSercosProcedureCommandAsync(m_command, m_asyncSm);
+  }
   if (res == AxisProfileResult::STS_OK)
   {
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
@@ -52,7 +75,16 @@ AxisProfileResult SercosJobReset::onJobActivating()
 
 AxisProfileResult SercosJobReset::onJobAborting()
 {
-  auto res = m_paramAccess->clearSercosProcedureCommandAsync(m_command, m_asyncSm);
+  AxisProfileResult res {AxisProfileResult::STS_PENDING};
+  if (m_isSignalFuncCmd)
+  {
+    res = m_signalFuncCmd.onJobAborting();
+  }
+  else
+  {
+    res = m_paramAccess->clearSercosProcedureCommandAsync(m_command, m_asyncSm);
+  }
+
   if (res == AxisProfileResult::STS_OK)
   {
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_NOT_SET);
@@ -69,6 +101,7 @@ AxisProfileResult SercosJobReset::onUpdateStatusInDevice()
     if (!m_statusControlIf->checkError())
     {
       m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_COMPLETED);
+      APR_TRACE_MESSAGE(m_isSignalFuncCmd ? "reset command : finished as signal function." : "reset command : finished as normal command.");
     }
   }
   return AxisProfileResult::STS_OK;

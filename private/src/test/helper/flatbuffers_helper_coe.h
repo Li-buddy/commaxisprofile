@@ -69,7 +69,7 @@ namespace test
     /// @param[in]   subIndex     SubIndex of the parameter
     /// @param[in]   data         Pointer to the data
     /// @param[in]   dataSize     Size of the data
-    void generateSDORequestFlatbuffer(comm::datalayer::Variant* const variant, const std::uint16_t & index, const std::uint8_t &subIndex, const std::uint8_t* data, const size_t& dataSize);
+    static void generateSDORequestFlatbuffer(comm::datalayer::Variant* const variant, const std::uint16_t & index, const std::uint8_t &subIndex, const std::uint8_t* data, const size_t& dataSize);
 
     /// @brief This is a simple helper method to write data for testing. It writes the member variables of this class as values.
     /// @param[in]   paramID    ID of the parameter

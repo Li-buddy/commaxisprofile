@@ -25,9 +25,19 @@ REGISTER_TEST_TO_GROUP(TestProviderProfilesUseChecksum, Provider);
 
 HRESULT TestProviderProfilesUseChecksum::doInit()
 {
-  m_invalidNodeAddress = m_nodeAddress;
-  test::ProviderHelperCommon::insertProfileName(m_nodeAddress, m_profileName);
-  test::ProviderHelperCommon::insertProfileName(m_invalidNodeAddress, "doesNotExist");
+  // Reset to wildcard base path on every init to keep this setup idempotent.
+  m_nodeAddress = comm::axisprofile::provider::NodeTree.APR_PROFILES_CFG_USE_CHECKSUM;
+  m_invalidNodeAddress = comm::axisprofile::provider::NodeTree.APR_PROFILES_CFG_USE_CHECKSUM;
+
+  if (!test::ProviderHelperCommon::insertProfileName(m_nodeAddress, m_profileName))
+  {
+    return E_FAIL;
+  }
+
+  if (!test::ProviderHelperCommon::insertProfileName(m_invalidNodeAddress, "doesNotExist"))
+  {
+    return E_FAIL;
+  }
   return S_OK;
 }
 
@@ -46,7 +56,6 @@ HRESULT TestProviderProfilesUseChecksum::doTest()
 
   return hResult;
 }
-
 
 HRESULT TestProviderProfilesUseChecksum::testOnRead()
 {

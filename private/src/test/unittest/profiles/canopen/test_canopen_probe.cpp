@@ -113,7 +113,7 @@ HRESULT TestCanopenProbe::TestProbeBaseConfig()
   {
     std::wstring m_testName;             // test name
     std::function<AxisProfileResult(canopen::CanopenProbeDrive& probe)> m_testFun;  // test function
-    std::uint16_t m_setDataState;             // set of datalayer value
+    std::uint16_t m_setDataState{};           // set of datalayer value
     AxisProfileResult m_expectedResult;  // expected return value
   };
 
@@ -220,7 +220,7 @@ HRESULT TestCanopenProbe::TestProbeStatusCtrl()
   {
     std::wstring m_testName;             // test name
     std::function<AxisProfileResult(canopen::CanopenProbeDrive& probe)> m_testFun;  // test function
-    std::uint16_t m_setDataState;             // set of datalayer value
+    std::uint16_t m_setDataState{};           // set of datalayer value
     AxisProfileResult m_expectedResult;  // expected return value
   };
 
@@ -294,7 +294,7 @@ HRESULT TestCanopenProbe::TestGetProbeValues()
   {
     std::wstring m_testName;                    // test name
     std::function<AxisProfileResult(canopen::CanopenProbeDrive& probe)> m_testFun; // test function 
-    std::uint16_t m_setDataState;                    // set of datalayer value
+    std::uint16_t m_setDataState{};                  // set of datalayer value
     AxisProfileResult m_expectedResult;         // expected return value
   };
 

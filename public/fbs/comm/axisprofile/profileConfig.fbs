@@ -13,31 +13,35 @@ table profileConfig {
   inputBuffer      : string;
 
   /// Datalayer address of the output telegram
-  outputBuffer     : string;              
+  outputBuffer     : string;
 
   /// Flatbuffer: Basic profile data (name, type)
-  profileBasicData : profile;             
+  profileBasicData : profile;
 
   /// Flatbuffer: Complete input value mapping
-  inputMapping     : valueMapping;        
+  inputMapping     : valueMapping;
 
   /// Flatbuffer: Complete output value mapping
-  outputMapping    : valueMapping;        
+  outputMapping    : valueMapping;
 
   /// scaling information for profile
-  scalingInfo      : profileScalingCfg;   
+  scalingInfo      : profileScalingCfg;
 
   /// name of device
-  deviceName       : string;              
+  deviceName       : string;
 
   /// drive number
-  driveNumber      : uint8;               
+  driveNumber      : uint8;
 
   /// category of current profile
-  category         : ProfileCategory; 
+  category         : ProfileCategory;
 
   /// whether checksum activated
-  checksumEnabled    : bool;  
+  checksumEnabled    : bool;
+
+  /// configured EtherCAT master instance name
+  ethercatMasterName : string;
+
 }
 
 root_type profileConfig;

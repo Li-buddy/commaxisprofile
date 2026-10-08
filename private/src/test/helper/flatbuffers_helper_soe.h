@@ -62,7 +62,7 @@ namespace test
     /// @param[in]   data       Pointer to the data
     /// @param[in]   dataSize   Size of the data
     /// @param[in]   maxLength  Maximal length of the request data in bytes, 8 bytes for default.
-    void generateParamRequestFlatbuffer(comm::datalayer::Variant* variant, const std::uint16_t paramID, const std::uint8_t* data, const size_t& dataSize, const std::uint32_t& maxLength = 8);
+    static void generateParamRequestFlatbuffer(comm::datalayer::Variant* variant, const std::uint16_t paramID, const std::uint8_t* data, const size_t& dataSize, const std::uint32_t& maxLength = 8);
 
     /// @brief This is a simple helper method to write data for testing. It writes the member variables of this class as values.
     /// @param[in]   request    Writing request

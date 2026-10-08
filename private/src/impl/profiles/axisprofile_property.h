@@ -77,6 +77,8 @@ namespace comm::axisprofile
     const std::string& getDeviceSoftwareVersion() const final;
     void enableChecksum(bool enable) final;
     bool isChecksumEnabled() const final;
+    const char* getEtherCATName() const final;
+    AxisProfileResult setEtherCATName(const char* name) final;
 
   protected: // data
     ProfileBasicInfo& m_profileBasicInfo;                           ///< Profile basic information
@@ -84,6 +86,7 @@ namespace comm::axisprofile
     IAxisProfileSharingHandler* m_sharingHandler {};                ///< Pointer to the data sharing handler
     DeviceSeries m_deviceSeries {DeviceSeries::NOTINDICATES};       ///< device series
     SoftwareVersion m_softwareVersion;                              ///< software version info
+    std::string m_ethercatName {};                                  ///< name of configured EtherCAT instance
 
   private: // data
     IAxisProfilePropertyC m_propertyInterface {};                   ///< C-Interface for bundle interface

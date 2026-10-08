@@ -57,8 +57,8 @@ private: // types
   /// @brief This struct contains the test data of the different test cases.
   struct TestCaseDiagMsg
   {
-    const wchar_t *m_name;                                     ///< name of testcase
-    std::uint32_t m_diagMsg;                                        ///< test value for diagnostic message
+    const wchar_t *m_name{};                                   ///< name of testcase
+    std::uint32_t m_diagMsg{};                                 ///< test value for diagnostic message
     comm::axisprofile::AxisProfileResult m_expectedResult;     ///< expected result of analyzeDiagMsg
     comm::axisprofile::AxisProfileDeviceErrorType m_errorType; ///< expected error type
   };

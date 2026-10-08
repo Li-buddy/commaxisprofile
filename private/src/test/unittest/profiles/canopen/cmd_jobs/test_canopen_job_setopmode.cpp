@@ -4,7 +4,6 @@
 #include "mockup/mock_axisprofile_mapping_handler.h"
 #include "mockup/mock_axisprofile_status_control.h"
 #include "mockup/mock_fieldbus_adapter_coe.h"
-#include "mockup/mock_job_mgr.h"
 #include "mockup/mock_profile_trace.h"
 #include "profiles/canopen/cmd_jobs/canopen_job_setopmode.h"
 #include "profiles/canopen/canopen_cmd.h"

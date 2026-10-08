@@ -68,13 +68,13 @@ private: //data
   //! @brief This structure contains the test data of the different test cases.
   struct TestCaseStatusword
   {
-    const wchar_t *m_name;                                          //!< name of testcase
-    std::uint16_t m_statusWord;                                          //!< test value for statusword
+    const wchar_t *m_name{};                                        //!< name of testcase
+    std::uint16_t m_statusWord{};                                  //!< test value for statusword
     comm::axisprofile::AxisProfileResult m_expectedResult;          //!< expected result of analyzeStatusWord
-    bool m_expectedErrorValue;                                      //!< execute datalayer callback
-    bool m_expectedStandStill;                                      //!< execute standstill state
-    bool m_isDeviceFollowsControl;                                  //!< execute is device follows control
-    TestCaseOpModeSupported m_opModeSupported;                      //!< expected support operation mode
+    bool m_expectedErrorValue{};                                    //!< execute datalayer callback
+    bool m_expectedStandStill{};                                    //!< execute standstill state
+    bool m_isDeviceFollowsControl{};                                //!< execute is device follows control
+    TestCaseOpModeSupported m_opModeSupported{};                    //!< expected support operation mode
     comm::axisprofile::sercos::OperationMode m_sercosOpMode;        //!< expected sercos operation mode
     comm::axisprofile::AxisProfileOperationMode m_expectedOpMode;   //!< expected operation mode
     comm::axisprofile::AxisProfilePowerMode m_expectedPowerMode;    //!< expected power mode
@@ -84,13 +84,13 @@ private: //data
   //! @brief This structure contains the test data of the different test cases.
   struct TestCaseControlword
   {
-    const wchar_t *m_name;                                           //!< name of testcase
-    std::uint16_t m_statusWord;                                      //!< test value for statusword
+    const wchar_t *m_name{};                                         //!< name of testcase
+    std::uint16_t m_statusWord{};                                    //!< test value for statusword
     comm::axisprofile::AxisProfileResult m_expectedResult;           //!< expected result of called method
-    TestCaseOpModeSupported m_opModeSupported;                       //!< expected support operation mode
+    TestCaseOpModeSupported m_opModeSupported{};                     //!< expected support operation mode
     TestCaseOpModePair m_opModePair;                                 //!< available operation mode pair
     comm::axisprofile::AxisProfileOperationMode m_commandedOpMode;   //!< operation mode to set
-    bool m_testPowerMode;                                            //!< execute setPowerMode
+    bool m_testPowerMode{};                                          //!< execute setPowerMode
     comm::axisprofile::AxisProfilePowerMode m_commandedPowerMode;    //!< power mode to set
 
   };

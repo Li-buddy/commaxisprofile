@@ -32,6 +32,8 @@
 #include "comm/ethercat/master/fbs/master_state_generated.h"
 #include "comm/ethercat/master/fbs/master_status_generated.h"
 #include "comm/ethercat/master/fbs/dc_slave_config_info_generated.h"
+#include "comm/ethercat/master/fbs/slave_config_info_generated.h"
+#include "comm/ethercat/master/fbs/slave_address_mapping_generated.h"
 
 // local defines
 #include "fieldbuses/fieldbus_defs.h"
@@ -81,12 +83,12 @@ namespace test
     //! @brief This is a simple helper method to generate slave state request flatbuffers for testing.
     //! @param[in]   variant         Variant address where the created flatbuffer will be stored.
     //! @param[in]   deviceAddress   address of the device
-    void generateSlaveStateRequestFlatbuffer(comm::datalayer::Variant* const variant, const std::uint16_t deviceAddress = 0);
+    static void generateSlaveStateRequestFlatbuffer(comm::datalayer::Variant* const variant, const std::uint16_t deviceAddress = 0);
 
     //! @brief This is a simple helper method to generate slave status request flatbuffers for testing.
     //! @param[in]   variant         Variant address where the created flatbuffer will be stored.
     //! @param[in]   deviceAddress   address of the device
-    void generateSlaveStatusRequestFlatbuffer(comm::datalayer::Variant* const variant, const std::uint16_t deviceAddress = 0);
+    static void generateSlaveStatusRequestFlatbuffer(comm::datalayer::Variant* const variant, const std::uint16_t deviceAddress = 0);
 
     //! @brief This is a simple helper method to generate slave status response flatbuffers for testing.
     //! @param[in]   variant   Variant address where the created flatbuffer will be stored.
@@ -99,6 +101,19 @@ namespace test
     //! @brief This is a simple helper method to generate slave DC config info response flatbuffers for testing.
     //! @param[in]   variant   Variant address where the created flatbuffer will be stored.
     void generateSlaveDcCfgInfoResponseFlatbuffer(comm::datalayer::Variant* const variant);
+
+    /// @brief This function will generate the response data for address mapping.
+    /// @param[in] addressCnt This argument use for control how many slave device in the response.
+    /// @param[out] mappingResponse Variant address where the created flatbuffer will be stored.
+    static void generateAddressMappingResponseFlatbuffer(std::uint16_t addressCnt, comm::datalayer::Variant& mappingResponse);
+
+    /// @brief This function will generate the response data for the slaveCfg node.
+    /// @param[in] deviceName The device name that will be used in the response data.
+    /// @param[in] devInfo    The related device information used for response generation.
+    /// @param[out] variant Variant address where the created flatbuffer will be stored.
+    static void generateSlaveCfgInfoResponseFlatbuffer(std::string& deviceName,
+                                               comm::axisprofile::DeviceHardwareInfo& devInfo,
+                                               comm::datalayer::Variant* variant);
 
   public: // Data
     comm::ethercat::master::fbs::EthercatState m_slaveState = comm::ethercat::master::fbs::EthercatState::EthercatState_op;    //!< Return value when slave state is read

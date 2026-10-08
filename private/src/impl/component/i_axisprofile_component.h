@@ -66,6 +66,7 @@ namespace comm
     // ---------------------------------------------------------------------------
     class IAxisProfileManagerInternal;
     class IBackupRestoreMgr;
+    class IBootParamBackupRestoreMgr;
     class IBootMgr;
     class IStateMachine;
 
@@ -106,6 +107,10 @@ namespace comm
       //! @brief This method returns a pointer to the backup/restore manager.
       //! @return Pointer to the backup/restore manager
       virtual IBackupRestoreMgr* getBackupRestoreManager() = 0;
+
+      //! @brief This method returns a pointer to the boot parameter backup/restore manager.
+      //! @return Pointer to the boot parameter backup/restore manager
+      virtual const IBootParamBackupRestoreMgr* getBootParamBackupRestoreMgr() const = 0;
 
       //! @brief This method returns a pointer to the boot manager.
       //! @return Pointer to the boot manager

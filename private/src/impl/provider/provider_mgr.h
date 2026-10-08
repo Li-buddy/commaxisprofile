@@ -56,6 +56,8 @@ namespace comm::axisprofile::provider
 
     /// Constructor
     ProviderMgr();
+    ProviderMgr(const ProviderMgr&) = delete;
+    ProviderMgr& operator=(const ProviderMgr&) = delete;
     /// Destructor
     virtual ~ProviderMgr() noexcept;
 

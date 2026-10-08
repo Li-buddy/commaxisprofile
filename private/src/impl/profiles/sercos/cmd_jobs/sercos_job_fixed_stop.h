@@ -17,6 +17,10 @@
 #include "profiles/sercos/sercos_defs.h"
 
 // ---------------------------------------------------------------------------
+// Forward references
+// ---------------------------------------------------------------------------
+class TestSercosJobFixedStop;
+// ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
 namespace comm::axisprofile::sercos
@@ -71,7 +75,7 @@ namespace comm::axisprofile::sercos
     AxisProfileResult validateConfig();
 
   private: // data
-
+    friend class::TestSercosJobFixedStop; 
     double m_clampingTorque {0.0};        ///< clamping torque for fixed stop
     std::uint16_t m_torqueRawS530 {0};    ///< clamping torque converted to raw value, S530
   };

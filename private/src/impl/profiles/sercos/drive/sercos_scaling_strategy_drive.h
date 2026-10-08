@@ -90,6 +90,13 @@ namespace comm::axisprofile::sercos
 
   private: // methods
 
+    /// @brief Read one SoE parameter from boot snapshot/cache or drive.
+    /// @param[in] idn SoE IDN.
+    /// @param[out] bufPtr Target buffer.
+    /// @param[in] bufLen Target buffer length.
+    /// @return Return value indicating success or error.
+    AxisProfileResult getParameterValueFromSnapshot(std::uint16_t idn, std::uint8_t* bufPtr, std::size_t bufLen);
+
     AxisProfileResult calcPosScalingLSBWeight() final;
     AxisProfileResult calcVelScalingLSBWeight() final;
     AxisProfileResult calcTorqueScalingLSBWeight() final;        

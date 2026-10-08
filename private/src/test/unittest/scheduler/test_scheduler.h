@@ -55,9 +55,9 @@ private: //data
   //! @brief This struct contains the test data of the different test cases.
   struct TestCaseCallable
   {
-    const wchar_t *m_name;                                          //!< name of testcase
-    bool m_addValidAxisProfileManager;                              //!< indicates if a real axisprofile manager is given in the constructor
-    const bool m_oneShotFlag;                                       //!< one shot flag
+    const wchar_t *m_name{};                                        //!< name of testcase
+    bool m_addValidAxisProfileManager{};                            //!< indicates if a real axisprofile manager is given in the constructor
+    const bool m_oneShotFlag{};                                    //!< one shot flag
     const common::scheduler::SchedState m_initState;                //!< initialized state before execute call
     const common::scheduler::SchedEventType m_eventType;            //!< event type for execute call
     const common::scheduler::SchedEventPhase m_eventPhase;          //!< event phase for execute call

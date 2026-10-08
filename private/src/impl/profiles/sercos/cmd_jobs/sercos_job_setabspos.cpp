@@ -14,7 +14,6 @@
 #include "diagnosis/dia.h"
 #include "sercos_job_setabspos.h"
 #include "profiles/profile_defs.h"
-
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -64,7 +63,7 @@ AxisProfileResult SercosJobSetAbsPos::onSetArgument(IContainer* arg)
 }
 
 AxisProfileResult SercosJobSetAbsPos::onJobEnterActivating()
-{
+{  
   m_jobFuns.clear();
   m_jobStep = 0;
 
@@ -86,6 +85,15 @@ AxisProfileResult SercosJobSetAbsPos::onJobEnterActivating()
   }
 
   m_asyncSm.setCommandTimeout(0); // disable timeout check since homing movement duration is unknown
+
+  // decide command execution way
+  SignalFuncHandler* signalFuncHandler {};
+  getSignalFuncHandler(signalFuncHandler);
+
+  m_signalFuncCmd.initSignalFuncHandler(signalFuncHandler);
+  FunctionSupportErrorInfo errorInfo {};
+  m_isSignalFuncCmd = m_signalFuncCmd.isSignalFuncSupported(errorInfo);
+  APR_TRACE_MESSAGE(m_isSignalFuncCmd ? "set absolute position command : handled as signal function." : "set absolute position command : handled as normal command.");  
   return SercosJobBase::onJobEnterActivating();
 }
 
@@ -215,22 +223,38 @@ AxisProfileResult SercosJobSetAbsPos::writeConfigToDevice()
 
 AxisProfileResult SercosJobSetAbsPos::activeSetAbsPosByDevice()
 {
-  auto res = m_paramAccess->setSercosProcedureCommandAsync(m_command, m_asyncSm);
-  if (res == AxisProfileResult::STS_OK)
+  AxisProfileResult result {AxisProfileResult::STS_PENDING};
+  if (m_isSignalFuncCmd)
+  {
+    result = m_signalFuncCmd.onJobActivating(m_asyncSm);
+  }
+  else
+  {
+    result = m_paramAccess->setSercosProcedureCommandAsync(m_command, m_asyncSm);
+  }
+  if (result == AxisProfileResult::STS_OK)
   {
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
   }
-  return res;
+  return result;
 }
 
 AxisProfileResult SercosJobSetAbsPos::abortSetAbsPosByDevice()
 {
-  auto res = m_paramAccess->clearSercosProcedureCommandAsync(m_command, m_asyncSm);
-  if (res == AxisProfileResult::STS_OK)
+  AxisProfileResult result {AxisProfileResult::STS_PENDING};
+  if (m_isSignalFuncCmd)
+  {
+    result = m_signalFuncCmd.onJobAborting();
+  }
+  else
+  {
+    result = m_paramAccess->clearSercosProcedureCommandAsync(m_command, m_asyncSm);
+  }
+  if (result == AxisProfileResult::STS_OK)
   {
     m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_NOT_SET);
   }
-  return res;
+  return result;
 }
 
 AxisProfileResult SercosJobSetAbsPos::judgmentHandleBased()

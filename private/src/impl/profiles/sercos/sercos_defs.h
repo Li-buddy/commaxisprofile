@@ -130,7 +130,8 @@ namespace comm::axisprofile::sercos
     {OutputMappingValueID::TORQUE_VEL_LIMIT_HIGH, {MappingGroup::TORQUE_FORCE, false}}, {OutputMappingValueID::TORQUE_VEL_LIMIT_LOW, {MappingGroup::TORQUE_FORCE, false}},
     {OutputMappingValueID::USER_PDO_OUTPUT_1, {MappingGroup::USER_PDO, false}}, {OutputMappingValueID::USER_PDO_OUTPUT_2, {MappingGroup::USER_PDO, false}},
     {OutputMappingValueID::USER_PDO_OUTPUT_3, {MappingGroup::USER_PDO, false}}, {OutputMappingValueID::USER_PDO_OUTPUT_4, {MappingGroup::USER_PDO, false}},
-    {OutputMappingValueID::USER_PDO_OUTPUT_5, {MappingGroup::USER_PDO, false}}, {OutputMappingValueID::USER_PDO_OUTPUT_6, {MappingGroup::USER_PDO, false}}
+    {OutputMappingValueID::USER_PDO_OUTPUT_5, {MappingGroup::USER_PDO, false}}, {OutputMappingValueID::USER_PDO_OUTPUT_6, {MappingGroup::USER_PDO, false}},
+    {OutputMappingValueID::SIGNAL_CONTROL_WORD, {MappingGroup::SIGNAL_WORD, false}}
   };
 
   // ---------------------------------------------------------------------------
@@ -155,7 +156,10 @@ namespace comm::axisprofile::sercos
   }
   /// @brief The follow IDN are general S-parameters
   constexpr std::uint16_t S_0_0000_DUMMY                          = IDN_S(0, 0);      ///< S-0-0000: Dummy parameter, used for initialization
+  constexpr std::uint16_t S_0_0016_CONFIG_LIST_AT                 = IDN_S(0, 16);     ///< S-0-0016: Configuration list of AT
+  constexpr std::uint16_t S_0_0024_CONFIG_LIST_MDT                = IDN_S(0, 24);     ///< S-0-0024: Configuration list of MDT
   constexpr std::uint16_t S_0_0026_CONFIG_LIST_SIGNAL_STATUS_WORD = IDN_S(0, 26);     ///< S-0-0026: Configuration list for signal status word
+  constexpr std::uint16_t S_0_0027_CONFIG_LIST_SIGNAL_CONTROL_WORD = IDN_S(0, 27);    ///< S-0-0027: Configuration list for signal control word
   constexpr std::uint16_t S_0_0030_SW_VERSION                     = IDN_S(0, 30);     ///< S-0-0030: Manufacturer software version
   constexpr std::uint16_t S_0_0032_OP_MODE_PRIMARY                = IDN_S(0, 32);     ///< S-0-0032: Primary operation mode
   constexpr std::uint16_t S_0_0033_OP_MODE_SECONDARY1             = IDN_S(0, 33);     ///< S-0-0033: Secondary operation mode 1
@@ -198,6 +202,8 @@ namespace comm::axisprofile::sercos
   constexpr std::uint16_t S_0_0133_PROBE2_NEG_EDGE                = IDN_S(0, 133);    ///< S-0-0133: Probe2 negative edge value
   constexpr std::uint16_t S_0_0134_MASTER_CONTROL_WORD            = IDN_S(0, 134);    ///< S-0-0134: Master control word
   constexpr std::uint16_t S_0_0138_BIPOLAR_ACC_LIMIT_VALUE        = IDN_S(0, 138);    ///< S-0-0138: Bipolar acceleration limit value
+  constexpr std::uint16_t S_0_0144_SIGNAL_STATUS_WORD             = IDN_S(0, 144);    ///< S-0-0144: Signal status word
+  constexpr std::uint16_t S_0_0145_SIGNAL_CONTROL_WORD            = IDN_S(0, 145);    ///< S-0-0145: Signal control word
   constexpr std::uint16_t S_0_0147_HOMING_PARAMETER               = IDN_S(0, 147);    ///< S-0-0147: Homing configuration parameter
   constexpr std::uint16_t S_0_0148_DRIVE_CONTROLLED_HOMING        = IDN_S(0, 148);    ///< S-0-0148: C0600 Drive-controlled homing procedure command
   constexpr std::uint16_t S_0_0149_FIXED_STOP_COMMAND             = IDN_S(0, 149);    ///< S-0-0149: C1300 Positive stop drive procedure command
@@ -218,6 +224,7 @@ namespace comm::axisprofile::sercos
   constexpr std::uint16_t S_0_0326_CHECKSUM                       = IDN_S(0, 326);    ///< S-0-0326: Parameter checksum
   constexpr std::uint16_t S_0_0327_CHECKSUM_IDN_LIST              = IDN_S(0, 327);    ///< S-0-0327: IDN list of checksum parameters    
   constexpr std::uint16_t S_0_0328_ASSIGN_LIST_SIGNAL_STATUS_WORD = IDN_S(0, 328);    ///< S-0-0328: Assign list signal status word
+  constexpr std::uint16_t S_0_0329_ASSIGN_LIST_SIGNAL_CONTROL_WORD= IDN_S(0, 329);    ///< S-0-0329: Assign list signal control word
   constexpr std::uint16_t S_0_0331_STANDSTILL_STATUS              = IDN_S(0, 331);    ///< S-0-0331: Status "n_feedback = 0"
   constexpr std::uint16_t S_0_0349_BIPOLAR_JERK_LIMIT             = IDN_S(0, 349);    ///< S-0-0349: Bipolar jerk limit
   constexpr std::uint16_t S_0_0372_DRIVE_HALT_ACC_BIPOLAR         = IDN_S(0, 372);    ///< S-0-0372: Drive halt acceleration bipolar

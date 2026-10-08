@@ -24,7 +24,7 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "provider/nodes/profiles/node_profiles_base.h"
-
+#include "fieldbuses/fieldbus_defs.h"
 
 // ---------------------------------------------------------------------------
 // Forward references
@@ -34,65 +34,52 @@
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
-namespace comm
+namespace comm::axisprofile::provider
 {
-  namespace axisprofile
+  // ---------------------------------------------------------------------------
+  // Declaration of symbolic constants
+  // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // Declaration of macros
+  // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // Declaration of data types
+  // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // Forward references
+  // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // Declaration of classes and structures
+  // ---------------------------------------------------------------------------
+
+  //! @class NodeProfilesSetURI
+  //! @brief This is the generic node to configure a profile URI.
+  class NodeProfilesSetURI : public NodeProfilesBase
   {
-    namespace provider
-    {
-      // ---------------------------------------------------------------------------
-      // Declaration of symbolic constants
-      // ---------------------------------------------------------------------------
+  public: // methods
 
-      // ---------------------------------------------------------------------------
-      // Declaration of macros
-      // ---------------------------------------------------------------------------
+    //! Constructor
+    //! @param[in]   mgr         pointer to the provider manager
+    //! @param[in]   operation   node operation which will be executed
+    NodeProfilesSetURI(ProviderMgr *mgr, const BufferOrient operation);
 
-      // ---------------------------------------------------------------------------
-      // Declaration of data types
-      // ---------------------------------------------------------------------------
+    //! Destructor
+    virtual ~NodeProfilesSetURI() noexcept override = default;
 
-      //! Operation which should be executed when calling onWrite() of class NodeProfilesSetURI.
-      enum class NodeOperation
-      {
-        INBUFFER = 0,   //!< Save a single motion object
-        OUTBUFFER       //!< Load a single motion object
-      };
+    void onRead(const std::string &address, const comm::datalayer::Variant* data, const ResponseCallback &callback) final;
+    void onWrite(const std::string &address, const comm::datalayer::Variant* data, const ResponseCallback &callback) final;
 
-      // ---------------------------------------------------------------------------
-      // Forward references
-      // ---------------------------------------------------------------------------
+    /// @brief Response for metadata request
+    /// @param[in]   address    address describe the uri
+    /// @param[in]   callback   execute after the response
+    void onMetadata(const std::string& address, const ResponseCallback& callback) final;
 
-      // ---------------------------------------------------------------------------
-      // Declaration of classes and structures
-      // ---------------------------------------------------------------------------
+  private: // data
 
-      //! @class NodeProfilesSetURI
-      //! @brief This is the generic node to configure a profile URI.
-      class NodeProfilesSetURI : public NodeProfilesBase
-      {
-      public: // methods
-
-        //! Constructor
-        //! @param[in]   mgr         pointer to the provider manager
-        //! @param[in]   operation   node operation which will be executed
-        NodeProfilesSetURI(ProviderMgr *mgr, const NodeOperation operation);
-
-        //! Destructor
-        virtual ~NodeProfilesSetURI() noexcept override = default;
-
-        void onRead(const std::string &address, const comm::datalayer::Variant* data, const ResponseCallback &callback) final;
-        void onWrite(const std::string &address, const comm::datalayer::Variant* data, const ResponseCallback &callback) final;
-
-        /// @brief Response for metadata request
-        /// @param[in]   address    address describe the uri
-        /// @param[in]   callback   execute after the response
-        void onMetadata(const std::string& address, const ResponseCallback& callback) final;
-
-      private: // data
-
-        const NodeOperation m_operation;   //!< Operation which will be executed in onWrite()
-      };
-    }
-  }
+    const BufferOrient m_operation;   ///< Operation which will be executed in onWrite()
+  };
 }

@@ -131,7 +131,7 @@ namespace comm
       //! @param[in]    addInfo2     Optional. Additional information (e.g. state name, variable name, ...). Usage depends on the given error code.
       //! @param[in]    addInfo3     Optional. Additional information (e.g. state name, variable name, ...). Usage depends on the given error code.
       //! @return      Return value indicating success or error.
-      std::int32_t convertAprResultToText(AxisProfileResult statusCode, char* dest, size_t size, const char* addInfo1 = nullptr, const char* addInfo2 = nullptr, const char* addInfo3 = nullptr);
+      static std::int32_t convertAprResultToText(AxisProfileResult statusCode, char* dest, size_t size, const char* addInfo1 = nullptr, const char* addInfo2 = nullptr, const char* addInfo3 = nullptr);
 
     private: // data
 

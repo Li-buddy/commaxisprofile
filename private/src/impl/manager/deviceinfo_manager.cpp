@@ -19,6 +19,7 @@
 #include "fieldbuses/fieldbus_defs.h"
 #include "fieldbuses/fieldbus_master.h"
 #include "flatbuffers/flatbuffers.h"
+#include "fieldbuses/fieldbus_helper.h"
 
 // ---------------------------------------------------------------------------
 // Forward references
@@ -78,8 +79,11 @@ void DeviceInfoManager::setProfiles(std::map<std::string, ProfileInfo>* mapProfi
   m_mapAxisProfiles = mapProfiles;
 }
 
-AxisProfileResult DeviceInfoManager::fillSingleDeviceInfo(const std::string& urlSlaveCfgInfo, const std::uint32_t nAddress)
+AxisProfileResult DeviceInfoManager::fillSingleDeviceInfo(const std::string& masterName, const std::uint32_t nAddress)
 {
+  // inquiry slave information
+  std::string urlSlaveCfgInfo = DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES + '/' + masterName + DL_SUB_ADDRESS_SLAVE_CFG_INFO;
+
   comm::datalayer::Variant slaveInfoData {};
   DeviceFbsDataHelper::generateAddressRequest(nAddress, slaveInfoData);
 
@@ -91,11 +95,11 @@ AxisProfileResult DeviceInfoManager::fillSingleDeviceInfo(const std::string& url
     return AxisProfileResult::ERR_DATALAYER_READ_NODE;
     // LCOV_EXCL_STOP
   }
-  std::string deviceName {};
-
-  DeviceHardwareInfo devInfo {nAddress};  
+  DeviceHardwareInfo devInfo {nAddress};
+  devInfo.m_masterName = masterName;
+  std::string deviceName {};  
   comm::axisprofile::AxisProfileResult aspResult = DeviceFbsDataHelper::extractSlaveCfgInfo(slaveInfoData, deviceName, devInfo);
-  if (AxisProfileResult::STS_OK != aspResult)
+    if (AxisProfileResult::STS_OK != aspResult)
   {
     APR_TRACE_ERROR("Failed to extract configured slave name.");
     return aspResult;
@@ -110,24 +114,22 @@ AxisProfileResult DeviceInfoManager::fillDeviceInfo(std::string const& masterNam
   std::vector<std::uint32_t> addressArray;
   AxisProfileResult axpResult = getSlaveAddress(masterName, addressArray);
   if (aprStatusNotOkay(axpResult))
-  {    
+  {
     return AxisProfileResult::ERR_DATALAYER_READ_NODE;
   }
-  
-  // inquiry slave information
-  std::string urlSlaveCfgInfo = DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES + '/' + masterName + DL_SUB_ADDRESS_SLAVE_CFG_INFO;
   uint32_t mainCode {}, detailCode {};
   for (std::uint32_t slaveAddr : addressArray)
   {
     // inquiry single available device info
-    axpResult = fillSingleDeviceInfo(urlSlaveCfgInfo, slaveAddr);
+    axpResult = fillSingleDeviceInfo(masterName, slaveAddr);
     if (aprStatusFailed(axpResult))
     {
+      std::string urlSlaveCfgInfo = DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES + '/' + masterName + DL_SUB_ADDRESS_SLAVE_CFG_INFO;
       switch (axpResult)
       {
         case AxisProfileResult::ERR_DATALAYER_READ_NODE:
           mainCode = MAIN_DIAG_BOOTING_ERR;
-          detailCode = DETAILED_DIAG_READ_PARAM_FAILED;
+          detailCode = DETAILED_DIAG_READ_DEVICE_CFG_VIA_MASTER_FAILED;
           break;
         case AxisProfileResult::ERR_DATALAYER_WRONG_TYPE:
         default:
@@ -145,32 +147,120 @@ AxisProfileResult DeviceInfoManager::fillDeviceInfo(std::string const& masterNam
   return axpResult;
 }
 
-AxisProfileResult DeviceInfoManager::initAvailableDeviceInfo()
+AxisProfileResult DeviceInfoManager::collectAllDeviceInfo(const bool& abortInitialization)
 {
-  if (m_mapAxisProfiles->empty())
-  {
-    return AxisProfileResult::STS_OK;
-  }
-
   if (!m_datalayerClient)
   {
     return AxisProfileResult::ERR_EXEC_NULL;
   }
 
-  //access cfged_slave count
-  AxisProfileResult axpResult {AxisProfileResult::STS_OK};
+  comm::datalayer::Variant data {};
+  comm::datalayer::DlResult dlResult;
+  std::uint16_t timeout = 10;      // 10 seconds timeout
+  std::uint16_t pollingMs = 100;   // 100 MS every polling
+  std::uint16_t nTimeout = timeout * 1000 / 100;
 
-  for (const auto& masterInstance : m_mapFieldbusInstance)
+  // try to browse master instance, when no usable data(not timeout)
+  Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_WAIT_FOR_FIELDBUS_INSTANCES, __FILE__, __FUNCTION__, __LINE__, "");
+
+  while (true)
   {
-    std::string masterName = masterInstance.first;
-    //todo: axpResult may indicate the error string to diagnosis, may get a string from fillDeviceInfo
-    axpResult = fillDeviceInfo(masterName);
-    if (AxisProfileResult::STS_OK != axpResult)
+    if (abortInitialization)
     {
-      return axpResult;
+      Dia::sendDiagnosis(MAIN_DIAG_BOOTING_WRN, DETAILED_DIAG_BOOT_ABORTED,
+                         __FILE__, __FUNCTION__, __LINE__, "By Web or System");
+      return AxisProfileResult::STS_BOOTING_ABORT;
+    }
+
+    // Browse should return DL_INVALID_ADDRESS as long as EthercatMaster boot has not been finished.
+    // Afterwards it could return with success but without any instances (empty list). We can not continue here without a valid instance.
+    dlResult = m_datalayerClient->browseSync(DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES, &data);
+    if ((comm::datalayer::STATUS_FAILED(dlResult)) && (dlResult != comm::datalayer::DlResult::DL_INVALID_ADDRESS))
+    {
+      APR_TRACE_ERROR("Could not browse %s! DlResult: %s", DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES.c_str(), dlResult.toString());
+      return AxisProfileResult::ERR_DATALAYER_BROWSE_NODE;
+    }
+    nTimeout--;
+    if ((dlResult == comm::datalayer::DlResult::DL_OK) || (nTimeout == 0 && data.getCount() == 0))
+    {
+      break;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(pollingMs));
+  }
+  if (data.getCount() == 0)
+  {
+    Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BOOT_MASTER_NOT_EXIT, __FILE__, __FUNCTION__, __LINE__,
+                       "Master URL: %s, DL_Result: %s", DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES.c_str(), dlResult.toString());
+    return AxisProfileResult::ERR_FIELDBUS_NO_MASTER;
+  }
+
+  Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_FIELDBUS_INSTANCES_READY, __FILE__, __FUNCTION__, __LINE__, "");
+
+  // collect all slave device information
+  const comm::datalayer::Variant* convData = &data;
+  const char** onlineInstances = *convData;
+  for (std::uint8_t i = 0; i < data.getCount(); i++)
+  {
+    linkProfileToFieldbusInstance(onlineInstances[i], nullptr);
+    auto res = fillDeviceInfo(onlineInstances[i]);
+    if (aprStatusFailed(res))
+    {
+      return res;
     }
   }
-  return axpResult;
+
+  return AxisProfileResult::STS_OK;
+}
+
+AxisProfileResult DeviceInfoManager::checkEtherCATConsistency(const std::vector<ProfileInfo>& vecProfilesInfo)
+{  
+  if (m_mapFieldbusInstance.empty())
+  {
+    Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BOOT_MASTER_NOT_EXIT, __FILE__, __FUNCTION__, __LINE__,
+                       "Master URL: %s", DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES.c_str());
+    return AxisProfileResult::ERR_FIELDBUS_NO_MASTER;
+  }
+  std::string addressBase = DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES + '/';
+  std::string cfgedEtherCATName {};
+
+  // compare with each profile
+  for (auto const& profile : vecProfilesInfo)
+  {
+    IAxisProfileInternal* internalProfile = static_cast<IAxisProfileInternal*>(profile.m_axisProfile);
+    for (auto it = m_mapFieldbusInstance.begin(); it != m_mapFieldbusInstance.end(); ++it)
+    {
+      const auto& instance = *it;
+      std::string address = addressBase + instance.first;
+      std::string addressSlash = address + "/";
+      // using addressSlash avoid the mismatch of the string contained case
+      // for example: ethercatmaster and ethercatmaster_1
+      if (profile.m_outputBufferUri.find(addressSlash)!= std::string::npos)
+      {
+        // the linkProfileToFieldbusInstance method will guarantee no duplicated instance
+        cfgedEtherCATName = FieldbusHelper::getEtherCATNameOfURI(profile.m_outputBufferUri.c_str());
+        linkProfileToFieldbusInstance(cfgedEtherCATName, internalProfile);
+        // assign address to fieldbus adapter
+        internalProfile->getFieldbusAdapter()->setFieldbusMasterAddress(address);
+        APR_TRACE_MESSAGE("Configure fieldbus instance '%s' for profile '%s'", address.c_str(), internalProfile->getProfileName());
+        // once match, finish current profile handle for better performance
+        break;
+      }
+      else
+      {
+        // if a profile hold a EtherCAT name that not match with all instance -> configuration error.
+        if (std::next(it) == m_mapFieldbusInstance.end())
+        {
+          // if profile's master name not included in the masters container, then error.
+          Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BOOT_MASTER_NOT_EXIT, __FILE__, __FUNCTION__, __LINE__,
+                             "%s: please check if the EtherCAT instance : %s exist",
+                             internalProfile->getProfileName(),
+                             cfgedEtherCATName.c_str());
+          return AxisProfileResult::ERR_PROFILE_CONFIG;
+        }
+      }
+    }
+  }
+  return AxisProfileResult::STS_OK;
 }
 
 AxisProfileResult DeviceInfoManager::updateProfileAddress()
@@ -179,9 +269,6 @@ AxisProfileResult DeviceInfoManager::updateProfileAddress()
   {
     return AxisProfileResult::STS_OK;
   }
-
-  // init device
-  initAvailableDeviceInfo();
 
   // if no physic device existed, no need to check 
   if (m_mapDeviceTopoInfo.empty())
@@ -332,12 +419,12 @@ AxisProfileResult DeviceInfoManager::validateProtocolInfo()
   return AxisProfileResult::STS_OK;
 }
 
-bool DeviceInfoManager::addFieldbusInstance(const std::string& instName, IAxisProfileInternal* profile)
+bool DeviceInfoManager::linkProfileToFieldbusInstance(const std::string& instName, IAxisProfileInternal* profile)
 {
-  if (!instName.empty() && profile != nullptr)
+  if (!instName.empty())
   {
     auto master = findAndCreateFieldbusMaster(instName);
-    if (master)
+    if (master && profile != nullptr)
     {
       master->addLinkedProfile(profile);
       return true;
@@ -366,19 +453,19 @@ AxisProfileResult DeviceInfoManager::getSlaveAddress(std::string const& strField
   std::string addressString = DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES + '/' + strFieldbusInstance + DL_SUB_ADDRESS_ADDRESS_MAP;
   comm::datalayer::Variant variantMapping;
   DeviceFbsDataHelper::generateSlaveAddressMappingRequestFlatbuffer(variantMapping);
-
-  comm::datalayer::DlResult dlResult = m_datalayerClient->readSync(addressString, &variantMapping);
-  if (STATUS_FAILED(dlResult))
+  
+  comm::datalayer::DlResult dlResult = m_datalayerClient->readSync(addressString.c_str(), &variantMapping);
+  if (comm::datalayer::STATUS_FAILED(dlResult))
   {
     APR_TRACE_ERROR("Not able to read slaves address mapping with address: %s, error: %s", addressString.c_str(), dlResult.toString());
-    Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_READ_PARAM_FAILED,
+    Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_READ_DEVICE_CFG_VIA_MASTER_FAILED,
                        __FILE__, __FUNCTION__, __LINE__,
                        "The URI is %s, datalayer error: %s", addressString.c_str(), dlResult.toString());
     return AxisProfileResult::ERR_DATALAYER_READ_NODE;
   }
 
   aprResult = DeviceFbsDataHelper::extractSlaveAddressByMapping(variantMapping, addressArray);
-  if (aprStatusNotOkay(aprResult))
+  if (aprStatusFailed(aprResult))
   {
     APR_TRACE_ERROR("Failed to extract configured slave address mapping of field Instance %s .", strFieldbusInstance.c_str());
   }

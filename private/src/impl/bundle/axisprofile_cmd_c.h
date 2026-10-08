@@ -111,10 +111,8 @@ extern "C" ::comm::axisprofile::AxisProfileResult AXISPROFILE_clearDeviceError2C
 /// @return Status of the function call, STS_OK or an error code on failure
 extern "C" ::comm::axisprofile::AxisProfileResult AXISPROFILE_setNewReferenceWithoutMovement(void* handle, double newPos, ::comm::axisprofile::AxisProfileEncoder encoder, ::comm::axisprofile::RefMode refMode, ::comm::axisprofile::CmdType& cmdType);
 
-/// @brief Command of setting operation mode of device.
-/// @param[in]  handle        pointer to the instantiated object
-/// @param[in]  opMode        operation mode to be set
+/// @brief Command of switching operation mode with check
+/// @param[in] handle pointer to the instantiated object
+/// @param[in] opMode operation mode to be set
 /// @return Status of the function call, STS_OK or an error code on failure
-extern "C" ::comm::axisprofile::AxisProfileResult AXISPROFILE_setOperationModeCmd(void* handle, ::comm::axisprofile::AxisProfileOperationMode opMode);
-
 extern "C" ::comm::axisprofile::AxisProfileResult AXISPROFILE_switchOperationModeWithCheckCmd(void* handle, ::comm::axisprofile::AxisProfileOperationMode opMode);

@@ -1,0 +1,34 @@
+include "deviceParam.fbs";
+
+namespace comm.axisprofile.fbtypes;
+
+enum bootSnapshotProtocol : byte {
+  /// unknow protocol
+  UNKNOWN = 0,  
+
+  /// soe protocol
+  SERCOS = 1,
+  
+  /// canopen protocol
+  CANOPEN = 2
+}
+
+table bootParamSnapshot {
+  /// version of this schema
+  schema_version      : ubyte;
+
+  /// profile name
+  profile_name    : string;
+
+  /// configured protocol for the snapshot payload
+  protocol           : bootSnapshotProtocol;
+
+  /// persisted checksum value of the device
+  checksum_value      : uint;
+
+  /// persisted drive parameters
+  param_list          : [bootParam];
+
+}
+
+root_type bootParamSnapshot;

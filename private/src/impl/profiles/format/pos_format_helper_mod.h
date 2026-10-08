@@ -107,7 +107,7 @@ namespace comm::axisprofile::format
     /// @param[in] inValue  input Value.
     /// @param[in] modValue modulo factor
     /// @return Return the modulo value of the input value.
-    double calcModulo(const double inValue, const double modValue);
+    static double calcModulo(const double inValue, const double modValue);
 
   private: //method
 
@@ -115,7 +115,7 @@ namespace comm::axisprofile::format
     /// @param[in] inValue  input Value.
     /// @param[in] moduloRange modulo range
     /// @return modulo value pair
-    ModValuePair convertToModValuePair(const double inValue, const double moduloRange);
+    static ModValuePair convertToModValuePair(const double inValue, const double moduloRange);
 
     /// @brief calculate and update limit for linear process
     /// @param[in] limitHigh    High Limit of linear value

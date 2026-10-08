@@ -64,7 +64,7 @@ HRESULT TestProviderProfilesSetURI::testErrors()
   comm::datalayer::Variant data;
 
   log(L"\nCreate node without manager.");
-  provider::NodeProfilesSetURI nodeA(nullptr, provider::NodeOperation::INBUFFER);
+  provider::NodeProfilesSetURI nodeA(nullptr, BufferOrient::INPUT_BUFFER);
 
   log(L"\nCall onWrite() without provider manager.");
   PROVIDER_CHECK_AND_RET(test::ProviderHelperUnittest::onWrite(this, &nodeA, m_nodeAddressIn, nullptr, false, comm::datalayer::DlResult::DL_INVALID_HANDLE));
@@ -76,7 +76,7 @@ HRESULT TestProviderProfilesSetURI::testErrors()
   test::MockAxisProfileCmp mockComponent;
 
   log(L"\nCreate node with manager.");
-  provider::NodeProfilesSetURI nodeB(mockComponent.getProviderManager(), provider::NodeOperation::INBUFFER);
+  provider::NodeProfilesSetURI nodeB(mockComponent.getProviderManager(), BufferOrient::INPUT_BUFFER);
 
   log(L"\nCall onWrite() with wrong variant type.");
   PROVIDER_CHECK_AND_RET(test::ProviderHelperUnittest::onWrite(this, &nodeB, m_nodeAddressIn, &data, false, comm::datalayer::DlResult::DL_TYPE_MISMATCH));
@@ -107,9 +107,9 @@ HRESULT TestProviderProfilesSetURI::testNode()
 
   log(L"\nCreate node with all possible node operations.");
   std::map< std::string, provider::NodeProfilesSetURI*> testNodes;
-  provider::NodeProfilesSetURI nodeInBuffer(mockComponent.getProviderManager(), provider::NodeOperation::INBUFFER);
+  provider::NodeProfilesSetURI nodeInBuffer(mockComponent.getProviderManager(), BufferOrient::INPUT_BUFFER);
   testNodes["INBUFFER"] = &nodeInBuffer;
-  provider::NodeProfilesSetURI nodeOutBuffer(mockComponent.getProviderManager(), provider::NodeOperation::OUTBUFFER); 
+  provider::NodeProfilesSetURI nodeOutBuffer(mockComponent.getProviderManager(), BufferOrient::OUTPUT_BUFFER);
   testNodes["OUTBUFFER"] = &nodeOutBuffer;
 
   for (auto &elem : testNodes)

@@ -91,12 +91,6 @@ bool AxisProfileDeviceParamEncoder::isLatchParamSupport() const
   return 0;
 }
 
-AxisProfileResult AxisProfileDeviceParamEncoder::readSignalStatusWordCfg(std::vector<std::uint32_t>& /*params*/, std::vector<std::uint16_t>& /*assignBits*/)
-{
-  rejectCmdDiagnosis("readSignalStatusWordCfg");
-  return AxisProfileResult::ERR_NOT_SUPPORTED;
-}
-
 OpModeAvailInfo* AxisProfileDeviceParamEncoder::getOpModeAvailInfo()
 {
   rejectCmdDiagnosis("getOpModeAvailInfo");
@@ -159,20 +153,16 @@ void AxisProfileDeviceParamEncoder::rejectCmdDiagnosis(const char* cmdNameInfo) 
                      m_profileBasicInfo.m_profileName.c_str());
 }
 
-bool AxisProfileDeviceParamEncoder::checkNeedReadBootParams()
-{
-  return true;
-}
-
-AxisProfileResult AxisProfileDeviceParamEncoder::getDeviceInformation()
-{
-  return AxisProfileResult::STS_OK;
-}
-
 AxisProfileResult AxisProfileDeviceParamEncoder::getChecksumIdnList(std::vector<std::string>& /*idnStrListRet*/) const
 {
   rejectCmdDiagnosis("getChecksumIdnList");
   return AxisProfileResult::ERR_NOT_SUPPORTED;
+}
+
+SignalFuncHandler* AxisProfileDeviceParamEncoder::getSignalFuncHandler()
+{
+  rejectCmdDiagnosis("getSignalFuncHandler");
+  return nullptr;
 }
 
 AxisProfileResult AxisProfileDeviceParamEncoder::checkAxisHomed(bool& homed)

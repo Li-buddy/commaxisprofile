@@ -104,7 +104,7 @@ HRESULT TestCanopenCommand::testSimpleCommands()
   {
     std::wstring m_testName;              // test name
     std::function<AxisProfileResult(canopen::CanopenCommandDrive& cmd)> m_testFun; // test function
-    std::uint16_t m_setDataState;              // set of datalayer value
+    std::uint16_t m_setDataState{};            // set of datalayer value
     AxisProfileResult m_expectedResult;   // expected return value
   };
 
@@ -175,8 +175,8 @@ HRESULT TestCanopenCommand::testReferencingCommand()
   {
     std::wstring m_testName;              // test name
     std::function<AxisProfileResult(canopen::CanopenCommandDrive& cmd)> m_testFun; // test function
-    std::uint16_t m_setStatusWord;             // set status word
-    std::uint16_t m_setDataState;              // set of datalayer value
+    std::uint16_t m_setStatusWord{};           // set status word
+    std::uint16_t m_setDataState{};            // set of datalayer value
     AxisProfileResult m_expectedResult;   // expected return value
     AxisProfileCommandType m_cmdType;     // command type
     AxisprofileCommandState m_cmdState = AxisprofileCommandState::CMD_STATE_ACTIVE;     // command state
@@ -461,8 +461,8 @@ HRESULT TestCanopenCommand::testCommandAssignedOpMode()
   {
     std::wstring m_testName;                // test name
     std::function<AxisProfileResult(canopen::CanopenCommandDrive& cmd)> m_testFun;
-    std::uint16_t m_setStatusWord;               // set status word
-    std::uint16_t m_setDataState;                // set of datalayer value
+    std::uint16_t m_setStatusWord{};             // set status word
+    std::uint16_t m_setDataState{};              // set of datalayer value
     AxisProfileResult m_expectedResult;     // expected return value
     AxisProfileCommandType m_cmdType;       // command type
     AxisprofileCommandState m_cmdState = AxisprofileCommandState::CMD_STATE_ACTIVE;     // command state
@@ -569,8 +569,8 @@ log(L"\n<b>Test referencingAxis.");
   {
     std::wstring m_testName;              // test name
     std::function<AxisProfileResult(canopen::CanopenCommandDrive& cmd)> m_testFun; // test function
-    std::uint16_t m_setStatusWord;             // set status word
-    std::uint16_t m_setDataState;              // set of datalayer value
+    std::uint16_t m_setStatusWord{};           // set status word
+    std::uint16_t m_setDataState{};            // set of datalayer value
     AxisProfileResult m_expectedResult;   // expected return value
     AxisProfileCommandType m_cmdType;     // command type
     DeviceSeries m_deviceSeries;          // device series
@@ -739,8 +739,8 @@ HRESULT TestCanopenCommand::testCheckIfDriveHalted()
   {
     std::wstring m_testName;              // test name
     std::function<AxisProfileResult(canopen::CanopenCommandDrive& cmd)> m_testFun; // test function
-    std::uint16_t m_setControlWord;            // set control word
-    std::uint16_t m_setDataState;              // set of datalayer value
+    std::uint16_t m_setControlWord{};          // set control word
+    std::uint16_t m_setDataState{};            // set of datalayer value
     DeviceSeries m_deviceSeries;          // set device series
     AxisProfileResult m_expectedResult;   // expected return value
    };

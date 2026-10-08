@@ -49,63 +49,37 @@ HRESULT TestAxisProfileStatusControlEncoder::doTest()
   RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::STS_OK);
 
   log(L"\n\t Test of checkError...");
-  if (m_category->getStatusControlInternal()->checkError())
-  {
-    error(L"\nUnexpected checkError value. Expected false.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(!m_category->getStatusControlInternal()->checkError(), L"\nUnexpected checkError value. Expected false.");
 
   log(L"\n\t Test of checkOperationMode...");
   AxisProfileOperationMode opMode { AxisProfileOperationMode::POSITIONING };
-  if (m_category->getStatusControlInternal()->checkOperationMode(opMode))
-  {
-    error(L"\nUnexpected checkOperationMode value. Expected false.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(!m_category->getStatusControlInternal()->checkOperationMode(opMode),
+                      L"\nUnexpected checkOperationMode value. Expected false.");
 
   log(L"\n\t Test of checkOperationModeSupported...");
   OpModeErrorInfo info {};
-  if (m_category->getStatusControlInternal()->checkOperationModeSupported(opMode, info))
-  {
-    error(L"\nUnexpected checkOperationModeSupported value. Expected false.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(!m_category->getStatusControlInternal()->checkOperationModeSupported(opMode, info),
+                      L"\nUnexpected checkOperationModeSupported value. Expected false.");
 
   log(L"\n\t Test of checkPowerMode...");
   AxisProfilePowerMode powerMode { AxisProfilePowerMode::POWER_ON };
-  if (m_category->getStatusControlInternal()->checkPowerMode(powerMode))
-  {
-    error(L"\nUnexpected checkPowerMode value. Expected false.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(!m_category->getStatusControlInternal()->checkPowerMode(powerMode),
+                      L"\nUnexpected checkPowerMode value. Expected false.");
 
   log(L"\n\t Test of checkReadyToOperate...");
-  if (m_category->getStatusControlInternal()->checkReadyToOperate() != ReadyToOperate::UNDEF_OPERATION)
-  {
-    error(L"\nUnexpected checkReadyToOperate value.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(m_category->getStatusControlInternal()->checkReadyToOperate() == ReadyToOperate::UNDEF_OPERATION,
+                      L"\nUnexpected checkReadyToOperate value.");
 
   log(L"\n\t Test of cyclicStandStillCheck...");
-  if (m_category->getStatusControlInternal()->cyclicStandStillCheck())
-  {
-    error(L"\nUnexpected cyclicStandStillCheck value. Expected false.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(!m_category->getStatusControlInternal()->cyclicStandStillCheck(),
+                      L"\nUnexpected cyclicStandStillCheck value. Expected false.");
 
   log(L"\n\t Test of deviceHasWarning...");
-  if (m_category->getStatusControlInternal()->deviceHasWarning())
-  {
-    error(L"\nUnexpected deviceHasWarning value. Expected false.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(!m_category->getStatusControlInternal()->deviceHasWarning(),
+                      L"\nUnexpected deviceHasWarning value. Expected false.");
 
   log(L"\n\t Test of getCInterface...");
-  if (!m_category->getStatusControlInternal()->getCInterface())
-  {
-    error(L"\nUnexpected nullptr C interface.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(m_category->getStatusControlInternal()->getCInterface(), L"\nUnexpected nullptr C interface.");
 
   log(L"\n\t Test of getDriveHaltMode...");
   bool isHalt {};
@@ -113,32 +87,20 @@ HRESULT TestAxisProfileStatusControlEncoder::doTest()
   RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
 
   log(L"\n\t Test of getOperationMode...");
-  if (m_category->getStatusControlInternal()->getOperationMode() != AxisProfileOperationMode::UNDEFINED)
-  {
-    error(L"\nUnexpected getOperationMode value.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(m_category->getStatusControlInternal()->getOperationMode() == AxisProfileOperationMode::UNDEFINED,
+                      L"\nUnexpected getOperationMode value.");
 
   log(L"\n\t Test of getPowerMode...");
-  if (m_category->getStatusControlInternal()->getPowerMode() != AxisProfilePowerMode::UNDEFINED)
-  {
-    error(L"\nUnexpected getPowerMode value.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(m_category->getStatusControlInternal()->getPowerMode() == AxisProfilePowerMode::UNDEFINED,
+                      L"\nUnexpected getPowerMode value.");
 
   log(L"\n\t Test of getStatusWord...");
-  if (m_category->getStatusControlInternal()->getStatusWord() != 0U)
-  {
-    error(L"\nUnexpected getStatusWord value. Expected 0.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(m_category->getStatusControlInternal()->getStatusWord() == 0U,
+                      L"\nUnexpected getStatusWord value. Expected 0.");
 
   log(L"\n\t Test of isDeviceFollowsControl...");
-  if (m_category->getStatusControlInternal()->isDeviceFollowsControl())
-  {
-    error(L"\nUnexpected isDeviceFollowsControl value. Expected false.");
-    res = E_FAIL;
-  }
+  LOG_TEST_RESULT_ANY(!m_category->getStatusControlInternal()->isDeviceFollowsControl(),
+                      L"\nUnexpected isDeviceFollowsControl value. Expected false.");
 
   log(L"\n\t Test of setControlWord...");
   uint16_t controlWord {};

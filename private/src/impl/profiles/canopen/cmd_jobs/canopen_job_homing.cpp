@@ -5,7 +5,7 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2025 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
 /// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
@@ -99,7 +99,15 @@ AxisProfileResult CanopenJobHoming::onSetArgument(IContainer* arg)
 
 AxisProfileResult CanopenJobHoming::onJobEnterActivating()
 {
-  auto propertyIf = m_shareHandle->getPropertyIF();
+  // decide command execution way
+  SignalFuncHandler* signalFuncHandler {};
+  getSignalFuncHandler(signalFuncHandler);
+
+  m_signalFuncCmd.initSignalFuncHandler(signalFuncHandler);
+  FunctionSupportErrorInfo errorInfo {};
+  m_isSignalFuncCmd = m_signalFuncCmd.isSignalFuncSupported(errorInfo);
+  APR_TRACE_MESSAGE(m_isSignalFuncCmd ? "homing command : handled as signal function." : "homing command : handled as normal command.");
+
   m_jobFuns.clear();
   m_jobStep = 0; // jobs that need to switch homing to active
   m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_NOT_SET);
@@ -107,22 +115,7 @@ AxisProfileResult CanopenJobHoming::onJobEnterActivating()
   switch (m_cmdData.mode)
   {
     case RefMode::SET_POS_DEVICE:
-      m_jobFuns.emplace_back([&]() {return setupReadListFromDevice();});
-      m_jobFuns.emplace_back([&]() {return exeParamListAccess();}); // read parameters from device
-      if (DeviceIdHelper::isRexrothCtrlXDrive(propertyIf->getDeviceSeries()))
-      {
-        // for ctrlX drive, we clear the old reference point in the drive
-        m_jobFuns.emplace_back([&](){return writeToDeviceU16(CANCEL_REF_POINT, 0x00);});
-        m_jobFuns.emplace_back([&](){return writeToDeviceU16(CANCEL_REF_POINT, 0x03);});
-        m_jobFuns.emplace_back([&](){return writeToDeviceU16(CANCEL_REF_POINT, 0x00);});
-      }
-      m_jobFuns.emplace_back([&]() {return setupWriteListToDevice();});
-      m_jobFuns.emplace_back([&]() {return exeParamListAccess();}); // write parameters from device
-      m_jobFuns.emplace_back([&]() {return setHomingState(false);});
-      m_jobFuns.emplace_back([&]() {return switchAndCheckOpMode(AxisProfileOperationMode::HOMING);});
-      m_jobFuns.emplace_back([&]() {return startHomingProcedure();});
-      m_jobFuns.emplace_back([&]() {return initDelayCycles(0.05);}); // delay 0.05 second for synchronization
-      m_jobFuns.emplace_back([&]() {return exeDelayCycles();});
+      setupHomingByDeviceJobs();
       break;
     case RefMode::SET_POS_PROFILE:
       m_jobFuns.emplace_back([&]() {return activeHomingByProfile();});
@@ -131,7 +124,7 @@ AxisProfileResult CanopenJobHoming::onJobEnterActivating()
     default:
       break;
   }
-
+  
   return CanopenJobBase::onJobEnterActivating();
 }
 
@@ -147,10 +140,18 @@ AxisProfileResult CanopenJobHoming::onJobEnterAborting()
   switch (m_cmdData.mode)
   {
     case RefMode::SET_POS_DEVICE:
-      m_jobFuns.emplace_back([&]() {return abortHomingProcedure();});
-      m_jobFuns.emplace_back([&]() {return initDelayCycles(0.05);}); // delay 0.05 second for synchronization
-      m_jobFuns.emplace_back([&]() {return exeDelayCycles();});
-      m_jobFuns.emplace_back([&]() {return switchAndCheckOpMode(AxisProfileOperationMode::POSITIONING);});
+      if(!m_isSignalFuncCmd)
+      {
+        m_jobFuns.emplace_back([&]() {return abortHomingProcedure();});
+        m_jobFuns.emplace_back([&]() {return initDelayCycles(0.05);}); // delay 0.05 second for synchronization
+        m_jobFuns.emplace_back([&]() {return exeDelayCycles();});
+        m_jobFuns.emplace_back([&]() {return switchAndCheckOpMode(AxisProfileOperationMode::POSITIONING);});
+      }
+      else
+      {
+        m_jobFuns.emplace_back([&]() {return m_signalFuncCmd.onJobAborting();});
+        m_jobFuns.emplace_back([&]() { return setCmdStatusInDevice(CmdStatusInDevice::DEVICE_NOT_SET); });
+      }
       break;
     default:
       break;
@@ -168,7 +169,7 @@ AxisProfileResult CanopenJobHoming::onUpdateStatusInDevice()
   return checkHomingProcedure();
 }
 
-////////////////////////////////////////// private methods //////////////////////////////////////////// 
+////////////////////////////////////////// private methods ////////////////////////////////////////////
 
 AxisProfileResult CanopenJobHoming::setupReadListFromDevice()
 {
@@ -193,9 +194,9 @@ AxisProfileResult CanopenJobHoming::setupWriteListToDevice()
     m_paramList.emplace_back(ReadWriteType::WRITE, getObjDir(REF_DISTANCE_INDRA_DRIVE, m_profileInfo.m_driveNumber),
                              &m_cmdPosRaw, sizeof(m_cmdPosRaw));
 
-    // It is a little bit confusion here, because for Indra drive, the REF_DISTANCE is used for set offset to 0, 
+    // It is a little bit confusion here, because for Indra drive, the REF_DISTANCE is used for set offset to 0,
     // but for other drive the REF_DISTANCE is used for set the homing position.
-    // The reason is, the REF_DISTANCE for indra drive is used for set the homing offset, the homing position must use 
+    // The reason is, the REF_DISTANCE for indra drive is used for set the homing offset, the homing position must use
     // REF_DISTANCE_INDRADRIVE to set
     m_paramList.emplace_back(ReadWriteType::WRITE, getObjDir(REF_DISTANCE, m_profileInfo.m_driveNumber),
                              &m_posOffsetRaw, sizeof(m_posOffsetRaw));
@@ -225,6 +226,44 @@ AxisProfileResult CanopenJobHoming::setupWriteListToDevice()
   }
 
   return AxisProfileResult::STS_OK;
+}
+
+void CanopenJobHoming::setupHomingByDeviceJobs()
+{
+  m_jobFuns.emplace_back([&]() {return setupReadListFromDevice();});
+  m_jobFuns.emplace_back([&]() {return exeParamListAccess();}); // read parameters from device
+  setupClearReferencePointJobs();
+  m_jobFuns.emplace_back([&]() {return setupWriteListToDevice();});
+  m_jobFuns.emplace_back([&]() {return exeParamListAccess();}); // write parameters from device
+  setupActiveHomingByDeviceJobs();
+}
+
+void CanopenJobHoming::setupClearReferencePointJobs()
+{
+  auto propertyIf = m_shareHandle->getPropertyIF();
+  if (DeviceIdHelper::isRexrothCtrlXDrive(propertyIf->getDeviceSeries()))
+  {
+    // for ctrlX drive, we clear the old reference point in the drive
+    m_jobFuns.emplace_back([&]() {return writeToDeviceU16(CANCEL_REF_POINT, 0x00);});
+    m_jobFuns.emplace_back([&]() {return writeToDeviceU16(CANCEL_REF_POINT, 0x03);});
+    m_jobFuns.emplace_back([&]() {return writeToDeviceU16(CANCEL_REF_POINT, 0x00);});
+  }
+}
+
+void CanopenJobHoming::setupActiveHomingByDeviceJobs()
+{  
+  m_jobFuns.emplace_back([&]() {return setHomingState(false);});
+  if(!m_isSignalFuncCmd)
+  {
+    m_jobFuns.emplace_back([&]() {return switchAndCheckOpMode(AxisProfileOperationMode::HOMING);});
+    m_jobFuns.emplace_back([&]() {return startHomingProcedure();});      
+    m_jobFuns.emplace_back([&]() {return initDelayCycles(0.05);}); // delay 0.05 second for synchronization
+    m_jobFuns.emplace_back([&]() {return exeDelayCycles();});
+  }
+  else
+  {
+    m_jobFuns.emplace_back([&]() {return m_signalFuncCmd.onJobActivating(m_asyncSm);});
+  }
 }
 
 AxisProfileResult CanopenJobHoming::switchAndCheckOpMode(AxisProfileOperationMode mode)
@@ -274,8 +313,6 @@ AxisProfileResult CanopenJobHoming::checkHomingProcedure()
   // TODO: watching bit12 (homing attained) changing from 0 to 1 is required.
   // For example, when previous homing command is done, user requests homing command again
   // see bug: https://rb-msvs-alm.de.bosch.com/tfs/Col-DCIATE3_EDC/PD_EDC/_workitems/edit/1010211
-  bool targetReached = tmpStatusWord.m_bits.bit10;
-  bool homingActive = tmpStatusWord.m_bits.bit12;
   bool homingError = tmpStatusWord.m_bits.bit13;
 
   if (homingError)
@@ -287,6 +324,8 @@ AxisProfileResult CanopenJobHoming::checkHomingProcedure()
   }
   else
   {
+    bool targetReached = tmpStatusWord.m_bits.bit10;
+    bool homingActive = tmpStatusWord.m_bits.bit12;
     if (targetReached && homingActive)
     {
       // make sure trace only once
@@ -300,10 +339,25 @@ AxisProfileResult CanopenJobHoming::checkHomingProcedure()
     }
     else
     {
-      m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
+      if (m_isSignalFuncCmd)
+      {
+        auto deviceParam = m_shareHandle->getDeviceParamIF();
+        bool homed {false};
+        auto res = deviceParam->checkAxisHomed(homed);
+        if(res!=AxisProfileResult::STS_OK)
+        {
+          m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_IN_PROCESS);
+        }
+        if (homed)
+        {
+          setHomingState(true);
+          APR_TRACE_MESSAGE("%s %s completed in device",
+                            m_profileInfo.m_profileTrace.createTraceMsg(), getID().c_str());
+          m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_COMPLETED);
+        }
+      }
     }
   }
-
   return AxisProfileResult::STS_OK;
 }
 
@@ -367,5 +421,11 @@ AxisProfileResult CanopenJobHoming::setHomingState(bool state)
   // for 3rd party drive, we have to set it to true to indicate homing is done
   auto deviceParamIf = m_shareHandle->getDeviceParamIF();
   deviceParamIf->setAxisHomed(state);
+  return AxisProfileResult::STS_OK;
+}
+
+AxisProfileResult CanopenJobHoming::setCmdStatusInDevice(CmdStatusInDevice status)
+{
+  m_deviceStatus.getRef().store(status);
   return AxisProfileResult::STS_OK;
 }

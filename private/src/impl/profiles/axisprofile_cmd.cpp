@@ -14,7 +14,8 @@
 #include "axisprofile_cmd.h"
 #include "bundle/axisprofile_cmd_c.h"
 #include "profiles/job_mgr/i_job_mgr.h"
-#include "profiles/axisprofile_job_base.h"
+#include "diagnosis/dia.h"
+
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
@@ -203,6 +204,7 @@ AxisProfileResult AxisProfileCmd::clearDeviceError2()
   {
     return retValue;
   }
+
   for (const auto& cmd : m_resetCmds)
   {
     if (getCmdState(cmd) == CmdState::STATE_ERROR)
@@ -305,7 +307,7 @@ AxisProfileResult AxisProfileCmd::switchOperationModeWithCheck(AxisProfileOperat
     resetCmd(cmdType);
     Dia::sendDiagnosis(MAIN_DIAG_COMMAND_ERR, DETAILED_DIAG_DEVICE_STATUS_ERROR,
                        m_profileInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "Trigger Reset again please");
+                       "Trigger the operation mode switching again please");
     return AxisProfileResult::ERR_INVALID_STATE;
   }
 

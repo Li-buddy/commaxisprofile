@@ -14,6 +14,7 @@
 // ---------------------------------------------------------------------------
 #include "node_profiles_checksum_value.h"
 #include "comm/axisprofile/defines/axisprofile_defs.h"
+#include "profiles/i_device_boot_param_snapshot.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -57,7 +58,14 @@ void NodeProfilesChecksumValue::onRead(const std::string& address, const comm::d
   {
     return;
   }
-  std::uint32_t value = profile->getDeviceParamInterface()->getCheckSumValue();
+  IDeviceBootParamSnapshot* snapshot = profile->getDeviceBootParmSnapshotInterface();
+  if (!snapshot)
+  {
+    ProviderHelper::sendDlErrorResponse(callback, comm::datalayer::DlResult::DL_INVALID_HANDLE, MAIN_DIAG_DATALAYER_ERR,
+                                        DETAILED_DIAG_SYSTEM_INCONSISTENT, "boot parameter snapshot interface not found");
+    return;
+  }
+  std::uint32_t value = snapshot->getBootParamSnapshot().checksumValue;
   
   // Finish
   comm::datalayer::Variant returnVal;

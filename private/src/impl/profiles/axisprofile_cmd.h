@@ -13,9 +13,7 @@
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
-#include "diagnosis/dia.h"
 #include "i_axisprofile_cmd_internal.h"
-#include "job_object/i_job_obj.h"
 #include "profiles/data_sharing/i_sharing_handler.h"
 #include <vector>
 

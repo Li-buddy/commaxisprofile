@@ -7,7 +7,6 @@
 
 // Mockups
 #include "mockup/mock_axisprofile_cmp.h"
-#include "mockup/mock_axisprofile_device_param.h"
 
 
 using namespace comm::axisprofile;
@@ -67,23 +66,23 @@ HRESULT TestProviderProfilesChecksumValue::testOnRead()
   log(L"\nCreate profile with name '%ls' for further testing.", UTF8TOWIDE(m_profileName));
   mockAxisProfileCmp.getAxisProfileManager()->createAxisProfile(AxisProfileType::SERVODRIVE_OVER_ETHERCAT, m_profileName);
 
-  log(L"\nSet checksum value.");
-  IAxisProfile* tempProfile = mockAxisProfileCmp.getAxisProfileManager()->getProfileByName(m_profileName.c_str());
-  if ( !tempProfile )
+  auto* profile = static_cast<IAxisProfileInternal*>(mockAxisProfileCmp.getAxisProfileManager()->getProfileByName(m_profileName.c_str()));
+  if (!profile)
   {
-    error(L"\nCould not find previously created profile!");
+    error(L"\nCould not get profile instance.");
     return E_FAIL;
-  }  
-  auto profile = static_cast<IAxisProfileInternal*>(tempProfile);
-  test::MockAxisProfileDeviceParam* pDevParm = static_cast<test::MockAxisProfileDeviceParam*>(profile->getDeviceParamInterface());
+  }
+
   std::uint32_t checksum = 123;
-  pDevParm->setChecksumValue(checksum);
-  
+  BootParamSnapshot snapshot {};
+  snapshot.checksumValue = checksum;
+  profile->getDeviceBootParmSnapshotInterface()->setBootParamSnapshot(snapshot);
+
   log(L"\nCall onRead() when everything is OK.");
-  comm::datalayer::Variant expData{};
-  expData.setValue(checksum);
-  comm::datalayer::Variant readData{};
-  PROVIDER_CHECK(test::ProviderHelperUnittest::onRead(this, &node, m_nodeAddress, &readData, true, comm::datalayer::DlResult::DL_OK, &expData));
+  comm::datalayer::Variant expectedData {};
+  expectedData.setValue(checksum);
+  comm::datalayer::Variant readData {};
+  PROVIDER_CHECK(test::ProviderHelperUnittest::onRead(this, &node, m_nodeAddress, &readData, true, comm::datalayer::DlResult::DL_OK, &expectedData));
 
   log(L"\n");
   return hResult;

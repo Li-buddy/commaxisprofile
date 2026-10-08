@@ -52,9 +52,9 @@ private: //data
   //! @brief This struct contains the test data of the different test cases.
   struct TestCaseStatusword
   {
-    const wchar_t *m_name;                                 //!< name of testcase
-    std::uint16_t m_statusWord;                            //!< test value for statusword
-    bool m_expectedErrorValue;                             //!< execute datalayer callback
+    const wchar_t *m_name{};                               //!< name of testcase
+    std::uint16_t m_statusWord{};                          //!< test value for statusword
+    bool m_expectedErrorValue{};                           //!< execute datalayer callback
     comm::axisprofile::AxisProfileResult m_expectedResult; //!< expected result of called method
   };
 
@@ -62,17 +62,17 @@ private: //data
   //! @brief This struct contains the test data of the different test cases.
   struct TestCaseControlword
   {
-    const wchar_t *m_name;                                         //!< name of testcase
+    const wchar_t *m_name{};                                       //!< name of testcase
     comm::axisprofile::AxisProfileResult m_expectedResult;         //!< expected result of called method
     comm::axisprofile::AxisProfileOperationMode m_commandedOpMode; //!< operation mode to set
-    std::uint16_t dataResponse;                                    //!< datalayer response
+    std::uint16_t dataResponse{};                                  //!< datalayer response
   };
 
   //! @struct TestCaseControlword
   //! @brief This struct contains the test data of the different test cases.
   struct TestPowerMode
   {
-    const wchar_t* m_name;                                        //!< name of testcase
+    const wchar_t* m_name{};                                      //!< name of testcase
     std::vector<std::uint16_t> m_statusWords;                     //!< test value for statusword
     comm::axisprofile::AxisProfileResult m_expectedResult;        //!< expected result of called method
     comm::axisprofile::AxisProfilePowerMode m_commandedPowerMode; //!< power mode to set
@@ -82,8 +82,8 @@ private: //data
   //! @brief This struct contains the test data of the different test cases.
   struct TestFeedbackStatus
   {
-    std::uint8_t m_opModeDisplay;                               //!< operation mode display.
-    std::uint8_t m_opMode;                                      //!< operation mode.
+    std::uint8_t m_opModeDisplay{};                             //!< operation mode display.
+    std::uint8_t m_opMode{};                                    //!< operation mode.
     comm::axisprofile::AxisProfileResult m_expectedResult;      //!< expected result of called method
   };
 

@@ -6,8 +6,8 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2018 - 2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
-/// All rights reserved in the event of the grant of a patent, utility model or design.  
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
 // Include Files
@@ -23,6 +23,7 @@
 #include "profiles/category/category_adapter_factory.h"
 #include "profiles/data_sharing/sharing_handler.h"
 #include "value_mapping/mapping_handler.h"
+#include "profiles/i_device_boot_param_snapshot.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -60,7 +61,7 @@ AxisProfile::AxisProfile(const std::string& profileName, const AxisProfileType a
   m_sharingHandler = new AxisProfileSharingHandler(&m_profileBasicInfo.m_profileTrace);
 
   // create job manager
-  m_jobMgr = new JobMgr(m_profileBasicInfo);  
+  m_jobMgr = new JobMgr(m_profileBasicInfo);
 
   // create mapping handler object
   m_mappingHandler = new AxisProfileMappingHandler(m_profileBasicInfo);
@@ -93,6 +94,7 @@ AxisProfile::~AxisProfile() noexcept
   delete m_profileCategory; m_profileCategory = nullptr;
   delete m_cmdIf; m_cmdIf = nullptr;
   delete m_propertyInterface; m_propertyInterface = nullptr;
+  delete m_bootParamSnapshotInterface; m_bootParamSnapshotInterface = nullptr;
   delete m_jobMgr; m_jobMgr = nullptr;
 }
 
@@ -179,7 +181,7 @@ AxisProfileDeviceScalingType AxisProfile::getDeviceScalingType(AxisProfileDevice
   {
     return AxisProfileDeviceScalingType::UNDEFINED;
   }
-  return m_profileCategory->getScalingInternal()->getDeviceScalingType(valueType);  
+  return m_profileCategory->getScalingInternal()->getDeviceScalingType(valueType);
 }
 
 
@@ -242,6 +244,11 @@ IAxisProfileCmdInternal* AxisProfile::getCmdInterface()
 IAxisProfilePropertyInternal* AxisProfile::getPropertyInterface()
 {
   return m_propertyInterface;
+}
+
+IDeviceBootParamSnapshot* AxisProfile::getDeviceBootParmSnapshotInterface()
+{
+  return m_bootParamSnapshotInterface;
 }
 
 IAxisProfileMappingHandler* AxisProfile::getMappingHandler() const
@@ -309,7 +316,7 @@ AxisProfileResult AxisProfile::setProfileCategory(AxisProfileCategory category)
     m_sharingHandler->removeSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY);
     delete originalCategory;
     originalCategory = nullptr;
-  }  
+  }
 
   init();
   m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY, m_profileCategory);
@@ -320,7 +327,7 @@ AxisProfileResult AxisProfile::setProfileCategory(AxisProfileCategory category)
 }
 
 AxisProfileCategory AxisProfile::getProfileCategory()
-{  
+{
   if (!m_profileCategory)
   {
     return AxisProfileCategory::UNDEFINED;

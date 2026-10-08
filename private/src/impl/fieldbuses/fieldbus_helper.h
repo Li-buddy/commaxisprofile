@@ -13,6 +13,9 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "fieldbus_defs.h"
+#include "profiles/profile_defs.h"
+#include "diagnosis/dia.h"
+#include <limits>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -23,7 +26,6 @@ namespace comm::axisprofile
   // ---------------------------------------------------------------------------
   // Declaration of symbolic constants
   // --------------------------------------------------------------------------- 
-  constexpr std::size_t LIST_BUFF_DEFAULT_SIZE = 64;    ///< Default buffer size for parameter list access
 
   // ---------------------------------------------------------------------------
   // Declaration of macros
@@ -72,7 +74,7 @@ namespace comm::axisprofile
         out[pos + 1] = hexDigits[c & 0x0F]; // Low 4 bits
         if (i != len - 1)
         {
-          out[pos + 2] = '|';               // Separator
+          out[pos + 2] = ':';               // Separator
         }
       }
 
@@ -97,7 +99,7 @@ namespace comm::axisprofile
         return AxisProfileResult::ERR_EXEC_NULL;
       }
 
-      const std::size_t cellSize = sizeof(T); // each data length in bytes    
+      const std::size_t cellSize = sizeof(T); // each data length in bytes
       std::size_t cellNum = rawSize / cellSize; // number of cells in the raw data
 
       if (cellSize * cellNum != rawSize)
@@ -222,5 +224,74 @@ namespace comm::axisprofile
 
       return AxisProfileResult::STS_OK;
     }
+
+    /// @brief Get EtherCAT name of the given uri string.
+    /// @param[in] uri The RT memory uri
+    /// @return The const pointer to string of EtherCAT name
+    static std::string_view getEtherCATNameOfURI(std::string_view uri)
+    {
+      std::string_view base = DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES;
+
+      size_t pos = uri.find(base);
+      if (pos == std::string_view::npos)
+      {
+        return {};
+      }
+
+      pos += base.size();
+
+      // skip optional '/'
+      if (pos < uri.size() && uri[pos] == '/')
+      {
+        ++pos;
+      }
+
+      size_t end = uri.find('/', pos);
+
+      return (end == std::string_view::npos) ? uri.substr(pos) : uri.substr(pos, end - pos);
+    }
+
+    /// @brief Get the EtherCAT master instance name from the RT memory buffer URI.
+    /// @param[in] inputURI   The const pointer to string of input RT memory.
+    /// @param[in] outputURI  The const pointer to string of output RT memory.
+    /// @return The const pointer to string of EtherCAT name
+    static std::string_view extractEtherCATNameFromBufString(const char* inputURI,
+                                                             const char* outputURI)
+    {
+      if (inputURI && *inputURI)
+      {
+        return getEtherCATNameOfURI(inputURI);
+      }
+
+      if (outputURI && *outputURI)
+      {
+        return getEtherCATNameOfURI(outputURI);
+      }
+      return {};
+    }
+
+    /// @brief Generate input/output buffer string with EtherCAT instance name.
+    ///        return empty string when name is empty
+    /// @param[in] ethercatName The EtherCAT instance name.
+    /// @param[in] buff         Input or output buffer
+    /// @return The corresponding buffer string
+    static std::string generateRTBufferString(const std::string& ethercatName, BufferOrient buff)
+    {
+      if (ethercatName.empty())
+      {
+        return {};
+      }
+      std::string uri = DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES + "/" + ethercatName;
+      if (BufferOrient::INPUT_BUFFER == buff)
+      {
+        uri += "/realtime_data/input";
+      }
+      else
+      {
+        uri += "/realtime_data/output";
+      }
+      return uri;
+    }
+
   };
 }

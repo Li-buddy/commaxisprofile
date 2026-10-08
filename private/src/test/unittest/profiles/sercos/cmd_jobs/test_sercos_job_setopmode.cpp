@@ -1,7 +1,6 @@
 #include "helper/result_helper.h"
 #include "mockup/mock_axisprofile_status_control.h"
 #include "mockup/mock_fieldbus_adapter_soe.h"
-#include "mockup/mock_job_mgr.h"
 #include "mockup/mock_profile_trace.h"
 #include "profiles/data_sharing/sharing_handler.h"
 #include "profiles/sercos/cmd_jobs/sercos_job_setopmode.h"

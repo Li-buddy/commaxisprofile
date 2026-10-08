@@ -121,6 +121,8 @@ HRESULT FuncTestProviderSystemStatemachine::testTransitionToRunning()
   m_axisProfileComponent->getAxisProfileManager()->setProfileInputBuffer(profileName.c_str(), MOCK_ECAT_INPUTBUFFER_STRING);
   m_axisProfileComponent->getAxisProfileManager()->setProfileOutputBuffer(profileName.c_str(), MOCK_ECAT_OUTPUTBUFFER_STRING);
 
+  testProfile->getPropertyInterface()->setEtherCATName(MOCK_ECAT_MASTER_INSTANCE_NAME);
+  testProfile->getPropertyInterface()->setDeviceName(MOCK_ECAT_SLAVE_DEVICE_NAME);
   testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::STATUSWORD, MOCK_ECAT_INBUFFER_STATUSWORD);
   testProfile->getMappingHandler()->configureInputValue(comm::axisprofile::InputMappingValueID::POSITION, MOCK_ECAT_INBUFFER_POSITION);
   testProfile->getMappingHandler()->configureOutputValue(comm::axisprofile::OutputMappingValueID::CONTROLWORD, MOCK_ECAT_OUTBUFFER_CMDWORD);

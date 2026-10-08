@@ -53,6 +53,7 @@ public: // methods
 private: //method
 
  HRESULT testForSetScalingStrategy();
+ HRESULT testProcessDataAtCopiesHomedStatusAsSingleBit();
 
 private: //data
 

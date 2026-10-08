@@ -138,7 +138,7 @@ namespace comm::axisprofile
     ///         will be stored in the 'responseData' argument.
     /// @param[out]   responseData   Received response data of the parameter request.
     /// @return The lambda function that will fill the 'responseData'  argument when it is executed later.
-    comm::datalayer::IClient::ResponseCallback parameterRequestCallback(ParameterResponseCallbackData* const responseData) const;
+    static comm::datalayer::IClient::ResponseCallback parameterRequestCallback(ParameterResponseCallbackData* const responseData);
 
   protected: // Data
     static const std::string ERROR_FB;                ///< fb error

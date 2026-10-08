@@ -210,6 +210,9 @@ AxisProfileResult SercosProbeDrive::probeStatusCtrl(ProbeIndex probeIdx, bool en
 
   if (asyncState->getCommandStep() == AsyncCommandStatemachine::CommandStep::PARAM_INIT)
   {
+    checkIsSignalSupported(probeIdx, m_isSignalFuncCmd);
+
+    APR_TRACE_MESSAGE(m_isSignalFuncCmd ? "probe-ex command : handled as signal function." : "probe-ex : handled as normal command.");
     m_probeEable.clear();
 
     bool preconditionFullFilled = itemListChecker(probeIdx, probeIdx == ProbeIndex::PROBE_1 ? m_probe1CheckList : m_probe2CheckList);
@@ -219,16 +222,58 @@ AxisProfileResult SercosProbeDrive::probeStatusCtrl(ProbeIndex probeIdx, bool en
       return AxisProfileResult::ERR_PROFILE_CONFIG;
     }
 
-    // check probe status
-    m_probeEable.emplace_back(SercosParamStruct(ReadWriteType::READ, S_0_0405_ENABLE_PROBE_1, 
-                              &m_probeParam.m_probe1Enable, sizeof(m_probeParam.m_cmdEnableValue)));
-    m_probeEable.emplace_back(SercosParamStruct(ReadWriteType::READ, S_0_0406_ENABLE_PROBE_2, 
-                              &m_probeParam.m_probe2Enable, sizeof(m_probeParam.m_cmdEnableValue)));
+    if (!m_isSignalFuncCmd)
+    {
+      // check probe status
+      m_probeEable.emplace_back(SercosParamStruct(ReadWriteType::READ, S_0_0405_ENABLE_PROBE_1,
+                                                  &m_probeParam.m_probe1Enable, sizeof(m_probeParam.m_cmdEnableValue)));
+      m_probeEable.emplace_back(SercosParamStruct(ReadWriteType::READ, S_0_0406_ENABLE_PROBE_2,
+                                                  &m_probeParam.m_probe2Enable, sizeof(m_probeParam.m_cmdEnableValue)));
+    }
     asyncState->switchToNextStep();
   }
-
-  result = executeProbeStatusCtrl(probeIdx, enable, *asyncState);
+  if (!m_isSignalFuncCmd)
+  {
+    result = executeProbeStatusCtrl(probeIdx, enable, *asyncState);
+  }
+  else
+  {
+    result = executeProbeStatusCtrlSignalFunc(probeIdx, enable, *asyncState);
+  }
   return resultHandlingCycle(*asyncState, result);
+}
+
+AxisProfileResult SercosProbeDrive::checkIsSignalSupported(ProbeIndex probeIdx, bool& supported)
+{
+  supported = false;
+  // decide the probe working method, check if the command is invoked via signal function or via probe async interface
+  if (!m_sharingHandler->getDeviceParamIF())
+  {
+    APR_TRACE_MESSAGE("failed to checkIsSignalSupported, command will handle in async way");
+    return AxisProfileResult::ERR_EXEC_NULL;
+  }
+
+  auto deviceParam = m_sharingHandler->getDeviceParamIF();
+  auto handler = deviceParam->getSignalFuncHandler();
+  m_signalFuncProbe.initSignalFuncHandler(handler);
+
+  // can decide the actual probe via probe index, since the probe async interface can not be used by its 2 probes same time!
+  switch (probeIdx)
+  {
+    case ProbeIndex::PROBE_1:
+      m_signalFuncProbe.setSignalFunc(SignalFunction(FunctionSupport::PROBE1_ENABLE_CYCLIC));
+      break;
+    case ProbeIndex::PROBE_2:
+      m_signalFuncProbe.setSignalFunc(SignalFunction(FunctionSupport::PROBE2_ENABLE_CYCLIC));
+      break;
+    default:
+      Dia::sendDiagnosis(MAIN_DIAG_PROBE_ERR, DETAILED_DIAG_SELECTED_PROBE_NOT_EXIST, __FILE__, __FUNCTION__, __LINE__, "Invalid probe number: %s", probeIdx);
+      return AxisProfileResult::ERR_INVALID_ARGUMENT;
+  }
+
+  FunctionSupportErrorInfo errorInfo {};
+  supported = m_signalFuncProbe.isSignalFuncSupported(errorInfo);
+  return AxisProfileResult::STS_OK;
 }
 
 AxisProfileResult SercosProbeDrive::getProbeActualValuesRT(ProbeIndex probeIdx, ProbeActualValues* actualValueProbe)
@@ -631,7 +676,99 @@ AxisProfileResult SercosProbeDrive::executeProbeStatusCtrl(ProbeIndex probeIdx, 
 
     default: // error reaction
     {
-      APR_TRACE_ERROR("invalid state to execute executeExtendedCtrlWordConfig.");
+      APR_TRACE_ERROR("invalid state to execute executeProbeStatusCtrl.");
+      result = AxisProfileResult::ERR_INVALID_STATE;
+      break;
+    }
+  }
+  return result;
+}
+
+AxisProfileResult SercosProbeDrive::executeProbeStatusCtrlSignalFunc(ProbeIndex probeIdx, bool enable, AsyncCommandStatemachine& asyncState)
+{
+  AxisProfileResult result {AxisProfileResult::STS_PENDING};
+  switch (asyncState.getCommandStep())
+  {
+    case AsyncCommandStatemachine::CommandStep::PARAM_PROCESS:
+    {
+      bool state {};
+      result = m_signalFuncProbe.getSignalFuncState(state);
+      // init the probe parameter for signal function
+      switch (probeIdx)
+      {
+        case ProbeIndex::PROBE_1:
+        {
+          m_probeParam.m_probe1Enable = state;
+          break;
+        }
+        case ProbeIndex::PROBE_2:
+        {
+          m_probeParam.m_probe2Enable = state;
+          break;
+        }
+        default:
+          Dia::sendDiagnosis(MAIN_DIAG_PROBE_ERR, DETAILED_DIAG_SELECTED_PROBE_NOT_EXIST, __FILE__, __FUNCTION__, __LINE__, "Invalid probe number: %s", probeIdx);
+          result = AxisProfileResult::ERR_INVALID_ARGUMENT;
+          break;
+      }
+      if (aprStatusOkay(result))
+      {
+        asyncState.switchToCmdStartStep();
+        result = AxisProfileResult::STS_PENDING;
+      }
+      break;
+    }
+    case AsyncCommandStatemachine::CommandStep::CMD_START:
+    {
+      uint16_t probeCmd = enable ? SERCOS_COMMAND_ENABLE : SERCOS_COMMAND_NOT_SET;
+      result = m_paramAccess->writeAndCheckParamAsync(S_0_0170_PROBING_CYCLE_PROCEDURE,
+                                                        static_cast<void*>(&probeCmd),
+                                                        sizeof(probeCmd), asyncState);      
+      if (aprStatusOkay(result))
+      {
+        asyncState.switchToNextStep();
+        result = AxisProfileResult::STS_PENDING;
+      }
+      break;
+    }
+    case AsyncCommandStatemachine::CommandStep::CMD_SET:
+    {
+      result = m_signalFuncProbe.onJobAborting();
+      if (aprStatusOkay(result))
+      {
+        asyncState.switchToNextStep();
+        result = AxisProfileResult::STS_PENDING;
+      }
+      break;
+    }
+    case AsyncCommandStatemachine::CommandStep::CMD_CHECK_STATUS:
+    {
+      if (enable)
+      {
+        result = m_signalFuncProbe.singleActiveSignalFunc();
+      }
+      else
+      {
+        result = AxisProfileResult::STS_OK;
+      }
+      if (aprStatusOkay(result))
+      {
+        asyncState.switchToCertainStep(AsyncCommandStatemachine::CommandStep::PARAM_POST);
+        result = AxisProfileResult::STS_PENDING;
+      }
+      break;
+    }
+    case AsyncCommandStatemachine::CommandStep::CMD_DONE:
+    case AsyncCommandStatemachine::CommandStep::CMD_CLEAR:
+    case AsyncCommandStatemachine::CommandStep::PARAM_POST:
+    {
+      result = AxisProfileResult::STS_OK;
+      break;
+    }
+
+    default: // error reaction
+    {
+      APR_TRACE_ERROR("invalid state to execute executeProbeStatusCtrl.");
       result = AxisProfileResult::ERR_INVALID_STATE;
       break;
     }

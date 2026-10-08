@@ -46,3 +46,8 @@ extern "C" comm::axisprofile::AxisProfileDeviceScalingType AXISPROFILE_getDevice
 /// @param[in] handle  Handle of the interface.
 /// @return The category of profile.
 extern "C" comm::axisprofile::AxisProfileCategory AXISPROFILE_getProfileCategoryProperty(void* handle);
+
+/// @brief This method return the fieldbus master name of current axisprofile.
+/// @param[in] handle  Handle of the interface.
+/// @return The name of fieldbus master instance configured for current axis profile.
+extern "C" const char* AXISPROFILE_getCfgedFieldbusMasterName(void* handle);

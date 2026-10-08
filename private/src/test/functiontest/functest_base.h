@@ -71,6 +71,10 @@ protected: // Methods
   //! @param[out]   axisProfile    Optional. Pointer to the new axis profile
   //! @return Return value indicating success or error.
   HRESULT addProfileToSystem(const comm::axisprofile::AxisProfileType type, const std::uint32_t deviceAddress, const std::string& profileName, comm::axisprofile::IAxisProfileInternal** axisProfile = nullptr);
+    
+  /// @brief Update the response source data based on profile type.
+  /// @param[in] type   The type fo axisprofile.
+  void updateProtocolRelatedMockData(const comm::axisprofile::AxisProfileType type);
 
   //! @brief This method connects an existing axisprofile.
   //! @param[in]    profileName    Name of the profile
@@ -125,7 +129,7 @@ protected: // Methods
   /// This method can be called without a test environment started. Use case: checking for valgrind and avoid creating a test environment, when no test should be done.
   ///
   /// @return true, if we are running in a valgrind (memcheck) environment
-  bool isValgrindEnvironment()
+  static bool isValgrindEnvironment()
   {
     return RUNNING_ON_VALGRIND;
   }

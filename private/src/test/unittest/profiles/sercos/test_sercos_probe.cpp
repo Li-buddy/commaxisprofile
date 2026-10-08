@@ -1,5 +1,6 @@
 #include "helper/result_helper.h"
 #include "profiles/data_sharing/sharing_handler.h"
+#include "profiles/signal_func/signal_func_handler.h"
 #include "profiles/sercos/sercos_param_access.h"
 #include "profiles/sercos/drive/sercos_probe_drive.h"
 //Mockups
@@ -8,6 +9,8 @@
 #include "mockup/mock_scaling.h"
 #include "mockup/mock_axisprofile_mapping_handler.h"
 #include "mockup/mock_axisprofile_category.h"
+#include "mockup/mock_axisprofile_cyclic_data.h"
+#include "mockup/mock_axisprofile_device_param.h"
 
 #include "test_sercos_probe.h"
 
@@ -35,6 +38,7 @@ HRESULT TestSercosProbe::doTest()
   hresult |= TestProbeCmdFailed();
   hresult |= TestMeasuredSignalConvert();
   hresult |= TestisProbeSupported();
+  hresult |= TestProbeStatusCtrlSignalFunction();
 
   return hresult;
 }
@@ -60,9 +64,9 @@ HRESULT TestSercosProbe::SimpleTests()
   log(L"\nTest case of time measurement exceed...");
 
   // 0.06s is already beyond the time limit.
-  double exceedTime = 0.06; 
+  double exceedTime = 0.06;
   testProbe.timeUnitAdapteDevice(exceedTime);
-  
+
   return S_OK;
 }
 
@@ -73,7 +77,7 @@ HRESULT TestSercosProbe::TestProbeBaseConfig()
   struct ProbeTestCase
   {
     std::wstring m_testName;                    // test name
-    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function 
+    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function
     std::uint16_t m_setDataState {0};                    // set of datalayer value
     AxisProfileResult m_expectedResult {AxisProfileResult::STS_OK};         // expected return value
   };
@@ -97,7 +101,7 @@ HRESULT TestSercosProbe::TestProbeBaseConfig()
   profileBasicInfo.m_profileName = m_profileName;
 
   comm::axisprofile::sercos::SercosParamAccess sercosParamAccess(profileBasicInfo);
-  
+
   ////////////////////////////////////////Create Tests cases////////////////////////////////////////////////////////
   ProbeTestCase testCase1;
   testCase1.m_testName = L"probeBaseConfig normal case of probe 1.";
@@ -141,7 +145,7 @@ HRESULT TestSercosProbe::TestProbeBaseConfig()
     AxisProfileResult result = AxisProfileResult::STS_OK;
     log(L"\n  Test normal case of %s ...", oneTest.m_testName.c_str());
     sercos::SercosProbeDrive testProbe {profileBasicInfo, &atData};
-    
+
     // set sharing handler for mapping
     auto sharing = std::make_unique<AxisProfileSharingHandler>(AxisProfileSharingHandler {&profileTraceMockup});
     IAxisProfileSharingHandler* ptrSharing = sharing.get();
@@ -177,7 +181,7 @@ HRESULT TestSercosProbe::TestProbeExtConfig()
   struct ProbeTestCase
   {
     std::wstring m_testName;                    // test name
-    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function 
+    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function
     std::uint16_t m_setDataState {0};                    // set of datalayer value
     AxisProfileResult m_expectedResult {AxisProfileResult::STS_OK};         // expected return value
   };
@@ -203,7 +207,7 @@ HRESULT TestSercosProbe::TestProbeExtConfig()
 
   comm::axisprofile::sercos::SercosParamAccess sercosParamAccess(profileBasicInfo);
 
-  ////////////////////////////////////////Create Tests cases////////////////////////////////////////////////////////  
+  ////////////////////////////////////////Create Tests cases////////////////////////////////////////////////////////
   ProbeTestCase testCase1;
   testCase1.m_testName = L"probeExtConfig normal case of probe 1";
   testCase1.m_testFun = [](sercos::SercosProbeDrive& probe)
@@ -283,14 +287,14 @@ HRESULT TestSercosProbe::TestProbeExtConfig()
   testCase6.m_setDataState = 0x0000;
   testCase6.m_expectedResult = AxisProfileResult::STS_OK;
   testCase.emplace_back(testCase6);
-    
+
   //////////////////////////////////////////Run tests cases/////////////////////////////////////////////////////////
   for (auto& oneTest : testCase)
   {
     AxisProfileResult result = AxisProfileResult::STS_OK;
     log(L"\n  Test normal case of %s ...", oneTest.m_testName.c_str());
     sercos::SercosProbeDrive testProbe {profileBasicInfo, &atData};
-    
+
     // set sharing handler for mapping
     auto sharing = std::make_unique<AxisProfileSharingHandler>(AxisProfileSharingHandler {&profileTraceMockup});
     IAxisProfileSharingHandler* ptrSharing = sharing.get();
@@ -326,12 +330,12 @@ HRESULT TestSercosProbe::TestProbeStatusCtrl()
   struct ProbeTestCase
   {
     std::wstring m_testName;                    // test name
-    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function 
-    std::uint16_t m_setDataState;                    // set of datalayer value
+    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function
+    std::uint16_t m_setDataState{};                  // set of datalayer value
     AxisProfileResult m_expectedResult;         // expected return value
   };
 
-  ////////////////////////////////////////Create Tests cases//////////////////////////////////////////////////////// 
+  ////////////////////////////////////////Create Tests cases////////////////////////////////////////////////////////
   std::vector<ProbeTestCase> testCase {
     {L"Enable probe normal case",           [](sercos::SercosProbeDrive& probe){probe.m_probeParam.m_probe1Enable = 0; probe.m_probeParam.m_probe2Enable = 0; return probe.probeStatusCtrl(ProbeIndex::PROBE_1, true);},         0x0000, AxisProfileResult::STS_OK},
     {L"Enable probe2 and probe1 activated", [](sercos::SercosProbeDrive& probe){probe.m_probeParam.m_probe1Enable = 0; probe.m_probeParam.m_probe2Enable = 1; return probe.probeStatusCtrl(ProbeIndex::PROBE_2, true);},         0x0000, AxisProfileResult::STS_OK},
@@ -339,7 +343,7 @@ HRESULT TestSercosProbe::TestProbeStatusCtrl()
     {L"Disable probe2 and probe1 enabled",  [](sercos::SercosProbeDrive& probe){probe.m_probeParam.m_probe1Enable = 1; probe.m_probeParam.m_probe2Enable = 1; return probe.probeStatusCtrl(ProbeIndex::PROBE_1, false);},        0x0000, AxisProfileResult::STS_OK},
     {L"Invalid probe",                      [](sercos::SercosProbeDrive& probe){probe.m_probeParam.m_probe1Enable = 1; probe.m_probeParam.m_probe2Enable = 1; return probe.probeStatusCtrl(ProbeIndex::PROBE_UNDEFINED, true);}, 0x0000, AxisProfileResult::ERR_INVALID_ARGUMENT},
   };
-  
+
   test::MockAxisProfileTrace mockProfileTrace {};
   test::MockFieldbusAdapterSoE mockFieldbusAdapter {};
   test::MockAxisProfileMappingHandler mappingHandlerMockup {};
@@ -358,7 +362,7 @@ HRESULT TestSercosProbe::TestProbeStatusCtrl()
 
   comm::axisprofile::sercos::SercosParamAccess sercosParamAccess(profileBasicInfo);
 
-  
+
   //////////////////////////////////////////Run tests cases/////////////////////////////////////////////////////////
   for (auto& oneTest : testCase)
   {
@@ -400,12 +404,12 @@ HRESULT TestSercosProbe::TestOnlineChangeParams()
   struct ProbeTestCase
   {
     std::wstring m_testName;                    // test name
-    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function 
+    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function
     std::uint16_t m_setDataState {0};                    // set of datalayer value
     AxisProfileResult m_expectedResult {AxisProfileResult::STS_OK};         // expected return value
   };
-  
-  std::vector<ProbeTestCase> testCase; 
+
+  std::vector<ProbeTestCase> testCase;
   test::MockAxisProfileTrace mockProfileTrace {};
   test::MockFieldbusAdapterSoE mockFieldbusAdapter {};
   test::MockAxisProfileMappingHandler mappingHandlerMockup {};
@@ -527,8 +531,8 @@ HRESULT TestSercosProbe::TestGetProbeValues()
   struct ProbeTestCase
   {
     std::wstring m_testName;                    // test name
-    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function 
-    std::uint16_t m_setDataState;                    // set of datalayer value
+    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function
+    std::uint16_t m_setDataState{};                  // set of datalayer value
     AxisProfileResult m_expectedResult;         // expected return value
   };
 
@@ -596,8 +600,8 @@ HRESULT TestSercosProbe::TestGetProbeValuesRT()
   struct ProbeTestCase
   {
     std::wstring m_testName;                    // test name
-    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function 
-    std::uint16_t commandIDN;          // measured signal
+    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function
+    std::uint16_t commandIDN{};        // measured signal
     AxisProfileResult m_expectedResult;         // expected return value
   };
 
@@ -667,7 +671,7 @@ HRESULT TestSercosProbe::TestProbeCmdFailed()
   struct ProbeTestCase
   {
     std::wstring m_testName;                    // test name
-    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function 
+    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function
     AxisProfileResult m_expectedResult;         // expected return value
   };
 
@@ -713,7 +717,7 @@ HRESULT TestSercosProbe::TestProbeCmdFailed()
     }
   }
 
-  log(L"\n  Test error case of probe without sharing handler ...");  
+  log(L"\n  Test error case of probe without sharing handler ...");
   sercos::SercosProbeDrive testProbe2 {profileBasicInfo, &atData};
   auto result = testProbe2.booting();
   if (result != AxisProfileResult::ERR_EXEC_NULL)
@@ -724,7 +728,7 @@ HRESULT TestSercosProbe::TestProbeCmdFailed()
 }
 
 HRESULT TestSercosProbe::TestMeasuredSignalConvert()
-{ 
+{
   log(L"\n<b>Test signal convert.</b>");
   HRESULT hResult = S_OK;
   test::MockAxisProfileTrace mockProfileTrace {};
@@ -742,12 +746,12 @@ HRESULT TestSercosProbe::TestMeasuredSignalConvert()
   profileBasicInfo.m_profileName = m_profileName;
 
   sercos::SercosProbeDrive testProbe {profileBasicInfo, &atData};
-  
+
   log(L"\nTest case of POS_FEEDBACK_VAL_ENCODER_1...");
   MeasuringSignalSel expSignal = MeasuringSignalSel::POS_FEEDBACK_VAL_ENCODER_1;
   testProbe.m_probeParam.m_selectedSignal = 51;
   MeasuringSignalSel signal = testProbe.measuredSignalConvert();
-  
+
   if (signal != expSignal)
   {
     error(L"Method did not fail with expected error code! Expected: 0x%08X, Actual: 0x%08X", expSignal, signal);
@@ -758,7 +762,7 @@ HRESULT TestSercosProbe::TestMeasuredSignalConvert()
   expSignal = MeasuringSignalSel::POS_FEEDBACK_VAL_ENCODER_2;
   testProbe.m_probeParam.m_selectedSignal = 53;
   signal = testProbe.measuredSignalConvert();
-  
+
   if (signal != expSignal)
   {
     error(L"Method did not fail with expected error code! Expected: 0x%08X, Actual: 0x%08X", expSignal, signal);
@@ -769,7 +773,7 @@ HRESULT TestSercosProbe::TestMeasuredSignalConvert()
   expSignal = MeasuringSignalSel::SYSTEM_FINE_TIME;
   testProbe.m_probeParam.m_selectedSignal = 35523;
   signal = testProbe.measuredSignalConvert();
-  
+
   if (signal != expSignal)
   {
     error(L"Method did not fail with expected error code! Expected: 0x%08X, Actual: 0x%08X", expSignal, signal);
@@ -780,7 +784,7 @@ HRESULT TestSercosProbe::TestMeasuredSignalConvert()
   expSignal = MeasuringSignalSel::SIGNAL_UNDEFINED;
   testProbe.m_probeParam.m_selectedSignal = 1;
   signal = testProbe.measuredSignalConvert();
-  
+
   if (signal != expSignal)
   {
     error(L"Method did not fail with expected error code! Expected: 0x%08X, Actual: 0x%08X", expSignal, signal);
@@ -809,7 +813,7 @@ HRESULT TestSercosProbe::TestisProbeSupported()
 
   test::MockAxisProfileMappingHandler mappingHandlerMockup{};
   test::MockAxisProfileTrace profileTraceMockup{};
-  
+
   sercos::SercosProbeDrive testProbe{profileBasicInfo, &atData};
 
   // set sharing handler for mapping
@@ -855,4 +859,106 @@ void TestSercosProbe::setResponseVariant(test::MockDatalayerClient* const client
   comm::datalayer::Variant variant;
   variant.copyFlatbuffers(builder);
   client->m_callbackVariant = variant;
+}
+
+HRESULT TestSercosProbe::TestProbeStatusCtrlSignalFunction()
+{
+  log(L"\n<b>Test probe status control.</b>");
+  struct ProbeTestCase
+  {
+    std::wstring m_testName;                    // test name
+    std::function<AxisProfileResult(sercos::SercosProbeDrive& probe)> m_testFun; // test function
+    std::uint16_t m_setDataState{};                  // set of datalayer value
+    AxisProfileResult m_expectedResult;         // expected return value
+  };
+
+  ////////////////////////////////////////Create Tests cases////////////////////////////////////////////////////////
+  std::vector<ProbeTestCase> testCase {
+    {L"Enable probe normal case", [] (sercos::SercosProbeDrive& probe)
+    {
+      probe.m_probeParam.m_probe1Enable = 0; probe.m_probeParam.m_probe2Enable = 0; return probe.probeStatusCtrl(ProbeIndex::PROBE_1, true);
+    }, 0x0000, AxisProfileResult::STS_OK},
+    {L"Enable probe2 and probe1 activated", [] (sercos::SercosProbeDrive& probe)
+    {
+      probe.m_probeParam.m_probe1Enable = 0; probe.m_probeParam.m_probe2Enable = 1; return probe.probeStatusCtrl(ProbeIndex::PROBE_2, true);
+    }, 0x0000, AxisProfileResult::STS_OK},
+    {L"Disable probe1 and probe2 disabled", [] (sercos::SercosProbeDrive& probe)
+    {
+      probe.m_probeParam.m_probe1Enable = 1; probe.m_probeParam.m_probe2Enable = 0; return probe.probeStatusCtrl(ProbeIndex::PROBE_1, true);
+    }, 0x0000, AxisProfileResult::STS_OK},
+    {L"Disable probe2 and probe1 enabled", [] (sercos::SercosProbeDrive& probe)
+    {
+      probe.m_probeParam.m_probe1Enable = 1; probe.m_probeParam.m_probe2Enable = 1; return probe.probeStatusCtrl(ProbeIndex::PROBE_1, false);
+    }, 0x0000, AxisProfileResult::STS_OK},
+    {L"Invalid probe", [] (sercos::SercosProbeDrive& probe)
+    {
+      probe.m_probeParam.m_probe1Enable = 1; probe.m_probeParam.m_probe2Enable = 1; return probe.probeStatusCtrl(ProbeIndex::PROBE_UNDEFINED, true);
+    }, 0x0000, AxisProfileResult::ERR_INVALID_ARGUMENT},
+  };
+
+  test::MockAxisProfileTrace mockProfileTrace {};
+  test::MockFieldbusAdapterSoE mockFieldbusAdapter {};
+  test::MockAxisProfileMappingHandler mappingHandlerMockup {};
+  mappingHandlerMockup.getProfileAssignedInfo().m_input.m_signalStatusWord = true;
+  mappingHandlerMockup.getProfileAssignedInfo().m_output.m_signalControlWord = true;
+  test::MockDatalayerClient mockClient {};
+  mockFieldbusAdapter.setDatalayer(static_cast<comm::datalayer::IClient*>(&mockClient));
+  test::MockScaling mockScaling;
+  test::MockCategory mockCategory;
+  std::uint32_t devAddress = 1;
+  AcknowledgeTelegram atData;
+  std::uint8_t driveNumber = 0;
+  ProfileBasicInfo profileBasicInfo;
+  profileBasicInfo.m_deviceAddress = devAddress;
+  profileBasicInfo.m_driveNumber = driveNumber;
+  profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
+  profileBasicInfo.m_profileName = m_profileName;
+
+  ProbeSignalFuncDeviceParam mockDeviceParam;
+  ProbeSignalFuncHandler handler {profileBasicInfo};
+  handler.setProbeSignalsSupported(true);
+  mockDeviceParam.setSignalFuncHandler(&handler);
+  RecordingProbeCyclicData cyclicData;
+  comm::axisprofile::sercos::SercosParamAccess sercosParamAccess(profileBasicInfo);
+
+
+  //////////////////////////////////////////Run tests cases/////////////////////////////////////////////////////////
+  for (auto& oneTest : testCase)
+  {
+    AxisProfileResult result = AxisProfileResult::STS_OK;
+    log(L"\n  Test normal case of %s ...", oneTest.m_testName.c_str());
+    sercos::SercosProbeDrive testProbe {profileBasicInfo, &atData};
+    testProbe.m_isSignalFuncCmd = true;
+    // set sharing handler for mapping
+    auto sharing = std::make_unique<AxisProfileSharingHandler>(AxisProfileSharingHandler {&mockProfileTrace});
+    IAxisProfileSharingHandler* ptrSharing = sharing.get();
+
+    
+    ptrSharing->registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappingHandlerMockup);
+    ptrSharing->registSharingITF(SharingInterfaceType::ITF_TYPE_PROBE, &testProbe);
+    ptrSharing->registSharingITF(SharingInterfaceType::ITF_TYPE_PARAMACCESS, &sercosParamAccess);
+    ptrSharing->registSharingITF(SharingInterfaceType::ITF_TYPE_SCALING, &mockScaling);
+    ptrSharing->registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY, &mockCategory);
+    ptrSharing->registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &mockDeviceParam);
+    ptrSharing->registSharingITF(SharingInterfaceType::ITF_TYPE_CYCLICDATA, &cyclicData);
+
+    handler.init(ptrSharing);
+    testProbe.booting();
+    testProbe.resetProbeCommand();
+    TestDataVariantU16 data {L"Add invalid data", oneTest.m_setDataState, true};
+    setResponseVariant(&mockClient, data);
+    std::uint16_t cycleExpired = 100; // max cycle for the test
+    while (true)
+    {
+      result = oneTest.m_testFun(testProbe);
+      if (result != AxisProfileResult::STS_PENDING)
+      {
+        RETURN_TEST_RESULT(result, L"\n  unexpected return value.", oneTest.m_expectedResult);
+        break;
+      }
+      RETURN_TEST_FAILED(cycleExpired--, L"\n  Execute timeout.");
+    }
+  }
+
+  return S_OK;
 }

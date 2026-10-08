@@ -4,7 +4,7 @@
 ///
 /// @brief This file is part of the axis profile library and declares the device profile component.
 ///
-/// SPDX-FileCopyrightText: Copyright (c) 2024 Bosch Rexroth AG
+/// SPDX-FileCopyrightText: Copyright (c) 2024-2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
 /// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
@@ -17,6 +17,8 @@
 #include "background_thread/i_background_thread.h"
 #include "common/debug_trace.h"
 #include "common/mutex_helper.h"
+#include "configuration/i_backup_restore_mgr.h"
+#include "configuration/i_boot_param_backup_restore_mgr.h"
 #include "diagnosis/dia.h"
 #include "i_axisprofile_component.h"
 #include "provider/provider_mgr.h"
@@ -119,6 +121,7 @@ namespace comm
       IAxisProfileManagerInternal* getAxisProfileManager() override;
       IStateMachine* getStateMachine() override;
       IBackupRestoreMgr* getBackupRestoreManager() override;
+      const IBootParamBackupRestoreMgr* getBootParamBackupRestoreMgr() const override;
       comm::datalayer::IDataLayerFactory* getDataLayer() const final;
       const PersistenceHelperItf* getPersistenceHelper() const override;
       common::scheduler::IScheduler2* getScheduler() const final;
@@ -171,25 +174,26 @@ namespace comm
 
     private: // data
 
-      friend TestAxisProfileCmp;                                   //!< for unit test
-      DebugTrace m_debugTrace;                                     //!< ServiceDependency - The debug trace for the whole component
-      Dia m_diagnosis;                                             //!< ServiceDependency - The diagnosis for the whole component
-      common::scheduler::IScheduler2* m_scheduler = nullptr;       //!< ServiceDependency - Pointer to the system scheduler
-      comm::datalayer::IDataLayerFactory* m_datalayer = nullptr;   //!< ServiceDependency - Pointer to datalayer
-      const PersistenceHelperItf* m_persistenceHelper = nullptr;   //!< ServiceDependency - Pointer to the persistence helper
+      friend TestAxisProfileCmp;                                                              ///< for unit test
+      DebugTrace m_debugTrace;                                                                ///< ServiceDependency - The debug trace for the whole component
+      Dia m_diagnosis;                                                                        ///< ServiceDependency - The diagnosis for the whole component
+      common::scheduler::IScheduler2* m_scheduler = nullptr;                                  ///< ServiceDependency - Pointer to the system scheduler
+      comm::datalayer::IDataLayerFactory* m_datalayer = nullptr;                              ///< ServiceDependency - Pointer to datalayer
+      const PersistenceHelperItf* m_persistenceHelper = nullptr;                              ///< ServiceDependency - Pointer to the persistence helper
 
-      std::shared_ptr<AxisprofileCallableFactory> m_dprCallableFactory = nullptr;             //!< Shared pointer to the axis profile callable factory
-      std::shared_ptr<::common::systemhandler::IComponent> m_systemStateComponent = nullptr;  //!< Shared pointer to the system state component
-      IStateMachine* m_statemachine = nullptr;              //!< Pointer to global statemachine
-      AxisProfileManager* m_axisProfileManager = nullptr;   //!< Pointer to axis profile manager
-      IBootMgr* m_bootManager = nullptr;                    //!< Pointer to boot manager of the axis profile bundle
-      IBackupRestoreMgr* m_backupRestoreMgr = nullptr;      //!< Pointer to the backup restore manager
+      std::shared_ptr<AxisprofileCallableFactory> m_dprCallableFactory = nullptr;             ///< Shared pointer to the axis profile callable factory
+      std::shared_ptr<::common::systemhandler::IComponent> m_systemStateComponent = nullptr;  ///< Shared pointer to the system state component
+      IStateMachine* m_statemachine = nullptr;                                                ///< Pointer to global statemachine
+      AxisProfileManager* m_axisProfileManager = nullptr;                                     ///< Pointer to axis profile manager
+      IBootMgr* m_bootManager = nullptr;                                                      ///< Pointer to boot manager of the axis profile bundle
+      std::unique_ptr<IBackupRestoreMgr> m_backupRestoreMgr;                                  ///< Pointer to the backup restore manager
+      std::unique_ptr<IBootParamBackupRestoreMgr> m_bootParamBackupRestoreMgr;                ///< Pointer to boot parameter backup helper
 
-      provider::ProviderMgr m_providerMgr;                  //!< provider manager for datalayer nodes
-      MutexHelper m_mutexHelper{};                          //!< mutex helper for easy use of mutex
+      provider::ProviderMgr m_providerMgr;                                                    ///< provider manager for datalayer nodes
+      MutexHelper m_mutexHelper{};                                                            ///< mutex helper for easy use of mutex
 
-      double m_cycleTime { STD_CYCLE_TIME };                //!< cycle time of system in seconds
-      std::unique_ptr<IBackgroundThread> m_bkThread;        //!< Pointer against background thread
+      double m_cycleTime { STD_CYCLE_TIME };                                                  ///< cycle time of system in seconds
+      std::unique_ptr<IBackgroundThread> m_bkThread;                                          ///< Pointer against background thread
     };
   }
 }

@@ -1,0 +1,17 @@
+
+namespace comm.axisprofile.fbtypes;
+
+table keyValueEntry {
+  /// key string
+  name: string;
+  
+  /// value string
+  value: string;
+}
+
+table keyValueStringMap {
+  /// readable key-value list of string map
+  params: [keyValueEntry];
+}
+
+root_type keyValueStringMap;

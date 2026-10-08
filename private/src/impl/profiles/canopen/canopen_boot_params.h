@@ -13,40 +13,71 @@
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
+#include "profiles/canopen/canopen_defs.h"
+#include "profiles/i_device_boot_param_snapshot.h"
+
+#include <array>
+#include <vector>
 
 // ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
 namespace comm::axisprofile::canopen
 {
+  /// @brief Descriptor of a Canopen boot parameter.
+  struct BootParamDescriptor
+  {
+    ObjectDirEntry objEntry;
+    BootParamValueType type;
+  };
+
   // ---------------------------------------------------------------------------
   // Declaration of symbolic constants
   // ---------------------------------------------------------------------------
 
-  /// @brief This const list indicate the default booting parameters of CoE
-  inline const std::vector<ObjectDirEntry> COE_BOOT_PARAM_LIST = {
-    ENCODER_1_PROPERTY,
-    ENCODER_2_PROPERTY,
-    SIGNAL_STATUS_WORD_CONFIG_LIST,
-    //SUPPORTED_DRIVE_MODE,
-    SCALING_SI_UNIT_VELOCITY,
-    SCALING_SI_UNIT_POSITION,
-    SCALING_TORQUE_SCALING_TYPE,
-    SCALING_TORQUE_FACTOR,
-    SCALING_TORQUE_EXPONENT,
-    SCALING_GEAR_REVOLUTION_IN,
-    SCALING_GEAR_REVOLUTION_OUT,
-    SCALING_FEED_CONSTANT,
-    SCALING_SI_UNIT_ACCELERATION,
-    SIGNAL_STATUS_WORD_ASSIGN_LIST,
-    //HOMING_FEEDBACK_VALUE_STATUS,
-    SCALING_NOMINAL_TORQUE,
-    //TORQUE_FORCE_OPTIONS_CODE,
-    QUICK_STOP_OPTION,
-    //PROBE1_POS_LATCHED_TIMES,
-    //PROBE1_NEG_LATCHED_TIMES,
-    //PROBE2_POS_LATCHED_TIMES,
-    //PROBE2_NEG_LATCHED_TIMES,
-  };
+  inline const std::array<BootParamDescriptor, 17> COE_BOOT_PARAM_DESCRIPTOR_TABLE {{
+    {ENCODER_1_PROPERTY,              BootParamValueType::UNSIGNED16},
+    {ENCODER_2_PROPERTY,              BootParamValueType::UNSIGNED16},
+    {SIGNAL_STATUS_WORD_CONFIG_LIST,  BootParamValueType::BYTEARRAY},
+    {SIGNAL_CONTROL_WORD_CONFIG_LIST, BootParamValueType::BYTEARRAY},
+    {SCALING_SI_UNIT_VELOCITY,        BootParamValueType::UNSIGNED32},
+    {SCALING_SI_UNIT_POSITION,        BootParamValueType::UNSIGNED32},
+    {SCALING_TORQUE_SCALING_TYPE,     BootParamValueType::UNSIGNED16},
+    {SCALING_TORQUE_FACTOR,           BootParamValueType::UNSIGNED16},
+    {SCALING_TORQUE_EXPONENT,         BootParamValueType::SIGNED16},
+    {SCALING_GEAR_REVOLUTION_IN,      BootParamValueType::UNSIGNED32},
+    {SCALING_GEAR_REVOLUTION_OUT,     BootParamValueType::UNSIGNED32},
+    {SCALING_FEED_CONSTANT,           BootParamValueType::UNSIGNED32},
+    {SCALING_SI_UNIT_ACCELERATION,    BootParamValueType::UNSIGNED32},
+    {SIGNAL_STATUS_WORD_ASSIGN_LIST,  BootParamValueType::BYTEARRAY},
+    {SIGNAL_CONTROL_WORD_ASSIGN_LIST, BootParamValueType::BYTEARRAY},
+    {SCALING_NOMINAL_TORQUE,          BootParamValueType::UNSIGNED32},
+    {QUICK_STOP_OPTION,               BootParamValueType::SIGNED16},
+  }};
+
+  inline const BootParamDescriptor* getCanopenBootParamDescriptor(const ObjectDirEntry& objEntry)
+  {
+    for (const auto& descriptor : COE_BOOT_PARAM_DESCRIPTOR_TABLE)
+    {
+      if (descriptor.objEntry.index == objEntry.index && descriptor.objEntry.subIndex == objEntry.subIndex)
+      {
+        return &descriptor;
+      }
+    }
+
+    return nullptr;
+  }
+
+  /// @brief Build the default CoE boot parameter list from descriptor table.
+  inline std::vector<ObjectDirEntry> getCanopenBootParamList()
+  {
+    std::vector<ObjectDirEntry> result {};
+    result.reserve(COE_BOOT_PARAM_DESCRIPTOR_TABLE.size());
+    for (const auto& descriptor : COE_BOOT_PARAM_DESCRIPTOR_TABLE)
+    {
+      result.push_back(descriptor.objEntry);
+    }
+    return result;
+  }
 
 }

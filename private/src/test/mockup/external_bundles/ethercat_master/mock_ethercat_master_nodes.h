@@ -1,24 +1,14 @@
 #pragma once
 
-// ---------------------------------------------------------------------------
-//
-//! @file       mock_ethercat_master_nodes.h
-//!
-//! @author     DC-AE/ESW2
-//!
-//! @copyright  Bosch Rexroth Corporation http://www.boschrexroth.com
-//!
-//! @version    1.0.0
-//!
-//! @date       2020
-//
-// ---------------------------------------------------------------------------
-//
-//! This header file is part of the axisprofile library and declares a
-//! mockup of an ethercat master datalayer node.
-//
-// ---------------------------------------------------------------------------
-
+/// @file
+///
+/// This source file is part of the axisprofile library and declare mock EtherCAT master node.
+///
+/// SPDX-FileCopyrightText: Copyright (c) 2018 - 2026 Bosch Rexroth AG
+///
+/// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
 // Include Files
@@ -32,7 +22,6 @@
 // ---------------------------------------------------------------------------
 // Declaration of symbolic constants
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -87,7 +76,7 @@ namespace test
 
   public: // Data
 
-    test::FlatbuffersHelperSoE m_fbsHelper{};   //!< Helper class to generate flatbuffers
+    test::FlatbuffersHelperSoE m_fbsHelper{};   ///< Helper class to generate flatbuffers
   };
 
   //! @class MockEthercatMasterSDORequestNodeCoE
@@ -132,7 +121,7 @@ namespace test
 
   public: // Data
 
-    test::FlatbuffersHelperCoE m_fbsHelper{};   //!< Helper class to generate flatbuffers
+    test::FlatbuffersHelperCoE m_fbsHelper{};   ///< Helper class to generate flatbuffers
   };  
 
   //! @class MockEthercatMasterSlaveStateNodeSoE
@@ -159,7 +148,7 @@ namespace test
 
   public: // Data
 
-    test::FlatbuffersHelperSoE m_fbsHelper{};   //!< Helper class to generate flatbuffers
+    test::FlatbuffersHelperSoE m_fbsHelper{};   ///< Helper class to generate flatbuffers
   };
 
   //! @class MockEthercatMasterSlaveStatusNodeSoE
@@ -189,6 +178,6 @@ namespace test
 
   public: // Data
 
-    test::FlatbuffersHelperSoE m_fbsHelper {};   //!< Helper class to generate flatbuffers
+    test::FlatbuffersHelperSoE m_fbsHelper {};   ///< Helper class to generate flatbuffers
   };
 }

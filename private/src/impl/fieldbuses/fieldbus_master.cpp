@@ -60,7 +60,7 @@ FieldbusMaster::~FieldbusMaster()
   {
     m_datalayer->closeMemory(m_rtDataInfo.m_memoryUser);
   }
-  m_profiles.clear();
+  m_linkedProfiles.clear();
 }
 
 const char* FieldbusMaster::getMasterName()
@@ -70,12 +70,12 @@ const char* FieldbusMaster::getMasterName()
 
 const std::set<IAxisProfileInternal*>& FieldbusMaster::getLinkedProfiles()
 {
-  return m_profiles;
+  return m_linkedProfiles;
 }
 
 void FieldbusMaster::addLinkedProfile(IAxisProfileInternal* profile)
 {
-  m_profiles.insert(profile);
+  m_linkedProfiles.insert(profile);
 }
 
 AxisProfileResult FieldbusMaster::initRtData(bool abort)

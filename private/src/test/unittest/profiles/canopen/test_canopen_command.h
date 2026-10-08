@@ -47,8 +47,8 @@ public: // types
   /// @brief Struct test mock objects for test
   struct TestCmdMockObj
   {
-    comm::datalayer::IClient* m_client;                 ///< datalayer client
-    comm::axisprofile::IScaling* m_scaling;             ///< scaling
+    comm::datalayer::IClient* m_client{};                ///< datalayer client
+    comm::axisprofile::IScaling* m_scaling{};            ///< scaling
     comm::axisprofile::AcknowledgeTelegram m_at;        ///< at
     comm::axisprofile::MasterDataTelegram m_mdt;        ///< mdt
     comm::axisprofile::ProfileBasicInfo m_profileInfo;  ///< profile basic information

@@ -3,7 +3,7 @@
 ///
 /// This header file is part of the axisprofile library and define device information manager.
 ///
-/// @copyright (C) 2018-2022 Bosch Rexroth AG
+/// @copyright (C) 2018-2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
 /// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
@@ -69,9 +69,9 @@ namespace comm
     struct DeviceInfo
     {
       std::string         m_name;     //device name
-      std::uint32_t       m_address;  //device address
-      std::uint8_t        m_driveNum; //drive number of the device
-      AxisProfileCategory m_category; //drive category of the device
+      std::uint32_t       m_address{};  //device address
+      std::uint8_t        m_driveNum{}; //drive number of the device
+      AxisProfileCategory m_category{}; //drive category of the device
     };
 
     // ---------------------------------------------------------------------------
@@ -109,11 +109,7 @@ namespace comm
       /// @brief  This method set list of profile information, key is profile name
       /// @param[in]    mapProfiles   The map contain profiles.
       void setProfiles(std::map<std::string, ProfileInfo>* mapProfiles);
-
-      /// @brief  This method save all available device information in the fieldbus to container.
-      /// @return Return value indicating success or error.
-      AxisProfileResult initAvailableDeviceInfo();
-
+      
       /// @brief  This method will update device address according to device name, when device name not empty.
       /// @return Return value indicating success or error.
       AxisProfileResult updateProfileAddress();
@@ -122,7 +118,7 @@ namespace comm
       /// @param[in] instName    Instance name of the fieldbus master
       /// @param[in] profile     Pointer to profile instance link against to the master instance
       /// @return true for adding success
-      bool addFieldbusInstance(const std::string& instName, IAxisProfileInternal* profile);
+      bool linkProfileToFieldbusInstance(const std::string& instName, IAxisProfileInternal* profile);
 
       /// @brief This method get the map of fieldbus master name against fieldbus master object
       /// @return Return map of fieldbus master name and object
@@ -131,6 +127,16 @@ namespace comm
       /// @brief This function will validate protocol information between device and profile
       /// @return Return value indicating success (>=0) or error (<0).
       AxisProfileResult validateProtocolInfo();
+      
+      /// @brief This method will collect necessary device information for EtherCAT data layer node.
+      /// @param[in] abortInitialization Whether abort the booting method.
+      /// @return    Return value indicating success (>=0) or error (<0).
+      AxisProfileResult collectAllDeviceInfo(const bool& abortInitialization);
+
+      /// @brief Validate if the EtherCAT name of profile consistent with online master name.
+      /// @param[in] vecProfiles  The profiles need to validated.
+      /// @return Return value indicating success or error.
+      AxisProfileResult checkEtherCATConsistency(const std::vector<ProfileInfo>& vecProfilesInfo);
 
     private: //method
 
@@ -138,7 +144,7 @@ namespace comm
       /// @param[in] urlSlaveCfgInfo    The url of salve config information.
       /// @param[in] nAddress           The device address.  
       /// @return     Return value indicating success or error.
-      AxisProfileResult fillSingleDeviceInfo(const std::string& urlSlaveCfgInfo, const std::uint32_t nAddress);
+      AxisProfileResult fillSingleDeviceInfo(const std::string& urlSlaveCfgInfo, const std::uint32_t nAddress);      
 
       /// @brief This method will fill the map container with device information.
       /// @param[in]  masterName              The fieldbus instance name for corresponding device.
@@ -153,7 +159,7 @@ namespace comm
       /// @brief  This method check whether has the duplicated device in list.
       /// @param[in]  vecAllCfgedDeviceInfo   device information.
       /// @return     Return value indicating success or error.
-      AxisProfileResult checkDuplicateDevices(const std::vector<DeviceInfo>& vecAllCfgedDeviceInfo);
+      static AxisProfileResult checkDuplicateDevices(const std::vector<DeviceInfo>& vecAllCfgedDeviceInfo);
 
       /// @brief  This method get the salve address by the salve address mapping of DL.
       /// @param[in]   strFieldbusInstance     The fieldbus instance name for corresponding device.
@@ -165,7 +171,7 @@ namespace comm
       /// @param[in]  propertyInterface     interface of property.
       /// @param[in]  hardwareInfoMap       map of device name and device hardware info
       /// @param[in]  profileName           the profile's name
-      void handleLegacyDeviceName(IAxisProfileProperty* propertyInterface, const std::map<std::string, DeviceHardwareInfo>& hardwareInfoMap, const std::string& profileName);
+      static void handleLegacyDeviceName(IAxisProfileProperty* propertyInterface, const std::map<std::string, DeviceHardwareInfo>& hardwareInfoMap, const std::string& profileName);
 
     private: //data
       friend class ::TestDeviceInfoMgr;                                     ///< for unit test

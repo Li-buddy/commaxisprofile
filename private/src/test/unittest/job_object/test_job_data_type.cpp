@@ -19,8 +19,8 @@ REGISTER_TEST_TO_GROUP(TestJobDataType, JobTest);
 /// @brief Structure for test
 struct TestStruct
 {
-  std::int32_t myInt;   ///< Integer value
-  double myDouble;      ///< Double value
+  std::int32_t myInt{}; ///< Integer value
+  double myDouble{};    ///< Double value
   std::string myString; ///< String value
 };
 

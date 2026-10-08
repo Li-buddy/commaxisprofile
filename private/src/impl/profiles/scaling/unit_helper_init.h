@@ -69,52 +69,52 @@ namespace comm
       //! @brief little helper to define one single unit
       //! @param[in]   unit   unit to be defined
       //! @param[in]   data   conversion data of the new unit
-      void defineUnit(Unit unit, const UnitHelper::ConversionData& data);
+      static void defineUnit(Unit unit, const UnitHelper::ConversionData& data);
 
       //! @brief define all linear units here
-      void defineLinearUnits();
+      static void defineLinearUnits();
 
       //! @brief define all linear position units here
-      void defineLinearPositionUnits();
+      static void defineLinearPositionUnits();
 
       //! @brief define all linear velocity units here
-      void defineLinearVelocityUnits();
+      static void defineLinearVelocityUnits();
 
       //! @brief define all linear acceleration units here
-      void defineLinearAccelerationUnits();
+      static void defineLinearAccelerationUnits();
 
       //! @brief define all linear jerk units here
-      void defineLinearJerkUnits();
+      static void defineLinearJerkUnits();
 
 
 
       //! @brief define all rotational units here
-      void defineRotationalUnits();
+      static void defineRotationalUnits();
 
       //! @brief define all rotational position units here
-      void defineRotationalPositionUnits();
+      static void defineRotationalPositionUnits();
 
       //! @brief define all rotational velocity units here
-      void defineRotationalVelocityUnits();
+      static void defineRotationalVelocityUnits();
 
       //! @brief define all rotational acceleration units here
-      void defineRotationalAccelerationUnits();
+      static void defineRotationalAccelerationUnits();
 
       //! @brief define all rotational jerk units here
-      void defineRotationalJerkUnits();
+      static void defineRotationalJerkUnits();
 
 
 
 
 
       //! @brief define all force units here
-      void defineForceUnits();
+      static void defineForceUnits();
 
       //! @brief define all torque units here
-      void defineTorqueUnits();
+      static void defineTorqueUnits();
 
       //! @brief define all time units here
-      void defineTimeUnits();
+      static void defineTimeUnits();
 
     private: // data
 

@@ -112,13 +112,6 @@ double Scaling::getHomeOffset() const
 
 AxisProfileResult Scaling::booting()
 {
-  bool needReadParamsFromDrive = m_sharingHandler->getDeviceParamIF()->isNeedReadBootParams();
-  bool isNodeChecksumEnable = m_sharingHandler->getPropertyIF()->isChecksumEnabled();
-  if (!needReadParamsFromDrive && isNodeChecksumEnable)
-  {
-    APR_TRACE_MESSAGE("%s; The checksum mechanism is activated, and scaling parameter reading is skipped.", m_profileBasicInfo.m_profileTrace.createTraceMsg());
-    return AxisProfileResult::STS_OK;
-  }
   loadBootingTasks();
   return calcScalingLSBWeights();
 }
@@ -247,7 +240,7 @@ AxisProfileResult Scaling::executeCalcScalingLSBWeights()
       APR_TRACE_ERROR("%s; Could not calculate %s data scaling factor", method.m_methodName->c_str(), m_profileBasicInfo.m_profileTrace.createTraceMsg());
       result = funcResult;
     }
-    APR_TRACE_MESSAGE("%s; New %s data scaling LSB weight = %f", m_profileBasicInfo.m_profileTrace.createTraceMsg(), method.m_methodName->c_str(), *(method.m_ptrScalingLSBWeight));
+    APR_TRACE_MESSAGE("%s; New %s data scaling LSB weight = %g", m_profileBasicInfo.m_profileTrace.createTraceMsg(), method.m_methodName->c_str(), *(method.m_ptrScalingLSBWeight));
   }
   return result;
 }

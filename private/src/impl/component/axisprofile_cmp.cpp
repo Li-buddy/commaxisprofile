@@ -22,6 +22,7 @@
 #include "statemachine/state_machine.h"
 #include "configuration/boot_mgr.h"
 #include "configuration/backup_restore_mgr.h"
+#include "configuration/boot_param_backup_restore_mgr.h"
 #include "background_thread/background_thread.h"
 
 // External Includes
@@ -78,12 +79,6 @@ AxisProfileCmp::~AxisProfileCmp()
     delete m_bootManager;
     m_bootManager = nullptr;
   }
-
-  if (m_backupRestoreMgr)
-  {
-    delete m_backupRestoreMgr;
-    m_backupRestoreMgr = nullptr;
-  }
 }
 
 
@@ -120,8 +115,10 @@ celix_status_t AxisProfileCmp::init()
   }
 
   // Backup/Restore Manager
-  delete m_backupRestoreMgr;
-  m_backupRestoreMgr = new BackupRestoreMgr(m_axisProfileManager, m_datalayer->createClient(), m_persistenceHelper);
+  m_backupRestoreMgr = std::make_unique<BackupRestoreMgr>(m_axisProfileManager, m_datalayer->createClient(), m_persistenceHelper);
+
+  m_bootParamBackupRestoreMgr = std::make_unique<BootParamBackupRestoreMgr>(m_axisProfileManager, m_persistenceHelper, m_bundlePath);
+  m_axisProfileManager->setBootParamBackupRestoreMgr(m_bootParamBackupRestoreMgr.get());
 
   m_dprCallableFactory.reset();
   if(m_scheduler)
@@ -206,11 +203,9 @@ celix_status_t AxisProfileCmp::stop()
     delete m_bootManager;
     m_bootManager = nullptr;
   }
-  if ( m_backupRestoreMgr )
-  {
-    delete m_backupRestoreMgr;
-    m_backupRestoreMgr = nullptr;
-  }
+
+  m_backupRestoreMgr.reset();
+  m_bootParamBackupRestoreMgr.reset();
 
   if ( m_axisProfileManager )
   {
@@ -367,7 +362,12 @@ IStateMachine* AxisProfileCmp::getStateMachine()
 
 IBackupRestoreMgr* AxisProfileCmp::getBackupRestoreManager()
 {
-  return m_backupRestoreMgr;
+  return m_backupRestoreMgr.get();
+}
+
+const IBootParamBackupRestoreMgr* AxisProfileCmp::getBootParamBackupRestoreMgr() const
+{
+  return m_bootParamBackupRestoreMgr.get();
 }
 
 IBootMgr* AxisProfileCmp::getBootManager()

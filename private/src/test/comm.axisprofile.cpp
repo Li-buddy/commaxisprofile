@@ -38,6 +38,7 @@ bool APIENTRY DllMain(HMODULE hModule,
 //
 // 2. Declare Plugin Meta Information
 //
+// cppcheck-suppress unknownMacro
 PLUGIN_INFO_BEGIN()
 PLUGIN_INFO_NAME(L"comm_axisprofile")
 PLUGIN_INFO_DEPARTMENT(L"ENG6-CN")

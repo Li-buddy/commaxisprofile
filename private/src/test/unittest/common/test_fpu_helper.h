@@ -44,14 +44,14 @@ private: // types
   {
     const std::wstring m_name;          ///< name of the test case
     std::function<void(volatile double&)> m_trigger;   ///< test function
-    TestResults m_expRes;               ///< expected result
+    TestResults m_expRes{};             ///< expected result
   };
 
   /// @brief structure for test cases for checkValid
   struct TestCaseValid
   {
     const std::wstring m_name;          ///< name of the test case
-    double m_value;                     ///< test value
+    double m_value{};                   ///< test value
     std::string m_expRes;               ///< expected result
   };
 

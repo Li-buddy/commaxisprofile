@@ -1,35 +1,23 @@
 #pragma once
 
-// ---------------------------------------------------------------------------
-//
-//! @file       mock_ethercat_master_defs.h
-//!
-//! @author     DC-AE/ESW2
-//!
-//! @copyright  Bosch Rexroth Corporation http://www.boschrexroth.com
-//!
-//! @version    1.0.0
-//!
-//! @date       2018
-//
-// ---------------------------------------------------------------------------
-//
-//! This file is part of the axisprofile library and contains defines relevant
-//! for the ethercat master mockup.
-//
-// ---------------------------------------------------------------------------
-
+/// @file
+///
+/// This source file is part of the axisprofile library and implement mock EtherCAT master definitions.
+///
+/// SPDX-FileCopyrightText: Copyright (c) 2018 - 2026 Bosch Rexroth AG
+///
+/// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
 #include "stdafx.h"
 
-
 // ---------------------------------------------------------------------------
 // Declaration of symbolic constants
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -40,19 +28,22 @@ namespace test
   // Declaration of symbolic constants
   // ---------------------------------------------------------------------------
 
-  #define MOCK_ECAT_MASTER_INSTANCE_NAME "MyEcatMasterTest"                        //!< name
-  #define MOCK_ECAT_BASE_ADDRESS         "fieldbuses/ethercat/master/instances"    //!< General ethercatmaster datalayer address
-  #define MOCK_ECAT_MASTER_INSTANCE_ADDRESS  MOCK_ECAT_BASE_ADDRESS "/" MOCK_ECAT_MASTER_INSTANCE_NAME  //!< node tree
+  #define MOCK_ECAT_MASTER_INSTANCE_NAME "MyEcatMasterTest"                        ///< name
+  #define MOCK_ECAT_BASE_ADDRESS         "fieldbuses/ethercat/master/instances"    ///< General ethercatmaster datalayer address
+  #define MOCK_ECAT_MASTER_INSTANCE_ADDRESS  MOCK_ECAT_BASE_ADDRESS "/" MOCK_ECAT_MASTER_INSTANCE_NAME  ///< node tree
+  #define MOCK_ECAT_SLAVE_DEVICE_NAME    "TestDevice"                        ///< name
 
-  #define MOCK_ECAT_COE_SDO_REQUEST      MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/coe/sdo"                //!< Ethercatmaster datalayer coe sdo address
-  #define MOCK_ECAT_SOE_PARAM_REQUEST    MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/soe/parameter"          //!< Ethercatmaster datalayer soe request address
-  #define MOCK_ECAT_SLAVE_STATE          MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/slave_state"            //!< Ethercatmaster datalayer slave state address
-  #define MOCK_ECAT_SLAVE_STATUS         MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/slave_status"           //!< Ethercatmaster datalayer slave status address
-  #define MOCK_ECAT_SLAVE_DC_CFG_INFO    MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/distributed_clock/config_info" //!< Ethercatmaster datalayer slave distributed clock config info
-  #define MOCK_ECAT_INPUTBUFFER_STRING   MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/realtime_data/input"                  //!< Ethercatmaster datalayer input address
-  #define MOCK_ECAT_OUTPUTBUFFER_STRING  MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/realtime_data/output"                 //!< Ethercatmaster datalayer output address
-  #define MOCK_FIELDBUS_MASTER_STATE     MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/admin/fieldbus_status/master_state"   //!< Fieldbus master state
-  #define MOCK_FIELDBUS_MASTER_STATUS    MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/admin/fieldbus_status/master_status"  //!< Fieldbus master status
+  #define MOCK_ECAT_COE_SDO_REQUEST      MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/coe/sdo"                ///< Ethercatmaster datalayer coe sdo address
+  #define MOCK_ECAT_SOE_PARAM_REQUEST    MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/soe/parameter"          ///< Ethercatmaster datalayer soe request address
+  #define MOCK_ECAT_SLAVE_STATE          MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/slave_state"            ///< Ethercatmaster datalayer slave state address
+  #define MOCK_ECAT_SLAVE_STATUS         MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/slave_status"           ///< Ethercatmaster datalayer slave status address
+  #define MOCK_ECAT_SLAVE_DC_CFG_INFO    MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/distributed_clock/config_info" ///< Ethercatmaster datalayer slave distributed clock config info
+  #define MOCK_ECAT_SLAVE_ADDRESS_MAPP   MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/slave_address_mapping"  ///< Ethercatmaster datalayer slave_address_mapping
+  #define MOCK_ECAT_SLAVE_CFG_INFO       MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/device_access/slave_config_info"      ///< Ethercatmaster datalayer slave config info
+  #define MOCK_ECAT_INPUTBUFFER_STRING   MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/realtime_data/input"                  ///< Ethercatmaster datalayer input address
+  #define MOCK_ECAT_OUTPUTBUFFER_STRING  MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/realtime_data/output"                 ///< Ethercatmaster datalayer output address
+  #define MOCK_FIELDBUS_MASTER_STATE     MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/admin/fieldbus_status/master_state"   ///< Fieldbus master state
+  #define MOCK_FIELDBUS_MASTER_STATUS    MOCK_ECAT_MASTER_INSTANCE_ADDRESS "/admin/fieldbus_status/master_status"  ///< Fieldbus master status
 
   #define MOCK_ECAT_MASTERBUFFER_TASK_START_TIME    "Master/Task.StartTime"                     ///< Fieldbus master task absolute start time
   #define MOCK_ECAT_MASTERBUFFER_TASK_CYCLE_TIME    "Master/Task.CycleTime"                     ///< Fieldbus master task cycle time
@@ -107,17 +98,17 @@ namespace test
   #define MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_5         "user-pdo-output5"             ///< user receive PDO 5
   #define MOCK_ECAT_INBUFFER_USER_PDO_OUTPUT_6         "user-pdo-output6"             ///< user receive PDO 6
 
-  #define ARRAY_SIZE_BUFFER (0x86)                            //!< Ethercatmaster buffer size
+  #define ARRAY_SIZE_BUFFER (0x86)                            ///< Ethercatmaster buffer size
 
-  const std::uint32_t AXISPROFILE_SLAVE_DATA_AT_SIZE = (16);       //!< size of data in at-telegram of one device in byte
-  const std::uint32_t AXISPROFILE_SLAVE_DATA_MDT_SIZE = (10);      //!< size of data in mdt-telegram of one device in byte
-  const std::uint32_t SLAVE_DATA_AT_START_OFFSET_IN_BIT = (0);     //!< offset of data in at-telegram in bit
-  const std::uint32_t SLAVE_DATA_MDT_START_OFFSET_IN_BIT = (0);    //!< offset of data in mdt-telegram in bit
-  const std::uint32_t SLAVE_DATA_AT_START_OFFSET_IN_BYTE = (0);    //!< offset of data in at-telegram in bit
-  const std::uint32_t SLAVE_DATA_MDT_START_OFFSET_IN_BYTE = (0);   //!< offset of data in mdt-telegram in bit
-  const std::uint16_t STSWORD_INOPERATION = 0xC008;                //!< Sercos II StatusWord 'in operation' bitmask
-  const std::uint16_t SERCOS_STSWORD_ERRORBIT_OFFSET = 0x000D;     //!< Sercos II Statusword error bit offset
-  const std::uint16_t SERCOS_STSWORD_CMD_CHANGE_BIT = 0x0005;      //!< Sercos II Statusword command change bit
+  const std::uint32_t AXISPROFILE_SLAVE_DATA_AT_SIZE = (16);       ///< size of data in at-telegram of one device in byte
+  const std::uint32_t AXISPROFILE_SLAVE_DATA_MDT_SIZE = (10);      ///< size of data in mdt-telegram of one device in byte
+  const std::uint32_t SLAVE_DATA_AT_START_OFFSET_IN_BIT = (0);     ///< offset of data in at-telegram in bit
+  const std::uint32_t SLAVE_DATA_MDT_START_OFFSET_IN_BIT = (0);    ///< offset of data in mdt-telegram in bit
+  const std::uint32_t SLAVE_DATA_AT_START_OFFSET_IN_BYTE = (0);    ///< offset of data in at-telegram in bit
+  const std::uint32_t SLAVE_DATA_MDT_START_OFFSET_IN_BYTE = (0);   ///< offset of data in mdt-telegram in bit
+  const std::uint16_t STSWORD_INOPERATION = 0xC008;                ///< Sercos II StatusWord 'in operation' bitmask
+  const std::uint16_t SERCOS_STSWORD_ERRORBIT_OFFSET = 0x000D;     ///< Sercos II Statusword error bit offset
+  const std::uint16_t SERCOS_STSWORD_CMD_CHANGE_BIT = 0x0005;      ///< Sercos II Statusword command change bit
 
   // ---------------------------------------------------------------------------
   // Declaration of classes and structures

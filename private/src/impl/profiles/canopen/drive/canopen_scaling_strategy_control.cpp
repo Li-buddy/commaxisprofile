@@ -249,7 +249,7 @@ AxisProfileResult ScalingStrategyCoEControl::checkAndSetModulo(double modValue, 
   double scaledLimitHigh = INT32_MAX * getPosScalingLSBWeight();
   double scaledLimitLow = INT32_MIN * getPosScalingLSBWeight();
   m_modulo.init(modValue, scaledLimitHigh, scaledLimitLow);
-  APR_TRACE_MESSAGE("Re-Init MDT modulo linear tool with modulo = %f.", modValue);
+  APR_TRACE_MESSAGE("Re-Init MDT modulo linear tool with modulo = %g.", modValue);
   return Scaling::checkAndSetModulo(modValue, dynErrTxt);
 }
 

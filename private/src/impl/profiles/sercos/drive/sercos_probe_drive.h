@@ -19,6 +19,7 @@
 #include "profiles/category/drive/axisprofile_probe_drive.h"
 #include "profiles/sercos/sercos_defs.h"
 #include <list>
+#include "profiles/signal_func/signal_func_cmd.h"
 
 // ---------------------------------------------------------------------------
 // Forward references
@@ -133,6 +134,13 @@ namespace comm::axisprofile::sercos
     /// @return         Return value indicating success or error.
     AxisProfileResult executeProbeStatusCtrl(ProbeIndex probeIdx, bool enable, AsyncCommandStatemachine& asyncState);
 
+    /// @brief Executes a probe status control signal function for the specified probe.
+    /// @param[in]      probeIdx         The index of the probe to control.
+    /// @param[in]      enable           True to enable the probe status control signal, false to disable it.
+    /// @param[in,out]  asyncState       Reference to the asynchronous command state machine for managing the operation's state.
+    /// @return         The result of the axis profile operation, indicating success or failure status.
+    AxisProfileResult executeProbeStatusCtrlSignalFunc(ProbeIndex probeIdx, bool enable, AsyncCommandStatemachine& asyncState);
+
     /// @brief This methods processing the drive configuration of probe.
     /// @param[in]      probeIdx              Indicates which probe should be set.
     /// @param[in,out]  asyncState            Async state machine.
@@ -175,6 +183,12 @@ namespace comm::axisprofile::sercos
     /// @return         Return indicating success or error.
     AxisProfileResult initAsyncAccessHandler();
 
+    /// @brief This method checks if the signal function is supported for the specified probe index.
+    /// @param[in] probeIdx Indicates which probe should be checked.
+    /// @param[out] retFlag Returns true if the signal function is supported, false otherwise.
+    /// @return Return value indicating success or error.
+    comm::axisprofile::AxisProfileResult checkIsSignalSupported(ProbeIndex probeIdx, bool& retFlag);
+
   private: // data
 
     friend class ::TestSercosProbe;              // For unit test of the SercosProbeDrive
@@ -192,5 +206,8 @@ namespace comm::axisprofile::sercos
     bool m_timeMeasure = false;                                    ///< Is time measurement activated    
     std::uint16_t m_prb1MeasureSignal {};                          ///< Probe1 measure signal
     std::uint16_t m_prb2MeasureSignal {};                          ///< Probe2 measure signal
+
+    SignalFuncCmd m_signalFuncProbe {{FunctionSupport::PROBE1_ENABLE_CYCLIC}};   ///< Signal function command default for probe1 parameter
+    bool m_isSignalFuncCmd {false};                                              ///< flag to indicate whether the command is a signal function command
   };
 }

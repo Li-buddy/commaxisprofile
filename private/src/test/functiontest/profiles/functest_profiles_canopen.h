@@ -64,6 +64,7 @@ private: // methods
 
 private: // data
 
+  comm::axisprofile::IAxisProfileInternal* m_profile {};  //!< test profile
   std::string m_profileName = "testProfile";                                                                        //!< Profile name used in this test
   comm::axisprofile::AxisProfileType m_testProfileType = comm::axisprofile::AxisProfileType::UNDEFINED;             //!< Profile type used in test
   comm::axisprofile::NetworkTechnology m_testNetworkTechnology = comm::axisprofile::NetworkTechnology::UNDEFINED;   //!< Network technology used in test

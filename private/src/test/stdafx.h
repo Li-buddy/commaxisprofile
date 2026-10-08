@@ -74,6 +74,7 @@ typedef long HRESULT;
 #define EMAIL_LLJ "Linjie.LI@boschrexroth.com.cn"
 #define EMAIL_LQ  "Qun.Liu@boschrexroth.com.cn"
 #define EMAIL_WSY "was3xi@boschrexroth.com.cn"
+#define EMAIL_LST "Shutong.LIU@boschrexroth.com.cn"
 
 #define APICALL_AND_CHECK(function) \
   result = function; \

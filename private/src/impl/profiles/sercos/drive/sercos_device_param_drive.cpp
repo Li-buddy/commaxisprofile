@@ -5,8 +5,8 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2021-2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
-/// All rights reserved in the event of the grant of a patent, utility model or design.  
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
 // Include Files
@@ -17,8 +17,10 @@
 #include "helper/checksum_idn_list_helper.h"
 #include "helper/device_id_helper.h"
 #include "profiles/sercos/cmd_jobs/sercos_job_device_param.h"
+#include "profiles/sercos/sercos_boot_param_snapshot.h"
 #include "profiles/sercos/sercos_boot_params.h"
 #include "sercos_device_param_drive.h"
+#include "sercos_signal_func_handler.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -47,6 +49,7 @@ constexpr std::size_t LIST_BUFF_CHECKSUM_PARAM_LIST_SIZE = 4858;  ///< Max buffe
 SercosDeviceParamDrive::SercosDeviceParamDrive(ProfileBasicInfo& profileBasicInfo, const AcknowledgeTelegram* at, MasterDataTelegram* mdt)
   :AxisProfileDeviceParamDrive(profileBasicInfo, at, mdt)
 {
+  m_signalFuncHandler = new SercosSignalFuncHandler(profileBasicInfo);
   m_bootingDataOpMode.clear();
   m_bootingDataOpMode.emplace(OperationMode::PRIMARY,    GenParamU16{S_0_0032_OP_MODE_PRIMARY,    0 });
   m_bootingDataOpMode.emplace(OperationMode::SECONDARY1, GenParamU16{S_0_0033_OP_MODE_SECONDARY1, 0 });
@@ -55,15 +58,7 @@ SercosDeviceParamDrive::SercosDeviceParamDrive(ProfileBasicInfo& profileBasicInf
   m_bootingDataOpMode.emplace(OperationMode::SECONDARY4, GenParamU16{S_0_0284_OP_MODE_SECONDARY4, 0 });
   m_bootingDataOpMode.emplace(OperationMode::SECONDARY5, GenParamU16{S_0_0285_OP_MODE_SECONDARY5, 0 });
   m_bootingDataOpMode.emplace(OperationMode::SECONDARY6, GenParamU16{S_0_0286_OP_MODE_SECONDARY6, 0 });
-  m_bootingDataOpMode.emplace(OperationMode::SECONDARY7, GenParamU16{S_0_0287_OP_MODE_SECONDARY7, 0 });  
-
-  // Register function of homing status checking with cyclic data.
-  registerSignalStatusWordFuncs(FunctionSupport::HOMING_STATUS_CYCLIC,
-    [](const std::uint32_t& param, const std::uint16_t& bit) -> bool
-    {
-      // Homing status is supported when IDN S-0-0403.0 is configured in the signal status word.
-      return param == S_0_0403_POSITION_FEEDBACK_VALUE_STATUS && bit == 0;
-    });
+  m_bootingDataOpMode.emplace(OperationMode::SECONDARY7, GenParamU16{S_0_0287_OP_MODE_SECONDARY7, 0 });    
 }
 
 void SercosDeviceParamDrive::loadBootingTasks()
@@ -72,12 +67,8 @@ void SercosDeviceParamDrive::loadBootingTasks()
   m_initDeviceParam.reserve(10);
   m_initDeviceParam.emplace_back([this]{return getDeviceParamJobObj();});
 
-  if (!m_needReadBootParams)
-  {
-    APR_TRACE_MESSAGE("%s, Not need to read SoE drive parameters again.", m_profileBasicInfo.m_profileTrace.createTraceMsg());
-    return;
-  }
-
+  // prepareSignalFuncMgr -> it may managed by check sum
+  m_initDeviceParam.emplace_back([this]{return prepareSignalFuncHandler();});
   m_initDeviceParam.emplace_back([this]{return readDelayBrakeParam();});
   m_initDeviceParam.emplace_back([this]{return getDelayBrakeInfo();});
   m_initDeviceParam.emplace_back([this]{return getBrakeDynLimit();});
@@ -86,7 +77,12 @@ void SercosDeviceParamDrive::loadBootingTasks()
   m_initDeviceParam.emplace_back([this]{return readEncodersTypes();});
   m_initDeviceParam.emplace_back([this]{return readDcConfigInfo();});
   m_initDeviceParam.emplace_back([this]{return readPosProcessMode();});
-  m_initDeviceParam.emplace_back([this]{return checkSignalStatusWord();});
+}
+
+AxisProfileResult SercosDeviceParamDrive::getParameterValueFromSnapshot(std::uint16_t idn, std::uint8_t* bufPtr, std::size_t bufLen, comm::ethercat::master::fbs::ElementFlags elementFlag)
+{
+  return SercosBootParamSnapshot::getParameterValueFromSnapshot(m_sharingHandler, m_profileBasicInfo.m_profileTrace.createTraceMsg(),
+                                                                idn, bufPtr, bufLen, elementFlag);
 }
 
 AxisProfileResult SercosDeviceParamDrive::getDeviceInformation()
@@ -125,8 +121,6 @@ AxisProfileResult SercosDeviceParamDrive::getDeviceInformation()
 
 AxisProfileResult SercosDeviceParamDrive::readDelayBrakeParam()
 {
-  ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, S_0_0000_DUMMY, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
-
   const bool brakeDelaySupported = DeviceIdHelper::isRexrothCtrlXDrive(m_sharingHandler->getPropertyIF()->getDeviceSeries());
 
   std::vector<SercosParamStruct> readStructSet;
@@ -148,8 +142,7 @@ AxisProfileResult SercosDeviceParamDrive::readDelayBrakeParam()
   AxisProfileResult result {};
   for (const auto& readParam : readStructSet)
   {
-    requestData.idn = readParam.m_requestIDN;
-    result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(readParam.m_ptrData), readParam.dataSize);
+	  result = getParameterValueFromSnapshot(readParam.m_requestIDN, static_cast<std::uint8_t*>(readParam.m_ptrData), readParam.dataSize);
     if (aprStatusFailed(result))
     {
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_WRN, DETAILED_DIAG_READ_PARAM_FAILED, m_profileBasicInfo.m_profileName.c_str(),
@@ -183,7 +176,7 @@ AxisProfileResult SercosDeviceParamDrive::getDelayBrakeInfo()
     multiBrakeInfoStep.push_back(stepValue);
 
     stepValue = (m_bootingDataMultiBrake.m_multiBrakeDelaySupport & SERCOS_MULTI_BRAKE_CRITICAL_ERROR) == SERCOS_MULTI_BRAKE_CRITICAL_ERROR ? MultiBrakeInfo::CRITICAL_ERROR_ACTIVATED : MultiBrakeInfo::CRITICAL_ERROR_INACTIVATED;
-    multiBrakeInfoStep.push_back(stepValue);  
+    multiBrakeInfoStep.push_back(stepValue);
 
     m_delayInfoMap.clear();
     for (size_t switchStep = 0; switchStep < multiBrakeInfoStep.size(); ++ switchStep)
@@ -192,11 +185,11 @@ AxisProfileResult SercosDeviceParamDrive::getDelayBrakeInfo()
       {
         case MultiBrakeInfo::LIGHT_ERROR_ACTIVATED:
         {
-          
+
           m_brakeDelayInfo.m_isActivated = true;
           m_brakeDelayInfo.m_delayTime = m_bootingDataMultiBrake.m_controlUnitReactionTimeLightError;
           //convert the time unit from millisecond to second
-          m_brakeDelayInfo.m_delayTime *=  std::pow(10, -3);   
+          m_brakeDelayInfo.m_delayTime *=  std::pow(10, -3);
           m_delayInfoMap.insert(std::make_pair(AxisProfileDeviceErrorType::ERROR_LIGHT, m_brakeDelayInfo));
           break;
         }
@@ -211,7 +204,7 @@ AxisProfileResult SercosDeviceParamDrive::getDelayBrakeInfo()
         }
         case MultiBrakeInfo::FIELDBUS_ERROR_ACTIVATED:
         {
-          
+
           m_brakeDelayInfo.m_isActivated = true;
           m_brakeDelayInfo.m_delayTime = m_bootingDataMultiBrake.m_controlUnitReactionTimeCriticalError;
           //convert the time unit from millisecond to second
@@ -230,7 +223,7 @@ AxisProfileResult SercosDeviceParamDrive::getDelayBrakeInfo()
         }
         case MultiBrakeInfo::CRITICAL_ERROR_ACTIVATED:
         {
-          
+
           m_brakeDelayInfo.m_isActivated = true;
           m_brakeDelayInfo.m_delayTime = m_bootingDataMultiBrake.m_controlUnitReactionTimeCriticalError;
           //convert the time unit from millisecond to second
@@ -244,7 +237,7 @@ AxisProfileResult SercosDeviceParamDrive::getDelayBrakeInfo()
           m_brakeDelayInfo.m_delayTime = m_bootingDataMultiBrake.m_controlUnitReactionTimeCriticalError;
           //convert the time unit from millisecond to second
           m_brakeDelayInfo.m_delayTime *=  std::pow(10, -3);
-          m_delayInfoMap.insert(std::make_pair(AxisProfileDeviceErrorType::ERROR_CRITICAL, m_brakeDelayInfo)); 
+          m_delayInfoMap.insert(std::make_pair(AxisProfileDeviceErrorType::ERROR_CRITICAL, m_brakeDelayInfo));
           break;
         }
         default:
@@ -261,8 +254,6 @@ AxisProfileResult SercosDeviceParamDrive::getDelayBrakeInfo()
 
 AxisProfileResult SercosDeviceParamDrive::getBrakeDynLimit()
 {
-  ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, S_0_0000_DUMMY, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
-
   bool checkDecelerationLimitSupport{false};
   std::vector<SercosParamStruct> readStructSet;
   readStructSet.reserve(5);
@@ -274,14 +265,13 @@ AxisProfileResult SercosDeviceParamDrive::getBrakeDynLimit()
   AxisProfileResult result{};
   for (const auto& readParam : readStructSet)
   {
-    requestData.idn = readParam.m_requestIDN;
-    result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(readParam.m_ptrData), readParam.dataSize);
+    result = getParameterValueFromSnapshot(readParam.m_requestIDN, static_cast<std::uint8_t*>(readParam.m_ptrData), readParam.dataSize);
     if (aprStatusFailed(result))
     {
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_WRN, DETAILED_DIAG_READ_PARAM_FAILED, m_profileBasicInfo.m_profileName.c_str(),
                          __FILE__, __FUNCTION__, __LINE__, "Brake Dynamic limit, SoE DIN: %s, error: 0x%X", idnToString(readParam.m_requestIDN).c_str(), result);
       continue;
-    } 
+    }
   }
   result = mappingBrakeInfo(checkDecelerationLimitSupport);
   m_decelerationLimitSupport = checkDecelerationLimitSupport;
@@ -295,7 +285,7 @@ AxisProfileResult SercosDeviceParamDrive::mappingBrakeInfo(bool& checkDecelerati
   {
     return AxisProfileResult::ERR_EXEC_NULL;
   }
-    
+
   m_reactionInfoMap.clear();
   std::uint16_t brakeReactionType = m_bootingDataMultiBrake.m_controlUnitReactionBestDeceleration & VALUE_BIT_0_TO_BIT3;
   ErrorBrakeReaction errorValue{};
@@ -374,13 +364,10 @@ AxisProfileResult SercosDeviceParamDrive::mappingBrakeInfo(bool& checkDecelerati
 
 AxisProfileResult SercosDeviceParamDrive::readOpModeParam()
 {
-  ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, S_0_0000_DUMMY, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
-
   AxisProfileResult result{};
   for (auto& readParam : m_bootingDataOpMode)
   {
-    requestData.idn = readParam.second.m_idn;
-    result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, reinterpret_cast<std::uint8_t*>(&readParam.second.m_value), sizeof(readParam.second.m_value));
+    result = getParameterValueFromSnapshot(readParam.second.m_idn, reinterpret_cast<std::uint8_t*>(&readParam.second.m_value), sizeof(readParam.second.m_value));
     if (aprStatusFailed(result))
     {
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_READ_PARAM_FAILED, m_profileBasicInfo.m_profileName.c_str(),
@@ -432,8 +419,6 @@ AxisProfileResult SercosDeviceParamDrive::determineOpModeAvailable()
 
 AxisProfileResult SercosDeviceParamDrive::readEncodersTypes()
 {
-  ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, S_0_0000_DUMMY, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
-
   std::vector<SercosParamStruct> readStructSet {};
   readStructSet.reserve(2);
   readStructSet.emplace_back(S_0_0277_ENCODER_1_PROPERTY, &m_deviceCfgData.m_encoder1Property, sizeof(m_deviceCfgData.m_encoder1Property));
@@ -441,12 +426,11 @@ AxisProfileResult SercosDeviceParamDrive::readEncodersTypes()
   AxisProfileResult result {AxisProfileResult::STS_OK};
   for (const auto& SercosParamStruct : readStructSet)
   {
-    requestData.idn = SercosParamStruct.m_requestIDN;
-    result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
+    result = getParameterValueFromSnapshot(SercosParamStruct.m_requestIDN, static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
     if (aprStatusFailed(result))
     {
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_WRN, DETAILED_DIAG_FUNCTION_NOT_IMPLEMENTED, m_profileBasicInfo.m_profileName.c_str(),
-                         __FILE__, __FUNCTION__, __LINE__, "Encoder type, SoE DIN: %s, error: 0x%X", idnToString(requestData.idn).c_str(), result);
+                         __FILE__, __FUNCTION__, __LINE__, "Encoder type, SoE DIN: %s, error: 0x%X", idnToString(SercosParamStruct.m_requestIDN).c_str(), result);
     }
   }
   return AxisProfileResult::STS_OK;
@@ -468,8 +452,6 @@ AxisProfileResult SercosDeviceParamDrive::readDriveLimits()
   std::uint32_t bipolarAccLimit {};
   std::uint16_t trqLimitMax {};
 
-  ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, S_0_0000_DUMMY, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
-
   std::vector<SercosParamStruct> readStructSet {};
   readStructSet.reserve(7);
   const auto& mappitems = m_sharingHandler->getMappingHandlerIF()->getProfileAssignedInfo();
@@ -480,7 +462,7 @@ AxisProfileResult SercosDeviceParamDrive::readDriveLimits()
     readStructSet.emplace_back(S_0_0049_POSITIVE_POS_LIMIT, &positivePosLimit, sizeof(positivePosLimit));
     readStructSet.emplace_back(S_0_0050_NEGATIVE_POS_LIMIT, &negativePosLimit, sizeof(negativePosLimit));
   }
-  
+
   readStructSet.emplace_back(S_0_0038_POSITIVE_VEL_LIMIT, &positiveVelLimit, sizeof(positiveVelLimit));
   readStructSet.emplace_back(S_0_0039_NEGATIVE_VEL_LIMIT, &negativeVelLimit, sizeof(negativeVelLimit));
   readStructSet.emplace_back(S_0_0091_BIPOLARE_VEL_LIMIT, &bipolarVelLimit, sizeof(bipolarVelLimit));
@@ -489,8 +471,7 @@ AxisProfileResult SercosDeviceParamDrive::readDriveLimits()
   AxisProfileResult result;
   for (const auto& SercosParamStruct : readStructSet)
   {
-    requestData.idn = SercosParamStruct.m_requestIDN;
-    result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
+    result = getParameterValueFromSnapshot(SercosParamStruct.m_requestIDN, static_cast<std::uint8_t*>(SercosParamStruct.m_ptrData), SercosParamStruct.dataSize);
     if (aprStatusFailed(result))
     {
       Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_READ_PARAM_FAILED, m_profileBasicInfo.m_profileName.c_str(),
@@ -506,14 +487,12 @@ AxisProfileResult SercosDeviceParamDrive::readDriveLimits()
   }
 
   // read the max value, which is the physics torque limit of the hardware
-  requestData.elementFlag = comm::ethercat::master::fbs::ElementFlags::ElementFlags_maxValue;
-  requestData.idn = S_0_0092_BIPOLARE_TORQUE_LIMIT;
-  result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, reinterpret_cast<std::uint8_t*>(&trqLimitMax), sizeof(trqLimitMax));
+  result = getParameterValueFromSnapshot(S_0_0092_BIPOLARE_TORQUE_LIMIT, reinterpret_cast<std::uint8_t*>(&trqLimitMax), sizeof(trqLimitMax),
+                                        comm::ethercat::master::fbs::ElementFlags::ElementFlags_maxValue);
   if (aprStatusFailed(result))
   {
-    Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_READ_PARAM_FAILED,
-                       m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "Max value of SoE IDN: %s, error: 0x%04X", idnToString(requestData.idn).c_str(), result);
+    Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_READ_PARAM_FAILED, m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
+                       "Max value of SoE IDN: %s, error: 0x%04X", idnToString(S_0_0092_BIPOLARE_TORQUE_LIMIT).c_str(), result);
   }
 
   // here actual judge which limitation take effect, and then store
@@ -564,9 +543,9 @@ bool SercosDeviceParamDrive::checkFunctionSupported(const FunctionSupport functi
     break;
     case FunctionSupport::HOMING_STATUS_CYCLIC:
     {
-      SignalStatusWordFunction func;
+      SignalFunction func;
       func.function = function;
-      result = isFuncInSignalStatusWord(func, errorInfo);
+      result = m_signalFuncHandler->isFuncInSignalStatusWord(func, errorInfo);
     }
     break;
     case FunctionSupport::ERROR_CODE_CYCLIC:
@@ -592,14 +571,12 @@ bool SercosDeviceParamDrive::checkFunctionSupported(const FunctionSupport functi
 AxisProfileResult SercosDeviceParamDrive::readPosProcessMode()
 {
   std::uint16_t posPrcMode {};
-  ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, P_0_0187_POS_PROCESS_MODE, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
-
-  auto result = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, reinterpret_cast<std::uint8_t*>(&posPrcMode), sizeof(posPrcMode));
+  auto result = getParameterValueFromSnapshot(P_0_0187_POS_PROCESS_MODE, reinterpret_cast<std::uint8_t*>(&posPrcMode), sizeof(posPrcMode));
   if (aprStatusFailed(result))
   {
     Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_READ_PARAM_FAILED,
                        m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "Position mode setting, SoE DIN: %s, error: 0x%X", idnToString(requestData.idn).c_str(), result);
+                       "Position mode setting, SoE DIN: %s, error: 0x%X", idnToString(P_0_0187_POS_PROCESS_MODE).c_str(), result);
     return AxisProfileResult::STS_BOOTING_CONTINUE;
   }
 
@@ -608,7 +585,7 @@ AxisProfileResult SercosDeviceParamDrive::readPosProcessMode()
   {
     m_hasOutputEffectiveDelay = true;
 
-    // the end value of the buffer is also used in the calculation, so the latency is buffer (depth - 1)*Ts  
+    // the end value of the buffer is also used in the calculation, so the latency is buffer (depth - 1)*Ts
     m_outputEffectiveDelay = m_dcSync0CycleTime * (getPosProcessBufLen(mode) - 1);
   }
   else
@@ -619,54 +596,6 @@ AxisProfileResult SercosDeviceParamDrive::readPosProcessMode()
   }
 
   return AxisProfileResult::STS_OK;
-}
-
-AxisProfileResult SercosDeviceParamDrive::readSignalStatusWordCfg(std::vector<std::uint32_t>& params, std::vector<std::uint16_t>& assignBits)
-{
-  auto syncReader = [&] (const std::uint16_t& idn, std::uint8_t* bufPtr, std::size_t bufLen, std::size_t& readLen)
-  {
-    // prepare request parameters
-    ParamReqDataSoE requestData {m_profileBasicInfo.m_deviceAddress, idn, comm::ethercat::master::fbs::ElementFlags::ElementFlags_value, m_profileBasicInfo.m_driveNumber};
-    requestData.maxLen = static_cast<std::uint32_t>(bufLen);
-
-    // do synchronous request
-    APR_TRACE_MESSAGE("%s; sync reading IDN=%s, max length=%d.",
-                      m_profileBasicInfo.m_profileTrace.createTraceMsg(),
-                      idnToString(requestData.idn).c_str(), requestData.maxLen);
-    AxisProfileResult res = m_profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, bufPtr, bufLen, readLen);
-    if (aprStatusFailed(res))
-    {
-      Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_READ_PARAM_FAILED,
-                         m_profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                         "Signal status, SoE DIN: %s, error: 0x%08X", idnToString(requestData.idn).c_str(), res);
-    }
-
-    return res;
-  };
-
-  std::size_t readLen {};
-  std::array<std::uint8_t, LIST_BUFF_DEFAULT_SIZE> rawBuf {}; // buffer for raw data reading
-
-  // S-0-0026: Configuration list for signal status word
-  auto res = syncReader(S_0_0026_CONFIG_LIST_SIGNAL_STATUS_WORD, rawBuf.data(), rawBuf.size(), readLen);
-  if (aprStatusFailed(res))
-  {
-    return res;
-  }
-  std::vector<std::uint16_t> tmpParams {}; // drive give array of 16bits, so we convert to uint32_t manually.
-  FieldbusHelper::rawToParamListSoE(rawBuf.data(), readLen, tmpParams);
-  params.clear();
-  params.assign(tmpParams.begin(), tmpParams.end());
-  rawBuf.fill(0); // clear buffer
-
-  // S-0-0328: assign list signal status word
-  res = syncReader(S_0_0328_ASSIGN_LIST_SIGNAL_STATUS_WORD, rawBuf.data(), rawBuf.size(), readLen);
-  if (aprStatusFailed(res))
-  {
-    return res;
-  }
-  FieldbusHelper::rawToParamListSoE(rawBuf.data(), readLen, assignBits);
-  return res;
 }
 
 AxisProfileResult SercosDeviceParamDrive::getDeviceParamJobObj()
@@ -769,7 +698,7 @@ AxisProfileResult SercosDeviceParamDrive::writeChecksumIdnListToDevice(const std
 bool SercosDeviceParamDrive::checkBootIdnListModified()
 {
   DeviceSeries series = m_sharingHandler->getPropertyIF()->getDeviceSeries();
-  std::vector<std::uint16_t> bootList = (series == DeviceSeries::CTRLXDRIVE) ? SOE_CTRLX_DRIVE_BOOT_PARAM_LIST : SOE_INDRA_DRIVE_BOOT_PARAM_LIST; //can't be other type in this function
+  std::vector<std::uint16_t> bootList = (series == DeviceSeries::CTRLXDRIVE) ? getSoeCtrlxDriveBootParamList() : getSoeIndraDriveBootParamList(); //can't be other type in this function
   return ChecksumIdnListHelper::checkBootIdnListModifiedImpl<std::vector<std::uint16_t> >(m_checksumIdnList, bootList,
     [this] (std::vector<std::uint16_t>& list) {
       return this->readChecksumIdnListFromDevice(list);
@@ -778,7 +707,7 @@ bool SercosDeviceParamDrive::checkBootIdnListModified()
       return this->writeChecksumIdnListToDevice(list);
     },
     m_profileBasicInfo.m_deviceAddress
-  );  
+  );
 }
 
 AxisProfileResult SercosDeviceParamDrive::getChecksumIdnList(std::vector<std::string>& idnStrListRet) const

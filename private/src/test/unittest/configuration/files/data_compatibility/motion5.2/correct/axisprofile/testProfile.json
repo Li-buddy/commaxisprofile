@@ -1,0 +1,50 @@
+{
+  "$persistence_header": {
+    "bfbs": "",
+    "version": ""
+  },
+  "$schema": "",
+  "deviceAddress": 1,
+  "deviceName": "Rexroth",
+  "inputBuffer": "fieldbuses/ethercat/master/instances/ethercatmaster/realtime_data/input",
+  "inputMapping": {
+    "mapping": [
+      {
+        "datalayerURI": "datalayer/myBundle/position",
+        "valueID": "position"
+      },
+      {
+        "datalayerURI": "datalayer/myBundle/stsWord",
+        "valueID": "statusword"
+      }
+    ]
+  },
+  "outputBuffer": "fieldbuses/ethercat/master/instances/ethercatmaster/realtime_data/output",
+  "outputMapping": {
+    "mapping": [
+      {
+        "datalayerURI": "datalayer/myBundle/ctrlWord",
+        "valueID": "controlword"
+      },
+      {
+        "datalayerURI": "datalayer/myBundle/position",
+        "valueID": "position"
+      }
+    ]
+  },
+  "profileBasicData": {
+    "name": "testProfile",
+    "type": "Servodrive_over_Ethercat"
+  },
+  "scalingInfo": {
+    "denominator": 1,
+    "numerator": 1,
+    "resolution": 1,
+    "scalingStrategy": {
+      "strategy": "UNKNOWN"
+    },
+    "scalingType": {
+      "scalingType": "UNDEFINED"
+    }
+  }
+}

@@ -277,8 +277,8 @@ HRESULT TestCanopenStatusControl::testSetPowerMode()
   std::vector<TestPowerMode> testcases
   {
     {L"PowerOn: everything works fine",   {0x40, 0x21, 0x23, 0x27}, AxisProfileResult::STS_OK,            AxisProfilePowerMode::POWER_ON},
+    {L"PowerOn: quick stop active",        {0x07, 0x27},             AxisProfileResult::STS_OK,            AxisProfilePowerMode::POWER_ON},
     {L"PowerOn: invalid state",           {0x00},                   AxisProfileResult::ERR_INVALID_STATE, AxisProfilePowerMode::POWER_ON},
-    {L"PowerOn: invalid state",           {0x07},                   AxisProfileResult::ERR_INVALID_STATE, AxisProfilePowerMode::POWER_ON},
     {L"PowerOff: everything works fine",  {0x27, 0x23, 0x21},       AxisProfileResult::STS_OK,            AxisProfilePowerMode::POWER_OFF},
     {L"Unknown power mode",               {0x00},                   AxisProfileResult::ERR_NOK,           AxisProfilePowerMode::POWER_OFF_TORQUE_FREE},
   };
@@ -352,7 +352,7 @@ HRESULT TestCanopenStatusControl::testSetDriveHalt() const
   {
     std::wstring m_testName;                //!< test name
     std::function<AxisProfileResult(canopen::CanopenStatusControlDrive& statusCtrl)> m_testFun; 
-    std::uint16_t m_statusWord;             //!< test value for statusword
+    std::uint16_t m_statusWord{};           //!< test value for statusword
     AxisProfileResult m_expectedResult;     //!< set expected return value
     AxisProfileResult m_cmdReturnValue;     //!< command return value
   };
@@ -570,8 +570,8 @@ HRESULT TestCanopenStatusControl::testMics()
   // structure of test case of FAS state
   struct TestFasStateCase
   {
-    const wchar_t* name;          // name of test case
-    std::uint16_t statusWord;     // test value for statusword
+    const wchar_t* name{};        // name of test case
+    std::uint16_t statusWord{};   // test value for statusword
     canopen::FsaState expState;   // expected FSA state
     ReadyToOperate expReadyToOP;  // expected ready to operate state
   };

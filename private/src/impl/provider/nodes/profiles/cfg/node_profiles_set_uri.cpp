@@ -50,7 +50,7 @@ using namespace comm::axisprofile::provider;
 // ---------------------------------------------------------------------------
 
 
-NodeProfilesSetURI::NodeProfilesSetURI(ProviderMgr* mgr, const NodeOperation operation) : NodeProfilesBase(mgr), m_operation(operation)
+NodeProfilesSetURI::NodeProfilesSetURI(ProviderMgr* mgr, const BufferOrient operation) : NodeProfilesBase(mgr), m_operation(operation)
 {
   this->m_metaDataInfo.m_description = "input uri";
   this->m_metaDataInfo.m_descriptionUrl = "";
@@ -75,10 +75,10 @@ void NodeProfilesSetURI::onRead(const std::string & address, const comm::datalay
   const char* uri = nullptr;
   switch (m_operation)
   {
-  case NodeOperation::INBUFFER:
+  case BufferOrient::INPUT_BUFFER:
     uri = profileManager->getProfileInputBuffer(name.c_str());
     break;
-  case NodeOperation::OUTBUFFER:
+  case BufferOrient::OUTPUT_BUFFER:
     uri = profileManager->getProfileOutputBuffer(name.c_str());
     break;
   }
@@ -120,10 +120,10 @@ void NodeProfilesSetURI::onWrite(const std::string& address, const comm::datalay
   AxisProfileResult aprReturn{AxisProfileResult::ERR_NOK};
   switch (m_operation)
   {
-  case NodeOperation::INBUFFER:
+  case BufferOrient::INPUT_BUFFER:
     aprReturn = profileManager->setProfileInputBuffer(name.c_str(), convData);
     break;
-  case NodeOperation::OUTBUFFER:
+  case BufferOrient::OUTPUT_BUFFER:
     aprReturn = profileManager->setProfileOutputBuffer(name.c_str(), convData);
     break;
   }

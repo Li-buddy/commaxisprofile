@@ -14,6 +14,12 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "sercos_job_base.h"
+#include "profiles/signal_func/signal_func_cmd.h"
+
+// ---------------------------------------------------------------------------
+// Forward references
+// ---------------------------------------------------------------------------
+class TestSercosJobHoming; 
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -35,8 +41,8 @@ namespace comm::axisprofile::sercos
   /// @brief Struct homing related data that will be used in homing process
   struct HomingDevData
   {
-    std::uint16_t idnRefDist;         ///< idn of reference position
-    std::uint16_t idnRefOffset;       ///< idn of reference offset
+    std::uint16_t idnRefDist{};       ///< idn of reference position
+    std::uint16_t idnRefOffset{};     ///< idn of reference offset
     WordStructure ctrlWordS448 {};    ///< value of S-0-0448, control word of set absolute position
     WordStructure ctrlWordS147 {};    ///< value of S-0-0147, homing parameter set in the device
     std::int32_t cmdPosRaw {};        ///< reference position in raw that to be set when homed
@@ -110,10 +116,13 @@ namespace comm::axisprofile::sercos
     AxisProfileResult abortHomingByDevice();
 
   private: // data
+    friend class::TestSercosJobHoming;
 
     HomingData m_cmdData {};      ///< command input data from motion
     HomingDevData m_devData {};   ///< device related data that used during homing process
 
     std::list<SercosParamStruct> m_paramList {}; ///< parameter list to be access asynchronously
+
+    SignalFuncCmd m_signalFuncCmd {{FunctionSupport::HOMING_CMD_CYCLIC}};    ///< signal function command for homing
   };
 }

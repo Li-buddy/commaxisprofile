@@ -89,7 +89,7 @@ namespace comm
 
         //! @brief add all nodes to the provider manager
         //! @param[in]   mgr   pointer to the provider manager
-        void addNodes(ProviderMgr *mgr);
+        static void addNodes(ProviderMgr *mgr);
       };
     }
   }

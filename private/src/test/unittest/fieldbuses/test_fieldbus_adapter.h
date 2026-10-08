@@ -100,15 +100,6 @@ private: // Methods
   /// @param[in] protocol                  The protocol type.
   void generateCfgSlaveInfo(comm::datalayer::Variant& variantCfgedSlaveInfo, std::string& slaveName, std::uint32_t protocol);
 
-  /// @brief Test the generation of configured slave count data.
-  /// @return  S_OK, when tests were successful
-  void generateCfgedSlaveNum(comm::datalayer::Variant& variantCfgedSlaveCount, std::uint32_t nCount, bool isValuable= true);
-
-  /// @brief Test the generation of slave address mapping data with response field.
-  /// @param[in] addressCnt                 the address count to been mock.
-  /// @param[out] mappingResponse           The mocked data.
-  /// @return  S_OK, when tests were successful
-  void generateSlaveAddressMappingResponse(std::uint16_t addressCnt, comm::datalayer::Variant& mappingResponse);
 private: // Types
 
   /// @class FieldbusAdapterUnittest

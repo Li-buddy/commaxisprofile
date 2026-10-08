@@ -194,24 +194,6 @@ void TestFieldbusAdapter::generateCfgSlaveInfo(comm::datalayer::Variant& variant
   variantCfgedSlaveInfo.copyFlatbuffers(totalBuilder);
 }
 
-void TestFieldbusAdapter::generateCfgedSlaveNum(comm::datalayer::Variant& variantCfgedSlaveCount, std::uint32_t nCount, bool isValuable)
-{
-  flatbuffers::FlatBufferBuilder builder;
-  builder.ForceDefaults(true);
-
-  comm::ethercat::master::fbs::NumConfiguredSlavesResponseBuilder responseBuilder(builder);
-  responseBuilder.add_numSlaves(nCount);
-  auto numOffsetResponse = responseBuilder.Finish();
-  comm::ethercat::master::fbs::NumConfiguredSlavesBuilder numCfgBuilder(builder);
-  if ( isValuable )
-  {    
-    numCfgBuilder.add_response(numOffsetResponse);   
-  }
-  auto numOffset = numCfgBuilder.Finish();
-  builder.Finish(numOffset);
-  variantCfgedSlaveCount.copyFlatbuffers(builder);
-}
-
 HRESULT TestFieldbusAdapter::testMiscellaneous()
 {
   HRESULT hResult = S_OK;
@@ -449,8 +431,8 @@ HRESULT TestFieldbusAdapter::testReadSlaveDcCfgInfo()
 HRESULT TestFieldbusAdapter::testParamListConversion()
 {
   HRESULT hResult = S_OK;
-  std::vector<std::uint8_t> dummyBuff {};
-  dummyBuff.resize(LIST_BUFF_DEFAULT_SIZE);
+  std::vector<std::uint8_t> dummyBuff {};  
+  dummyBuff.resize(64);
 
   log(L"\n<b>Test of rawToParamList</b>");
   std::vector<std::uint16_t> outList {};
@@ -549,34 +531,10 @@ HRESULT TestFieldbusAdapter::testSlaveAddressMappingFbs()
   LOG_TEST_RESULT(actResult, L"\nUnexpected return value!", AxisProfileResult::ERR_DATALAYER_WRONG_TYPE);
 
   log(L"\nCall extractSlaveAddressByMapping() with correct data");
-  generateSlaveAddressMappingResponse(3, variantMappingInfo);
+  test::FlatbuffersHelperCommon fbHelper;
+  fbHelper.generateAddressMappingResponseFlatbuffer(3, variantMappingInfo);
   actResult = DeviceFbsDataHelper::extractSlaveAddressByMapping(variantMappingInfo, addressVec);
   LOG_TEST_RESULT(actResult, L"\nUnexpected return value!", AxisProfileResult::STS_OK);
   LOG_TEST_RESULT_ANY(addressVec.size() == 3, L"unexpected return value!");
   return hResult;
-}
-
-void TestFieldbusAdapter::generateSlaveAddressMappingResponse(std::uint16_t addressCnt, comm::datalayer::Variant& mappingResponse)
-{
-  flatbuffers::FlatBufferBuilder builder;
-
-  std::vector<flatbuffers::Offset<comm::ethercat::master::fbs::AddressMappingEntry>> entries;
-  for (int i = 0; i < addressCnt; ++i)
-  {
-    auto entryAddr = comm::ethercat::master::fbs::CreateAddressedRequest(builder, comm::ethercat::master::fbs::Addresstype_fixedphysical, 1000 + i);
-    auto entryName = builder.CreateString("SLAVE_" + std::to_string(i));
-
-    auto entry = comm::ethercat::master::fbs::CreateAddressMappingEntry(builder, entryAddr, entryName);
-    entries.push_back(entry);
-  }
-
-  auto entryList = builder.CreateVector(entries);
-  auto response = comm::ethercat::master::fbs::CreateSlaveAddressMappingResponse(builder, entryList);
-
-  comm::ethercat::master::fbs::SlaveAddressMappingBuilder mappingBuilder(builder);
-  mappingBuilder.add_response(response);
-  auto mappingRoot = mappingBuilder.Finish();
-
-  builder.Finish(mappingRoot);
-  mappingResponse.copyFlatbuffers(builder);
 }

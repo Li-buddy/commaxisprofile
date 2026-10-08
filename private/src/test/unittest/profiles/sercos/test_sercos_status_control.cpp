@@ -305,7 +305,7 @@ HRESULT TestSercosStatusControl::testSetDriveHalt()
   {
     std::wstring m_testName;                //!< test name
     std::function<AxisProfileResult(sercos::SercosStatusControlDrive& statusCtrl)> m_testFun; 
-    std::uint16_t m_statusWord;             //!< test value for statusword
+    std::uint16_t m_statusWord{};           //!< test value for statusword
     AxisProfileResult m_expectedResult;     //!< set expected return value
     AxisProfileResult m_cmdReturnValue;     //!< command return value
   };

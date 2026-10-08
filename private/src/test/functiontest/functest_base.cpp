@@ -208,12 +208,31 @@ HRESULT FuncTestBase::addProfileToSystem(const comm::axisprofile::AxisProfileTyp
   aprResult = profile->setDeviceAddress(deviceAddress);
   RETURN_TEST_FAILED(aprResult, L"\nSet device address failed.");
 
+  updateProtocolRelatedMockData(type);
+
   if (axisProfile)
   {
     *axisProfile = profile;
   }
 
   return S_OK;
+}
+
+void FuncTestBase::updateProtocolRelatedMockData(const comm::axisprofile::AxisProfileType type)
+{
+  std::uint32_t protocol {};
+  switch (type)
+  {
+    case AxisProfileType::SERVODRIVE_OVER_ETHERCAT:
+      protocol = 26;
+      break;
+    case AxisProfileType::CANOPEN_OVER_ETHERCAT:
+      protocol = 6;
+      break;
+    default:
+      break;
+  }
+  m_mockEthercatMaster->m_ecatSlaveCfgInfo.m_devInfo.m_supportedProtocol = protocol;
 }
 
 HRESULT FuncTestBase::connectProfile(const std::string& profileName, std::shared_ptr<const IAxisProfileC>& axisProfile)

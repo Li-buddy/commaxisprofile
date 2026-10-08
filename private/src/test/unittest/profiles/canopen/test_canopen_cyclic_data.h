@@ -60,7 +60,7 @@ private: //data
   /// @brief This struct contains the test data of the different test cases.
   struct TestCaseDigitalInput
   {
-    const wchar_t* m_name;                                     ///< name of testcase
+    const wchar_t* m_name{};                                   ///< name of testcase
     comm::axisprofile::DigitalInputValueBitType m_valueType;   ///< test value type of digital input bit
     comm::axisprofile::AxisProfileResult m_expectedResult;     ///< expected result of getDigitalInputValueBit()
   };

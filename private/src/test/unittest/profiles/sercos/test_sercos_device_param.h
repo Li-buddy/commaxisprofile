@@ -41,7 +41,7 @@ public: // Types
 
   struct TestDelayInformation
   {
-    const wchar_t *m_name;                                      ///< Name of the variant type
+    const wchar_t *m_name{};                                    ///< Name of the variant type
     bool m_delaySupport{};                                      ///< Indicates whether the delay break support
     std::uint16_t m_multiBrakeDelaySupportCase{};               ///< The deceleration method
     comm::axisprofile::AxisProfileResult m_expectedResult;      ///< Expected result for clear error call
@@ -107,6 +107,17 @@ private:  // test methods
   /// @return S_OK, if test was successful
   HRESULT testCheckNeedReadBootParams();
 
+  /// @brief Test the checkAxisHomed function
+  /// @return S_OK, if test was successful
+  HRESULT testCheckAxisHomed();
+
+  /// @brief Test the loadBootingTasks function
+  /// @return S_OK, if test was successful
+  HRESULT testLoadBootingTasks();
+
+  /// @brief Test the getDeviceParamJobObj function
+  /// @return S_OK, if test was successful
+  HRESULT testGetDeviceParamJobObj();
 private: // data
 
   const std::string m_profileName = "testProfile";   ///< Name of the test axis profile

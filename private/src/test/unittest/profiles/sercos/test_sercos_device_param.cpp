@@ -2,6 +2,7 @@
 #include "profiles/data_sharing/sharing_handler.h"
 #include "profiles/sercos/drive/sercos_device_param_drive.h"
 #include "profiles/sercos/sercos_boot_params.h"
+#include "profiles/sercos/sercos_boot_param_snapshot.h"
 #include "test_sercos_device_param.h"
 
 //Mockups
@@ -12,6 +13,8 @@
 #include "mockup/mock_fieldbus_adapter_soe.h"
 #include "mockup/mock_profile_trace.h"
 #include "mockup/mock_scaling.h"
+#include "mockup/mock_job_mgr.h"
+#include "mockup/mock_axisprofile_cyclic_data.h"
 
 using namespace comm::axisprofile;
 using namespace test;
@@ -56,7 +59,9 @@ HRESULT TestSercosDeviceParam::doTest()
   hresult |= testBootingMethods();
   hresult |= testCheckFunctionSupported();
   hresult |= testreadPosProcessMode();
-
+  hresult |= testLoadBootingTasks();
+  hresult |= testCheckAxisHomed();
+  hresult |= testGetDeviceParamJobObj();
   return hresult;
 }
 
@@ -115,6 +120,7 @@ HRESULT TestSercosDeviceParam::executeTestDelayBrakeInfo(comm::axisprofile::serc
 
 HRESULT TestSercosDeviceParam::testMappingBrakeInfo()
 {
+  log(L"\n<b>Test MappingBrakeInfo.</b>");
   HRESULT hresult = S_OK;
   test::MockAxisProfileTrace mockProfileTrace{};
   test::MockFieldbusAdapterSoE mockFieldbusAdapter{};
@@ -131,9 +137,15 @@ HRESULT TestSercosDeviceParam::testMappingBrakeInfo()
   sercos::SercosDeviceParamDrive testClass{profileBasicInfo, nullptr, nullptr};
   mockClient.m_simulateTimeout = false;
 
+  log(L"\nTest sharingHandler is nullptr.");
   bool checkDecelerationLimitSupport = false;
+  AxisProfileResult res = testClass.mappingBrakeInfo(checkDecelerationLimitSupport);
+  LOG_TEST_RESULT(res, L"\n sharingHandle is null fail", AxisProfileResult::ERR_EXEC_NULL);
+
+  mockClient.m_simulateTimeout = false;
+
   AxisProfileResult expectedResult = AxisProfileResult::STS_OK;
-  testClass.m_bootingDataMultiBrake.m_controlUnitReactionBestDeceleration = 0x0042;  
+  testClass.m_bootingDataMultiBrake.m_controlUnitReactionBestDeceleration = 0x0042;
 
   AxisProfileSharingHandler shareHandler {&mockProfileTrace};
   test::MockScaling mockScaling;
@@ -176,7 +188,7 @@ HRESULT TestSercosDeviceParam::testBootingMethods()
   {
     std::wstring m_testName;                // test name
     std::function<AxisProfileResult(sercos::SercosDeviceParamDrive& cmd)> m_testFun; // test function
-    std::uint16_t m_setData;                     // set datalayer data
+    std::uint16_t m_setData{};                   // set datalayer data
     AxisProfileResult m_adapterRetVal;      // set expected fieldbus return value
     AxisProfileResult m_expectedResult;     // set expected result
   };
@@ -218,6 +230,9 @@ HRESULT TestSercosDeviceParam::testBootingMethods()
   profileBasicInfo.m_driveNumber = driveNumber;
   profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
   profileBasicInfo.m_profileName = "testProfile";  
+  profileBasicInfo.m_axisProfileType = AxisProfileType::SERVODRIVE_OVER_ETHERCAT;
+
+  comm::axisprofile::sercos::SercosBootParamSnapshot bootParamSnapshot {profileBasicInfo};
 
   for (auto& oneTest : testCase)
   {
@@ -233,11 +248,13 @@ HRESULT TestSercosDeviceParam::testBootingMethods()
 
     sercos::SercosDeviceParamDrive testClass {profileBasicInfo, nullptr, nullptr};
     AxisProfileSharingHandler sharingHandler(&profileTraceMockup);
-    sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_SCALING, &testClass);
+    sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
     sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappingHandlerMockup);
     sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_SCALING, &mockScaling);
+    sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
+    sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
 
-    log(L"\n  Test of %s ...", oneTest.m_testName.c_str());    
+    log(L"\n  Test of %s ...", oneTest.m_testName.c_str());
     mockFieldbusAdapter.m_returnValue = oneTest.m_adapterRetVal;
     TestDataVariantU16 data {L"Add invalid data", oneTest.m_setData, true};
     setResponseVariant(&mockClient, data);
@@ -306,6 +323,8 @@ HRESULT TestSercosDeviceParam::testCheckFunctionSupported()
   assignedInfo.m_output.m_controlWord = false;
   assignedInfo.m_input.m_statusWord = false;
 
+  testClass.prepareSignalFuncHandler();
+
   log(L"\n  Test the failure checking...");
   FunctionSupportErrorInfo errorInfo;
   bool result = testClass.checkFunctionSupported(FunctionSupport::OPMODE_CYCLIC, errorInfo);
@@ -328,7 +347,7 @@ HRESULT TestSercosDeviceParam::testCheckFunctionSupported()
   log(L"\n  Test the failure checking of invalid function enumeration...");
   result = testClass.checkFunctionSupported(FunctionSupport::MAX_VALUE, errorInfo);
   LOG_TEST_RESULT_ANY(!result && errorInfo.errorType == FuncSupportErrorType::ERROR_NOT_DEFINED, L"\n  unexpected return value.");
-  
+
   return hresult;
 }
 
@@ -337,13 +356,21 @@ HRESULT TestSercosDeviceParam::testreadPosProcessMode()
   MockFieldbusAdapterSoE mockFieldbusAdapter {};
   MockDatalayerClient mockClient {};
   mockFieldbusAdapter.setDatalayer(static_cast<comm::datalayer::IClient*>(&mockClient));
- 
+
   ProfileBasicInfo profileBasicInfo;
   profileBasicInfo.m_deviceAddress = 1;
   profileBasicInfo.m_driveNumber = 0;
   profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
   profileBasicInfo.m_profileName = "testProfile";
+  profileBasicInfo.m_axisProfileType = AxisProfileType::SERVODRIVE_OVER_ETHERCAT;
+
   sercos::SercosDeviceParamDrive testClass {profileBasicInfo, nullptr, nullptr};
+  comm::axisprofile::sercos::SercosBootParamSnapshot bootParamSnapshot {profileBasicInfo};
+
+  test::MockAxisProfileTrace profileTraceMockup {};
+  AxisProfileSharingHandler sharingHandler(&profileTraceMockup);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
 
   double outputDelay;
   testClass.m_dcSync0CycleTime = 0.005;
@@ -353,7 +380,7 @@ HRESULT TestSercosDeviceParam::testreadPosProcessMode()
   data.m_data = 0;
   setResponseVariant(&mockClient, data);
   auto result = testClass.readPosProcessMode();
-  RETURN_TEST_RESULT(result, L"\nUnexpected return value.", AxisProfileResult::STS_OK);  
+  RETURN_TEST_RESULT(result, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
   result = testClass.getOutputEffectiveDelay(outputDelay);
   RETURN_TEST_RESULT(result, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
   log(L"\nOutput delay is 1 cycle in mode 0...");
@@ -440,13 +467,13 @@ HRESULT TestSercosDeviceParam::testChecksum()
 
   log(L"\nReadChecksumIdnList test, return default idn list...");
   mockClient.m_returnValue = comm::datalayer::DlResult::DL_OK;
-  fbsHelper.writeParam(IDN_S(0, 327), sercos::SOE_CTRLX_DRIVE_BOOT_PARAM_LIST);
+  fbsHelper.writeParam(IDN_S(0, 327), sercos::getSoeCtrlxDriveBootParamList());
   fbsHelper.generateParamResponseFlatbuffer(&responseFB, IDN_S(0, 327));
   mockClient.m_callbackVariant = responseFB;
   IdnList.clear();
   result = testClass.readChecksumIdnListFromDevice(IdnList);
   RETURN_TEST_RESULT(result, L"\nUnexpected return value.", AxisProfileResult::STS_OK);
-  RETURN_TEST_RESULT_ANY(IdnList.size() == sercos::SOE_CTRLX_DRIVE_BOOT_PARAM_LIST.size(), L"\nUnexpected return value.");
+  RETURN_TEST_RESULT_ANY(IdnList.size() == sercos::getSoeCtrlxDriveBootParamList().size(), L"\nUnexpected return value.");
   RETURN_TEST_RESULT_ANY(!testClass.checkBootIdnListModified(), L"\nUnexpected return value.");
   RETURN_TEST_RESULT(testClass.getChecksumIdnList(idnStrList), L"\nUnexpected return value.", AxisProfileResult::STS_OK);
 
@@ -493,8 +520,10 @@ HRESULT TestSercosDeviceParam::testCheckNeedReadBootParams()
   AxisProfileSharingHandler shareHandler {&profileTraceMockup};
 
   test::MockAxisProfileProperty property {};
+  sercos::SercosBootParamSnapshot bootParamSnapshot {profileBasicInfo};
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
   shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testClass);
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, &bootParamSnapshot);
 
   log(L"\nCheckBootIdnListModified test, drive not support...");
   property.setDeviceSeries(DeviceSeries::CTRLXDRIVE);
@@ -520,7 +549,7 @@ HRESULT TestSercosDeviceParam::testCheckNeedReadBootParams()
 
   mockClient.m_nCalledTimes = 0;// resetClient();
   log(L"\nCheckBootIdnListModified test, checksum value same, idn list different to the deault booting idn list...");
-  //after checkNeedReadBootParams, the checksum has been updated  
+  //after checkNeedReadBootParams, the checksum has been updated
   RETURN_TEST_RESULT(testClass.checkNeedReadBootParams(), L"\nUnexpected return value.", true);
 
   log(L"\nCheckBootIdnListModified test, checksum value same, idn list same to the deault booting idn list...");
@@ -528,9 +557,109 @@ HRESULT TestSercosDeviceParam::testCheckNeedReadBootParams()
   mockClient.m_returnValue = comm::datalayer::DlResult::DL_OK;
   fbsHelper.generateParamResponseFlatbuffer(&responseFB, IDN_S(0, 326));
   mockClient.m_vecCallBackVariant.push_back(responseFB);
-  fbsHelper.writeParam(IDN_S(0, 327), sercos::SOE_CTRLX_DRIVE_BOOT_PARAM_LIST);
+  fbsHelper.writeParam(IDN_S(0, 327), sercos::getSoeCtrlxDriveBootParamList());
   fbsHelper.generateParamResponseFlatbuffer(&responseFB, IDN_S(0, 327));
   mockClient.m_vecCallBackVariant.push_back(responseFB);
   RETURN_TEST_RESULT(testClass.checkNeedReadBootParams(), L"\nUnexpected return value.", false);
+  return S_OK;
+}
+
+HRESULT TestSercosDeviceParam::testLoadBootingTasks()
+{
+  log(L"\n<b>Test the LoadBootingTasks function for non-required BootParams.</b>");
+  MockFieldbusAdapterSoE mockFieldbusAdapter {};
+  ProfileBasicInfo profileBasicInfo;
+  profileBasicInfo.m_axisProfileType = AxisProfileType::SERVODRIVE_OVER_ETHERCAT;
+  profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
+  sercos::SercosDeviceParamDrive testClass {profileBasicInfo, nullptr, nullptr};
+  testClass.m_needReadBootParams = false;
+  testClass.loadBootingTasks();
+  LOG_TEST_RESULT(testClass.m_initDeviceParam.size(), L"\nUnexpected return value", 10);
+  return S_OK;
+}
+
+HRESULT TestSercosDeviceParam::testCheckAxisHomed()
+{
+  log(L"\n<b>Test the CheckAxisHomed function.</b>");
+  HRESULT hResult = S_OK;
+
+  // Prepare profile info and telegrams
+  test::MockFieldbusAdapterSoE mockFieldbus{};
+  ProfileBasicInfo profileBasicInfo;
+  profileBasicInfo.m_profileName = "testProfile";
+  profileBasicInfo.m_fieldbusAdapter = &mockFieldbus;
+  AcknowledgeTelegram atData;
+  MasterDataTelegram mdtData;
+
+  // Create test instance
+  sercos::SercosDeviceParamDrive testDeviceParam(profileBasicInfo, &atData, &mdtData);
+
+  test::MockAxisProfileTrace profileTraceMockup {};
+  AxisProfileSharingHandler shareHandler {&profileTraceMockup};
+  test::MockAxisProfileMappingHandler mappingHandlerMockup {};
+  comm::axisprofile::ProfileAssignedInfo profileAssigned {false,false};
+  mappingHandlerMockup.setReturnValue(profileAssigned);
+  test::MockAxisProfileProperty property {};
+  test::MockAxisProfileCyclicData cyclicData {};
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, &testDeviceParam);
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappingHandlerMockup);
+  shareHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_CYCLICDATA, &cyclicData);
+
+  // not mapped homed
+  property.setDeviceSeries(DeviceSeries::INNOVANCE);
+  bool homed {};
+  testDeviceParam.checkAxisHomed(homed);
+  RETURN_TEST_RESULT(homed, L"Expected not homed", false);
+
+  // Test: Not homed (m_bitStatusHomed = 0)
+  mappingHandlerMockup.getProfileAssignedInfo().m_input.m_homed = true;
+  atData.m_bitStatusHomed.m_byte = {0};
+  testDeviceParam.checkAxisHomed(homed);
+  RETURN_TEST_RESULT(homed, L"Expected homed but not same as expect", false);
+
+  // Test: Homed (m_bitStatusHomed = 1)
+  atData.m_bitStatusHomed.m_byte = {1};
+  testDeviceParam.checkAxisHomed(homed);
+  RETURN_TEST_RESULT(homed, L"Expected homed", true);
+
+  testDeviceParam.prepareSignalFuncHandler();
+  auto mgr = testDeviceParam.getSignalFuncHandler();
+  SignalFunction func {};
+  func.controlSupported = true;
+  func.statusSupported = true;
+  auto result = mgr->resetSignalFuncBit(func);
+  RETURN_TEST_RESULT(result, L"failed to reset", AxisProfileResult::STS_OK);
+
+  result = mgr->activeSignalFunc(func);
+  RETURN_TEST_RESULT(result, L"failed to reset", AxisProfileResult::STS_OK);
+  bool value {};
+  result = mgr->getSignalFuncState(func, value);
+  RETURN_TEST_RESULT(result, L"failed to reset", AxisProfileResult::STS_OK);
+
+  return hResult;
+}
+
+HRESULT TestSercosDeviceParam::testGetDeviceParamJobObj()
+{
+  log(L"\n<b>Test the getDeviceParamJobObj function.</b>");
+  MockFieldbusAdapterSoE mockFieldbusAdapter {};
+  ProfileBasicInfo profileBasicInfo;
+  profileBasicInfo.m_axisProfileType = AxisProfileType::SERVODRIVE_OVER_ETHERCAT;
+  profileBasicInfo.m_fieldbusAdapter = &mockFieldbusAdapter;
+  sercos::SercosDeviceParamDrive testClass {profileBasicInfo, nullptr, nullptr};
+  AxisProfileResult res = testClass.getDeviceParamJobObj();
+  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_EXEC_NULL);
+
+  log(L"\n Test for jobobj is nullptr");
+  test::MockAxisProfileTrace profileTraceMockup {};
+  test::MockJobMgr mockJobMgr {};
+  mockJobMgr.m_jobObjPtr = nullptr;
+  AxisProfileSharingHandler sharingHandler(&profileTraceMockup);
+  sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_JOB_MGR, &mockJobMgr);
+  testClass.setSharingHandler(&sharingHandler);
+  res = testClass.getDeviceParamJobObj();
+  LOG_TEST_RESULT(res, L"\n Unexpected return value", AxisProfileResult::ERR_EXEC_NULL);
+
   return S_OK;
 }

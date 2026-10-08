@@ -18,6 +18,7 @@
 #include "comm/ethercat/master/fbs/slave_address_mapping_generated.h"
 #include "comm/ethercat/master/fbs/slave_state_generated.h"
 #include "comm/ethercat/master/fbs/slave_status_generated.h"
+#include "comm/ethercat/master/fbs/slave_config_info_generated.h"
 #include "device_fbs_data_helper.h"
 
 // --------------------------------------------------------------------------- 

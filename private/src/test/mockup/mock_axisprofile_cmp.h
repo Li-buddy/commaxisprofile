@@ -113,6 +113,7 @@ namespace test
     comm::axisprofile::IAxisProfileManagerInternal* getAxisProfileManager() override { return m_mockAxisProfileManager; }
     comm::axisprofile::IStateMachine* getStateMachine() override { return m_mockStatemachine; }
     comm::axisprofile::IBackupRestoreMgr* getBackupRestoreManager() override { return m_mockBackupRestoreMgr; }
+    const comm::axisprofile::IBootParamBackupRestoreMgr* getBootParamBackupRestoreMgr() const override { return nullptr; }
     comm::datalayer::IDataLayerFactory* getDataLayer() const override { return m_mockDatalayer; }
     const PersistenceHelperItf* getPersistenceHelper() const override { return m_persistenceHelper->getCInterface(); }
     common::scheduler::IScheduler2* getScheduler() const override { return m_mockScheduler; }

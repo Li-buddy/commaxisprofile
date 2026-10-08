@@ -65,6 +65,11 @@ extern "C" {
     /// @return The profile category
     ::comm::axisprofile::AxisProfileCategory(*getProfileCategory)(void* handle);
 
+    /// @brief Get the configured fieldbus master name, returns empty string when the axisprofile dose not configure any master.
+    /// @param[in]  handle Pointer to the instantiated object
+    /// @return     Name of the configured fieldbus master instance
+    const char* (*getCfgedFieldbusMasterName)(void* handle);
+
     void* reserved[100];  /// reservation
   } IAxisProfilePropertyC;
 

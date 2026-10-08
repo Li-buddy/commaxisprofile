@@ -16,7 +16,6 @@
 #include "profiles/axisprofile_cmd.h"
 #include "cmd_jobs/canopen_job_reset.h"
 #include "cmd_jobs/canopen_job_homing.h"
-#include "cmd_jobs/canopen_job_device_param.h"
 #include "cmd_jobs/canopen_job_setabspos.h"
 #include "cmd_jobs/canopen_job_setopmode.h"
 

@@ -13,7 +13,6 @@
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
-#include "axisprofile_internal_defs.h"
 #include "bundle/i_axisprofile_status_control.h"
 #include "profiles/i_axisprofile_sharing.h"
 #include "profiles/i_axisprofile_state_switch.h"
@@ -68,8 +67,6 @@ namespace comm::axisprofile
 
     /// @brief Commits an operation mode which has been verified against the device.
     /// @param[in] operationMode Operation mode confirmed by the command job.
-    ///
-    /// This synchronization hook is internal and is not exposed through the C interface.
     virtual void confirmOperationModeFromDevice(AxisProfileOperationMode operationMode) = 0;
   };
 }
