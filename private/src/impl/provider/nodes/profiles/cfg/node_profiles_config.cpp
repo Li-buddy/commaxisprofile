@@ -12,7 +12,6 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "node_profiles_config.h"
-#include "fieldbuses/fieldbus_helper.h"
 
 // ---------------------------------------------------------------------------
 // Forward references
@@ -89,7 +88,6 @@ void NodeProfilesConfig::onRead(const std::string& address, const comm::datalaye
   profileConfigData.m_driveNumber        = profile->getDriveNumber();
   profileConfigData.m_profileCategory    = profile->getPropertyInterface()->getProfileCategory();
   profileConfigData.m_checksumEnable     = profile->getPropertyInterface()->isChecksumEnabled();
-  profileConfigData.m_ethercatName       = profile->getPropertyInterface()->getEtherCATName();
 
   // Convert internal data into flatbuffer variant
   comm::datalayer::Variant retVariant;
@@ -150,7 +148,6 @@ void NodeProfilesConfig::onWrite(const std::string& address, const comm::datalay
   profile->setDriveNumber(profileConfigData.m_driveNumber);
   profile->setProfileCategory(profileConfigData.m_profileCategory);
   profile->getPropertyInterface()->enableChecksum(profileConfigData.m_checksumEnable);
-  profile->getPropertyInterface()->setEtherCATName(profileConfigData.m_ethercatName.c_str());
 
   // Finish
   callback(comm::datalayer::DlResult::DL_OK, nullptr);
@@ -231,20 +228,6 @@ comm::axisprofile::AxisProfileResult NodeProfilesConfig::extractFlatbufferData(c
   {
     profileConfigData.m_checksumEnable = variantData->checksumEnabled();
   }
-
-  // Extract the EtherCAT name
-  if (flatbuffers::IsFieldPresent(variantData, fbtypes::profileConfig::VT_ETHERCATMASTERNAME))
-  {
-    profileConfigData.m_ethercatName = flatbuffers::GetString(variantData->ethercatMasterName());
-    profileConfigData.m_inputBuffer = FieldbusHelper::generateRTBufferString(profileConfigData.m_ethercatName.c_str(), BufferOrient::INPUT_BUFFER);
-    profileConfigData.m_outputBuffer = FieldbusHelper::generateRTBufferString(profileConfigData.m_ethercatName.c_str(), BufferOrient::OUTPUT_BUFFER);
-  }
-  else
-  {
-    const char* inBuffer = profileConfigData.m_inputBuffer.c_str();
-    const char* outBuffer = profileConfigData.m_outputBuffer.c_str();
-    profileConfigData.m_ethercatName = FieldbusHelper::extractEtherCATNameFromBufString(inBuffer, outBuffer);
-  }
   return AxisProfileResult::STS_OK;
 }
 
@@ -261,7 +244,6 @@ comm::axisprofile::AxisProfileResult NodeProfilesConfig::generateFlatbufferData(
   auto inputBufferOffset  = builder.CreateString(profileConfigData.m_inputBuffer);
   auto outputBufferOffset = builder.CreateString(profileConfigData.m_outputBuffer);
   auto deviceNameOffset = builder.CreateString(profileConfigData.m_deviceName);
-  auto ethercatNameOffset = builder.CreateString(profileConfigData.m_ethercatName);
   // Build basic profile flatbuffer
   auto profileOffset = NodeProfiles::generateFlatbufferData(builder, profileConfigData.m_profile);
 
@@ -290,7 +272,6 @@ comm::axisprofile::AxisProfileResult NodeProfilesConfig::generateFlatbufferData(
   profileConfigBuilder.add_driveNumber(profileConfigData.m_driveNumber);
   profileConfigBuilder.add_category(categoryOffset);
   profileConfigBuilder.add_checksumEnabled(profileConfigData.m_checksumEnable);
-  profileConfigBuilder.add_ethercatMasterName(ethercatNameOffset);
 
   // Finish
   builder.Finish(profileConfigBuilder.Finish());

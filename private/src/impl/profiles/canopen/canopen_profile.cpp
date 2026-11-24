@@ -6,15 +6,15 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2020-2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
 /// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
 #include "canopen_cmd.h"
-#include "canopen_boot_param_snapshot.h"
 #include "canopen_profile.h"
+#include "common/axisprofile_fpu_helper.h"
 #include "drive/canopen_status_control_drive.h"
 #include "helper/datalayer_helper.h"
 #include "profiles/axisprofile_diag_msg.h"
@@ -53,18 +53,14 @@ CanopenProfile::CanopenProfile(const std::string& profileName, const NetworkTech
   // Create SercosCmd
   m_cmdIf = new CanopenCmd(m_profileBasicInfo);
 
-  // Create boot parameter snapshot interface
-  m_bootParamSnapshotInterface = new CanopenBootParamSnapshot(m_profileBasicInfo);
-
   // create profile category object
   m_profileCategory = new DriveCategoryAdapterCoE(m_profileBasicInfo, &m_telegramAT, &m_telegramMDT);
 
   // Create sharing handler class
   m_profileCategory->registerSharingITFs(m_sharingHandler);
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY,          m_profileCategory);
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_PARAMACCESS,       m_paramAccess);
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CMD,               m_cmdIf);
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, m_bootParamSnapshotInterface);
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY,      m_profileCategory);  
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_PARAMACCESS,   m_paramAccess);
+  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CMD,           m_cmdIf);
 
   // add init methods
   loadInitMethod();
@@ -176,9 +172,8 @@ AxisProfileResult CanopenProfile::processDataAt(std::uint8_t* dataByteArray)
       data = reinterpret_cast<uint8_t*>(&(m_telegramAT.m_ioInReference.m_byte));
       break;
     case InputMappingValueID::HOMED_STATUS:
-      m_telegramAT.m_bitStatusHomed.m_byte = 0;
-      DatalayerHelper::copyBits(reinterpret_cast<uint8_t*>(&(m_telegramAT.m_bitStatusHomed.m_byte)), 0, dataByteArray, realTimeInfo.m_bitOffset, 1);
-      continue;
+      data = reinterpret_cast<uint8_t*>(&(m_telegramAT.m_bitStatusHomed.m_byte));
+      break;
     default:
       result = AxisProfileResult::ERR_WRONGDATATYPE;
       break;
@@ -186,11 +181,15 @@ AxisProfileResult CanopenProfile::processDataAt(std::uint8_t* dataByteArray)
     DatalayerHelper::copyBits(data, 0, dataByteArray, realTimeInfo.m_bitOffset, realTimeInfo.m_bitSize);
   }
 
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_PROFILE(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE,
+                        m_profileBasicInfo.m_profileName.c_str(), "INPUT data analysis");
+
   // Interpret the new AT data
   m_profileCategory->getStatusControlInternal()->analyzeStatusWord();
   static_cast<AxisProfileDiagMsg*>(m_diagMsgInterface)->analyzeDiagMsg();
-  checkForFPUError();
+
+  APR_CHECK_FPU_ERR_PROFILE(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_DURING_AXISPROFILE,
+                        m_profileBasicInfo.m_profileName.c_str(), "INPUT data analysis");
 
   return result;
 }
@@ -252,9 +251,6 @@ AxisProfileResult CanopenProfile::processDataMdt(std::uint8_t* dataByteArray)
     case OutputMappingValueID::IO_REFERENCE_OFFSET:
       data = reinterpret_cast<std::uint8_t*>(&(m_telegramMDT.m_ioEncoderData.m_referenceOffset));
       break;
-    case OutputMappingValueID::SIGNAL_CONTROL_WORD:
-      data = reinterpret_cast<std::uint8_t*>(&(m_telegramMDT.m_signalControlword));
-      break;
     default:
       result = AxisProfileResult::ERR_WRONGDATATYPE;
       break;
@@ -271,7 +267,7 @@ AxisProfileResult CanopenProfile::getDeviceState()
 
 AxisProfileResult CanopenProfile::setProfileScalingStrategyCfg(const AxisProfileScalingStrategyCfg& strategyCfg)
 {
-  AxisProfileResult result = AxisProfileResult::STS_OK;
+  AxisProfileResult result = AxisProfileResult::STS_OK;    
   if (getProfileScalingStrategy() != strategyCfg.m_scalingStrategy)
   {
     result = setProfileScalingStrategy(strategyCfg.m_scalingStrategy);
@@ -299,7 +295,7 @@ AxisProfileScalingStrategyCfg CanopenProfile::getProfileScalingStrategyCfg() con
 }
 
 AxisProfileResult CanopenProfile::setProfileScalingStrategy(const AxisProfileScalingStrategy& strategy)
-{
+{  
   return m_profileCategory->updateScalingStrategy(strategy);
 }
 
@@ -387,7 +383,7 @@ std::vector<std::unique_ptr<IJobObj>> CanopenProfile::onGetJobList()
 {
   std::vector<std::unique_ptr<IJobObj>> jobs;
   jobs.reserve(4);
-
+ 
   jobs.emplace_back(std::make_unique<CanopenJobReset>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<CanopenJobHoming>(m_profileBasicInfo, m_sharingHandler));
   jobs.emplace_back(std::make_unique<CanopenJobDeviceParam>(m_profileBasicInfo, m_sharingHandler));

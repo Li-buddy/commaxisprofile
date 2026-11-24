@@ -80,9 +80,6 @@ namespace comm::axisprofile
     AxisProfileResult checkSafetyOperationMode(SafetyOperationMode& mode);
 
     AxisProfileResult getSafetyOperationMode(SafetyOperationMode& mode) override;
-    AxisProfileResult activeSignalFunc(std::uint8_t bitOffset) final;
-    AxisProfileResult resetSignalFuncBit(std::uint8_t bitOffset) final;
-    AxisProfileResult getSignalFuncState(std::uint8_t bitOffset, bool& value) final;
 
   protected:  // methods
 

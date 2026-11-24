@@ -19,7 +19,6 @@
 #include <limits>
 #include <thread>
 #include <cstdio>
-#include <string>
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -27,7 +26,7 @@
 namespace comm::axisprofile::firmware_related
 {
   ///< Bug 1009289, V0606 have different definition for torque limitation check
-  constexpr std::uint8_t TORQUE_LIMIT_STATUS_MAJOR_VERSION = 6;
+  constexpr std::uint8_t TORQUE_LIMIT_STATUS_MAJOR_VERSION = 6; 
   constexpr std::uint8_t TORQUE_LIMIT_STATUS_MINOR_VERSION = 6;
 
   //The checksum function is only supported by ctrlX drive V0502 and higher and indra drive
@@ -64,7 +63,7 @@ namespace comm::axisprofile
   #define SECOND_2_MICROSECOND(x) static_cast<double>(x) * 1E6        ///< convert second to microsecond
   #define MICROSECOND_2_SECOND(x) static_cast<double>(x) * 1E-6       ///< convert microsecond to second
   #define SECOND_2_NANOSECOND(x)  static_cast<double>(x) * 1E9        ///< convert second to nanosecond
-  #define NANOSECOND_2_SECOND(x)  static_cast<double>(x) * 1E-9       ///< convert nanosecond to second
+  #define NANOSECOND_2_SECOND(x)  static_cast<double>(x) * 1E-9       ///< convert nanosecond to second  
 
   #define MASK1(L,N,P)  ((~((~(std::uint##L##_t)(0))<<N))<<P)         ///< Creates a length of `L` mask with `N' 1 bits at position `P'.
 
@@ -115,7 +114,7 @@ namespace comm::axisprofile
   {
     UNDEFINED = -1,     ///< undefined
     ROTARY    = 0,      ///< rotary
-    LINEAR    = 2,      ///< linear
+    LINEAR    = 2,      ///< linear      
   };
 
   /// @brief position scaling type
@@ -123,7 +122,7 @@ namespace comm::axisprofile
   {
     UNDEFINED = -1,     ///< undefined
     ROTARY    = 0,      ///< rotary
-    LINEAR    = 2,      ///< linear
+    LINEAR    = 2,      ///< linear  
   };
 
   /// @brief acceleration scaling type
@@ -132,6 +131,7 @@ namespace comm::axisprofile
     UNDEFINED = -1,     ///< undefined
     ROTARY    = 0,      ///< rotary
     LINEAR    = 2,      ///< linear
+    RAMP_TIME = 3,      ///< ramp time
   };
 
   /// @brief torque scaling type
@@ -141,8 +141,8 @@ namespace comm::axisprofile
     UNDEFINED  = -1,    ///< undefined
     ROTARY     = 0,     ///< rotary
     PERCENTAGE = 1,     ///< percentage
-    LINEAR     = 2,     ///< linear
-  };
+    LINEAR     = 2,     ///< linear  
+  };        
 
   /// @brief callable type for scheduler
   enum class CallableType
@@ -154,11 +154,11 @@ namespace comm::axisprofile
   /// @brief Enum for User PDO mapping ID
   enum class UserPDOMappingID
   {
-    USER_PDO_INPUT_1 = 0,    ///< user PDO input 1
+    USER_PDO_INPUT_1 = 0,    ///< user PDO input 1  
     USER_PDO_INPUT_2,        ///< user PDO input 2
     USER_PDO_INPUT_3,        ///< user PDO input 3
-    USER_PDO_INPUT_4,        ///< user PDO input 4
-    USER_PDO_INPUT_5,        ///< user PDO input 5
+    USER_PDO_INPUT_4,        ///< user PDO input 4      
+    USER_PDO_INPUT_5,        ///< user PDO input 5      
     USER_PDO_INPUT_6,        ///< user PDO input 6
     USER_PDO_OUTPUT_1,       ///< user PDO output 1
     USER_PDO_OUTPUT_2,       ///< user PDO output 2
@@ -275,7 +275,7 @@ namespace comm::axisprofile
     bool try_raiseFlag()
     {
       std::thread::id currentID = std::this_thread::get_id();
-      if(!m_ocuppied || currentID == m_ownerID)
+      if(!m_ocuppied || (m_ocuppied && currentID == m_ownerID))
       {
         m_ocuppied= true;
         m_ownerID = currentID;
@@ -327,31 +327,30 @@ namespace comm::axisprofile
                                                  ///< Bit 4: SoE (Servo drive over EtherCAT)
                                                  ///< Bit 5: VoE (Vendor specific protocol over EtherCAT)
                                                  ///< Bit 6 to 31: Reserved"
-
+                                                 
     std::uint32_t m_vendorId {};                 ///< device vendor id
     std::uint32_t m_productCode {};              ///< device product code
-    std::string   m_masterName {};               ///< master name
   };
 
   /// @brief bit field
   typedef struct WordBits
   {
-    std::uint16_t bit0 : 1;     ///< bit0
+    std::uint16_t bit0 : 1;     ///< bit0 
     std::uint16_t bit1 : 1;     ///< bit1
     std::uint16_t bit2 : 1;     ///< bit2
     std::uint16_t bit3 : 1;     ///< bit3
     std::uint16_t bit4 : 1;     ///< bit4
-    std::uint16_t bit5 : 1;     ///< bit5
+    std::uint16_t bit5 : 1;     ///< bit5          
     std::uint16_t bit6 : 1;     ///< bit6
     std::uint16_t bit7 : 1;     ///< bit7
     std::uint16_t bit8 : 1;     ///< bit8
     std::uint16_t bit9 : 1;     ///< bit9
     std::uint16_t bit10 : 1;    ///< bit10
-    std::uint16_t bit11 : 1;    ///< bit11
+    std::uint16_t bit11 : 1;    ///< bit11         
     std::uint16_t bit12 : 1;    ///< bit12
     std::uint16_t bit13 : 1;    ///< bit13
     std::uint16_t bit14 : 1;    ///< bit14
-    std::uint16_t bit15 : 1;    ///< bit15
+    std::uint16_t bit15 : 1;    ///< bit15         
   }WordBits;
 
   /// @brief word structure
@@ -435,7 +434,7 @@ namespace comm::axisprofile
     std::uint16_t probeActive = 0;      ///< if probe 1 activated
     std::uint16_t posLatched = 0;       ///< probe 1 positive edge latched times
     std::uint16_t negLatched = 0;       ///< probe 1 negative edge latched times
-    std::int32_t positionDif = 0;       ///< probe 1 positive difference between edges
+    std::int32_t positionDif = 0;       ///< probe 1 positive difference between edges       
     std::uint16_t markFailure = 0;      ///< probe 1 marker failure counter
   };
 
@@ -459,44 +458,44 @@ namespace comm::axisprofile
     std::vector<UserPDOScalingEntry> m_vecUserPDOInputFactors {};   ///< Complete input mapping
     std::vector<UserPDOScalingEntry> m_vecUserPDOOutputFactors {};  ///< Complete output mapping
   };
-
+    
   /// @brief bit field
   typedef struct DWordBits
   {
-    std::uint16_t bit0 : 1;   ///< bit0
+    std::uint16_t bit0 : 1;   ///< bit0 
     std::uint16_t bit1 : 1;   ///< bit1
     std::uint16_t bit2 : 1;   ///< bit2
     std::uint16_t bit3 : 1;   ///< bit3
     std::uint16_t bit4 : 1;   ///< bit4
-    std::uint16_t bit5 : 1;   ///< bit5
+    std::uint16_t bit5 : 1;   ///< bit5          
     std::uint16_t bit6 : 1;   ///< bit6
     std::uint16_t bit7 : 1;   ///< bit7
     std::uint16_t bit8 : 1;   ///< bit8
     std::uint16_t bit9 : 1;   ///< bit9
     std::uint16_t bit10 : 1;  ///< bit10
-    std::uint16_t bit11 : 1;  ///< bit11
+    std::uint16_t bit11 : 1;  ///< bit11         
     std::uint16_t bit12 : 1;  ///< bit12
     std::uint16_t bit13 : 1;  ///< bit13
     std::uint16_t bit14 : 1;  ///< bit14
-    std::uint16_t bit15 : 1;  ///< bit15
-    std::uint16_t bit16 : 1;  ///< bit16
-    std::uint16_t bit17 : 1;  ///< bit17
-    std::uint16_t bit18 : 1;  ///< bit18
-    std::uint16_t bit19 : 1;  ///< bit19
-    std::uint16_t bit20 : 1;  ///< bit20
-    std::uint16_t bit21 : 1;  ///< bit21
-    std::uint16_t bit22 : 1;  ///< bit22
-    std::uint16_t bit23 : 1;  ///< bit23
-    std::uint16_t bit24 : 1;  ///< bit24
-    std::uint16_t bit25 : 1;  ///< bit25
-    std::uint16_t bit26 : 1;  ///< bit26
-    std::uint16_t bit27 : 1;  ///< bit27
-    std::uint16_t bit28 : 1;  ///< bit28
-    std::uint16_t bit29 : 1;  ///< bit29
-    std::uint16_t bit30 : 1;  ///< bit30
-    std::uint16_t bit31 : 1;  ///< bit31
+    std::uint16_t bit15 : 1;  ///< bit15         
+    std::uint16_t bit16 : 1;  ///< bit16         
+    std::uint16_t bit17 : 1;  ///< bit17         
+    std::uint16_t bit18 : 1;  ///< bit18         
+    std::uint16_t bit19 : 1;  ///< bit19         
+    std::uint16_t bit20 : 1;  ///< bit20         
+    std::uint16_t bit21 : 1;  ///< bit21         
+    std::uint16_t bit22 : 1;  ///< bit22         
+    std::uint16_t bit23 : 1;  ///< bit23         
+    std::uint16_t bit24 : 1;  ///< bit24         
+    std::uint16_t bit25 : 1;  ///< bit25         
+    std::uint16_t bit26 : 1;  ///< bit26         
+    std::uint16_t bit27 : 1;  ///< bit27         
+    std::uint16_t bit28 : 1;  ///< bit28        
+    std::uint16_t bit29 : 1;  ///< bit29        
+    std::uint16_t bit30 : 1;  ///< bit30        
+    std::uint16_t bit31 : 1;  ///< bit31        
   }DWordBits;
-
+    
   /// @brief double word structure
   typedef union DWordStructure
   {
@@ -507,25 +506,22 @@ namespace comm::axisprofile
   /// @brief Safe motion, safety technology input data structure.
   typedef struct SafeMotionDataPackage
   {
-    std::uint32_t m_safetySelection;  ///< Carrying SMO: Safety function selection data package.
+    std::uint32_t m_safetySelection;  ///< Carrying SMO: Safety function selection data package. 
     std::uint32_t m_safetyStatus;     ///< Carrying SMO: Safety function status data package.
   } SafeMotionDataPackage;
 
-  /// @brief The validator for the configuration of signal control/status word.
+  /// @brief The validator for the configuration of signal status word.
   /// @param[in] param The source parameter which provides the signal (IDN/CoE Object ID in raw data).
   /// @param[in] bit   The signal bit of the source parameter.
-  using SignalWordValidator = std::function<bool(const std::uint32_t& param, const std::uint16_t& bit)>;
+  using SignalStatusWordValidator = std::function<bool(const std::uint32_t& param, const std::uint16_t& bit)>;
 
   /// @brief Pre-defined signal status word function and source parameter/signal.
-  struct SignalFunction
+  struct SignalStatusWordFunction
   {
-    FunctionSupport function {FunctionSupport::MAX_VALUE};    ///< The function supported in this signal
-    SignalWordValidator validator {};                         ///< The validator of this function
+    FunctionSupport function {FunctionSupport::MAX_VALUE};    ///< The function supported by this signal
+    SignalStatusWordValidator validator {};                   ///< The validator of this function
     bool supported {false};                                   ///< Indicates the function is supported or not.
-    bool statusSupported {false};                             ///< Indicates the function is supported in the signal status word.
-    bool controlSupported {false};                            ///< Indicates the function is supported in the signal control word.
-    std::uint8_t statusBitOffset {0};                         ///< The bit offset in the signal status word.
-    std::uint8_t controlBitOffset {0};                        ///< The bit offset in the signal control word.
+    std::uint8_t bitOffset {0};                               ///< The bit offset when function is supported.
   };
 
 #pragma pack(push, 1)
@@ -533,7 +529,7 @@ namespace comm::axisprofile
   /// TODO: AT is SEROCS specific, renaming to InputTelegram.
   typedef struct AcknowledgeTelegram
   {
-    WordStruct m_statusWord {0};                              ///< status word
+    WordStruct m_statusWord {0};                              ///< status word 
     DataAT m_atData;                                          ///< data of the telegram
     DWordStructure m_diagMsg;                                 ///< diagnostic message
     DigitalInputValueBits m_digitalInput;                     ///< digital input value bits
@@ -552,7 +548,7 @@ namespace comm::axisprofile
       m_diagMsg.m_word = UINT32_MAX; // max value indicates not mapped
       m_digitalInput = {{0}, {0}, {0}};
       m_probe.m_probe1 = {0, 0, 0, 0, 0, 0, 0};
-      m_probe.m_probe2 = {0, 0, 0, 0, 0, 0, 0};
+      m_probe.m_probe2 = {0, 0, 0, 0, 0, 0, 0}; 
       m_smoData = { 0, 0 };
       m_userPDOInputs[0] = {0};
       m_userPDOInputs[1] = {0};
@@ -581,8 +577,7 @@ namespace comm::axisprofile
     DataMDT     m_mdtData;                                    ///< data of the telegram
     UserPDOData m_userPDOOutputs[USER_PDO_COUNT_LIMIT] {0};   ///< user PDO output data array
     IoEncoderOutputs  m_ioEncoderData;                        ///< the IO MDT data
-    WordStruct m_signalControlword {0};                       ///< signal control word
-  }MasterDataTelegram;
+  }MasterDataTelegram;  
 
 #pragma pack(pop)
 
@@ -625,7 +620,7 @@ namespace comm::axisprofile
   } AprUserPDOIDStrings;
 
   /// @brief Convert a string to the associated drive profile type.
-  /// @param[in]  typeString   The profile type string
+  /// @param[in]  typeString   The 
   /// @return The converted drive profile type.
   inline DriveProfileType stringToDriveProfileType(const char* typeString)
   {
@@ -654,9 +649,9 @@ namespace comm::axisprofile
     if (buffer.compare(NetworkTechnologyStrings.ETHERCAT) == 0) { return NetworkTechnology::ETHERCAT; }
 
     return NetworkTechnology::UNDEFINED;
-  }
+  }   
 
-  /// @brief Convert a string to user PDO ID
+  /// @brief Convert a string to user PDO ID 
   /// @param[in] idString The id string need convert.
   /// @return The converted user PDO mapping ID
   inline UserPDOMappingID stringToAxisProfileUserPDOID(const char* idString)
@@ -736,7 +731,7 @@ namespace comm::axisprofile
   }
 
   /// @brief Convert a drive profile type to the associated string.
-  /// @param[in]  profile   The drive profile
+  /// @param[in]  profile   The drive profile 
   /// @return The converted drive profile string.
   inline const char* driveProfileTypeToString(const DriveProfileType profile)
   {
@@ -801,6 +796,46 @@ namespace comm::axisprofile
       case DeviceSeries::INNOVANCE:           return "innovance";
       case DeviceSeries::MOON:                return "moon";
       default:                                return "undefined";
+    }
+  }
+
+  /// @brief convert position scaling type to string
+  /// @param[in] type The position scaling type
+  /// @return The converted position scaling type string
+  inline const char* scalingTypeToString(const PosScalingType type)
+  {
+    switch (type)
+    {
+      case PosScalingType::LINEAR: return "linear";
+      case PosScalingType::ROTARY: return "rotary";
+      default: return "undefined";
+    }
+  }
+
+  /// @brief convert velocity scaling type to string
+  /// @param[in] type The velocity scaling type
+  /// @return The converted velocity scaling type string
+  inline const char* scalingTypeToString(const VelScalingType type)
+  {
+    switch (type)
+    {
+      case VelScalingType::LINEAR: return "linear";
+      case VelScalingType::ROTARY: return "rotary";
+      default: return "undefined";
+    }
+  }
+
+  /// @brief Convert acceleration scaling type to string
+  /// @param[in] type The acceleration scaling type
+  /// @return The converted acceleration scaling type string
+  inline const char* scalingTypeToString(const AccScalingType type)
+  {
+    switch (type)
+    {
+      case AccScalingType::LINEAR: return "linear";
+      case AccScalingType::ROTARY: return "rotary";
+      case AccScalingType::RAMP_TIME: return "ramp_time";
+      default: return "undefined";
     }
   }
 }

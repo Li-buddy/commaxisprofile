@@ -42,6 +42,7 @@ using namespace comm::axisprofile::provider;
 
 NodeProfilesDeviceName::NodeProfilesDeviceName(ProviderMgr* mgr) : NodeProfilesBase(mgr)
 {
+  this->m_metaDataInfo.m_bfbsPath = "profileConfig.bfbs";
   this->m_metaDataInfo.m_description = "device name";
   this->m_metaDataInfo.m_descriptionUrl = "";
   this->m_metaDataInfo.m_nodeClass = comm::datalayer::NodeClass::NodeClass_Variable;

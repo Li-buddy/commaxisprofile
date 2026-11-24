@@ -104,7 +104,7 @@ HRESULT TestProviderProfilesMapSingleInputOutput::testErrors()
   PROVIDER_CHECK_AND_RET(test::ProviderHelperUnittest::onBrowse(this, &nodeIn, m_nodeAddressIn, true, &data));
 
   std::vector<std::string> expectedDataOutput = {"controlword", "position", "velocity", "torque-force", "torque-high-velocity-limit", "torque-low-velocity-limit", "user-pdo-output1", "user-pdo-output2",
-    "user-pdo-output3", "user-pdo-output4", "user-pdo-output5", "user-pdo-output6", "signal-control-word"};
+    "user-pdo-output3", "user-pdo-output4", "user-pdo-output5", "user-pdo-output6"};
   data.setValue(expectedDataOutput);
   log(L"\nCall onBrowse() of NodeProfilesMapSingleOutput with right variant type.");
   PROVIDER_CHECK_AND_RET(test::ProviderHelperUnittest::onBrowse(this, &nodeOut, m_nodeAddressOut, true, &data));

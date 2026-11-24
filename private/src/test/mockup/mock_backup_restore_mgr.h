@@ -62,8 +62,8 @@ namespace test
     //! @brief Destructor
     virtual ~MockBackupRestoreManager() = default;
 
-    comm::axisprofile::AxisProfileResult load(const std::string& /*profileName*/, const std::string& /*cfgFilePath*/) override { return m_returnValue; }
-    comm::axisprofile::AxisProfileResult save(const std::string& /*profileName*/, const std::string& /*cfgFilePath*/) override { return m_returnValue; }
+    comm::axisprofile::AxisProfileResult load(const std::string& /*profileName*/, const std::string& /*dlCfgUri*/, const std::string& /*cfgFilePath*/) override { return m_returnValue; }
+    comm::axisprofile::AxisProfileResult save(const std::string& /*profileName*/, const std::string& /*dlCfgUri*/, const std::string& /*cfgFilePath*/) override { return m_returnValue; }
     comm::axisprofile::AxisProfileResult loadSystemCfg(const std::string& /*setup*/) override { return m_returnValue; }
     comm::axisprofile::AxisProfileResult saveSystemCfg(const std::string& /*setup*/) override { return m_returnValue; }
 

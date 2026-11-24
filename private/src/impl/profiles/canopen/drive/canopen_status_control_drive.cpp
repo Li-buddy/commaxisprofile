@@ -448,15 +448,6 @@ AxisProfileResult CanopenStatusControlDrive::powerOnProcedure()
       m_telegramMDT->m_controlWord.m_bits.bit3 = 1;
       break;
 
-    case FsaState::QUICK_STOP_ACTIVE:
-      // transition 16
-      m_telegramMDT->m_controlWord.m_word = 0;
-      m_telegramMDT->m_controlWord.m_bits.bit0 = 1;
-      m_telegramMDT->m_controlWord.m_bits.bit1 = 1;
-      m_telegramMDT->m_controlWord.m_bits.bit2 = 1;
-      m_telegramMDT->m_controlWord.m_bits.bit3 = 1;
-      break;
-
     case FsaState::OPERATION_ENABLED:
       m_sharingHandler->getScalingIF()->initModuloPosCmp(m_telegramAT->m_atData.m_actualPosition);
       result = AxisProfileResult::STS_OK;

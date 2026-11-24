@@ -1,7 +1,5 @@
 #include "helper/result_helper.h"
 #include "test_axisprofile.h"
-#include "test_axisprofile.h"
-#include "test_axisprofile.h"
 
 using namespace comm::axisprofile;
 
@@ -27,7 +25,6 @@ HRESULT TestAxisProfile::doTest()
   log(L"\n");
   hResult |= testCInterface();
   hResult |= testClass();
-  hResult |= testForFPUError();
 
   return hResult;
 }
@@ -214,16 +211,5 @@ HRESULT TestAxisProfile::testClass()
   testClass.getProfileCategory();
 
   log(L"\n");
-  return result;
-}
-
-HRESULT TestAxisProfile::testForFPUError() const
-{
-  log(L"\n<b>Test checkForFPUError method.</b>");
-  HRESULT result = S_OK;
-  AxisProfileUnittest testInstance(m_profileName, m_testProfileType, m_testDriveProfileType, m_testNetworkTechnology);
-
-  testInstance.checkForFPUError();
-
   return result;
 }

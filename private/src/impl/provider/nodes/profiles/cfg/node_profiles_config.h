@@ -70,7 +70,6 @@ namespace comm::axisprofile::provider
       std::uint8_t m_driveNumber {};                                                ///< Number of the drive
       AxisProfileCategory m_profileCategory {AxisProfileCategory::CATEGORY_DRIVE};  ///< category of profile
       bool m_checksumEnable {true};                                                 ///< whether checksum activated
-      std::string m_ethercatName {};                                                ///< Name of the EtherCAT master
     };
 
   public: // methods

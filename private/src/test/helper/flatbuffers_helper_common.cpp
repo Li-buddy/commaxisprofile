@@ -23,7 +23,6 @@
 // ---------------------------------------------------------------------------
 #include "flatbuffers_helper_common.h"
 #include "helper/device_fbs_data_helper.h"
-#include "axisprofile_internal_defs.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -133,53 +132,4 @@ void FlatbuffersHelperCommon::generateSlaveDcCfgInfoResponseFlatbuffer(comm::dat
   builder.Finish(dcSlaveCfgOffset);
 
   variant->copyFlatbuffers(builder);
-}
-
-void FlatbuffersHelperCommon::generateAddressMappingResponseFlatbuffer(std::uint16_t addressCnt, comm::datalayer::Variant& mappingResponse)
-{
-  flatbuffers::FlatBufferBuilder builder;
-
-  std::vector<flatbuffers::Offset<comm::ethercat::master::fbs::AddressMappingEntry>> entries;
-  for (int i = 0; i < addressCnt; ++i)
-  {
-    auto entryAddr = comm::ethercat::master::fbs::CreateAddressedRequest(builder, comm::ethercat::master::fbs::Addresstype_fixedphysical, 1001 + i);
-    auto entryName = builder.CreateString("SLAVE_" + std::to_string(i));
-
-    auto entry = comm::ethercat::master::fbs::CreateAddressMappingEntry(builder, entryAddr, entryName);
-    entries.push_back(entry);
-  }
-
-  auto entryList = builder.CreateVector(entries);
-  auto response = comm::ethercat::master::fbs::CreateSlaveAddressMappingResponse(builder, entryList);
-
-  comm::ethercat::master::fbs::SlaveAddressMappingBuilder mappingBuilder(builder);
-  mappingBuilder.add_response(response);
-  auto mappingRoot = mappingBuilder.Finish();
-
-  builder.Finish(mappingRoot);
-  mappingResponse.copyFlatbuffers(builder);
-}
-
-void FlatbuffersHelperCommon::generateSlaveCfgInfoResponseFlatbuffer(std::string& deviceName,
-                                                                    comm::axisprofile::DeviceHardwareInfo& devInfo,
-                                                                    comm::datalayer::Variant* variant)
-{
-  flatbuffers::FlatBufferBuilder totalBuilder;
-  auto slavenameOffset = totalBuilder.CreateString(deviceName);
-
-  comm::ethercat::master::fbs::EthercatIdentityInfo identityInfo(devInfo.m_vendorId, devInfo.m_productCode, 3, 0);
-  
-  comm::ethercat::master::fbs::SlaveConfigInfoResponseBuilder slaveResponseBuilder(totalBuilder);
-  slaveResponseBuilder.add_ethercatAddr(devInfo.m_address);
-  slaveResponseBuilder.add_slaveName(slavenameOffset);
-  slaveResponseBuilder.add_mbxProtocols(devInfo.m_supportedProtocol);
-  slaveResponseBuilder.add_slaveIdentity(&identityInfo);
-  auto slaveResponseOffset = slaveResponseBuilder.Finish();
-
-  comm::ethercat::master::fbs::SlaveConfigInfoBuilder infoBuilder(totalBuilder);
-  infoBuilder.add_response(slaveResponseOffset);
-  auto slaveInfoOffset = infoBuilder.Finish();
-  totalBuilder.Finish(slaveInfoOffset);
-
-  variant->copyFlatbuffers(totalBuilder);
 }

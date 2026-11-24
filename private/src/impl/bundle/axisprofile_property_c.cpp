@@ -77,10 +77,3 @@ extern "C" comm::axisprofile::AxisProfileCategory AXISPROFILE_getProfileCategory
   RETURN_HANDLE_INVALIDE(propertyInterface, AxisProfileCategory::UNDEFINED, "get profile category");
   return propertyInterface->getProfileCategory();
 }
-
-extern "C" const char* AXISPROFILE_getCfgedFieldbusMasterName(void* handle)
-{
-  const IAxisProfileProperty* propertyInterface = static_cast<IAxisProfileProperty*>(handle);
-  RETURN_HANDLE_INVALIDE(propertyInterface, "", "get profile configured EtherCAT name");
-  return propertyInterface->getEtherCATName();
-}

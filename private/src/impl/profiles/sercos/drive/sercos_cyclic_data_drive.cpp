@@ -2,7 +2,7 @@
 ///
 /// @brief This source file is part of the axisprofile library and implement the SercosCyclicDataDrive.
 ///
-/// SPDX-FileCopyrightText: Copyright (c) 2023 - 2025 Bosch Rexroth AG
+/// SPDX-FileCopyrightText: Copyright (c) 2023 - 2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
 /// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
@@ -11,11 +11,12 @@
 // ---------------------------------------------------------------------------
 // Include Files
 // ---------------------------------------------------------------------------
-#include "sercos_cyclic_data_drive.h"
 #include "axisprofile_internal_defs.h"
 #include "comm/axisprofile/defines/axisprofile_defs.h"
+#include "common/axisprofile_fpu_helper.h"
 #include "common/fpu_helper.h"
 #include "diagnosis/dia.h"
+#include "sercos_cyclic_data_drive.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -23,21 +24,17 @@
 using namespace comm::axisprofile;
 using namespace comm::axisprofile::sercos;
 
-
 // ---------------------------------------------------------------------------
 // Declaration of constants
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Declaration of macros
 // ---------------------------------------------------------------------------
 
-
 // ---------------------------------------------------------------------------
 // Forward function references
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Class implementation
@@ -77,7 +74,8 @@ AxisProfileResult SercosCyclicDataDrive::initAllSharedData()
 
 AxisProfileResult SercosCyclicDataDrive::getActualValuesDevice(ActualValuesDevice* const actualValues)
 {
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_PROFILE(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE,
+                        m_profileBasicInfo.m_profileName.c_str(), "scaling of INPUT data");
 
   actualValues->m_actualPosition = m_scaling->convertPositionRawToScaled(m_telegramAT->m_atData.m_actualPosition) + m_scaling->getHomeOffset();
   actualValues->m_actualVelocity = m_scaling->convertVelocityRawToScaled(m_telegramAT->m_atData.m_actualVelocity);
@@ -87,14 +85,16 @@ AxisProfileResult SercosCyclicDataDrive::getActualValuesDevice(ActualValuesDevic
                                && (0 != m_telegramAT->m_statusWord.m_word)) ? true : false;
   
   // only check FPU when there is no FPU error
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_PROFILE(MAIN_DIAG_SCALING_ERR, DETAILED_DIAG_FPU_SCALING_VALUE_ERROR,
+                        m_profileBasicInfo.m_profileName.c_str(), "scaling of INPUT data");
 
   return AxisProfileResult::STS_OK;
 }
 
 AxisProfileResult SercosCyclicDataDrive::setCommandValuesDevice(CommandValuesDevice commandValues)
 {
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_PROFILE(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE,
+                        m_profileBasicInfo.m_profileName.c_str(), "scaling of OUTPUT data");
 
   // work around for control based homing
   if (AxisprofileCommandState::CMD_STATE_ACTIVE == m_command->getAxisProfileCommandState(AxisProfileCommandType::CMD_SET_REFERENCING_POS))
@@ -117,7 +117,8 @@ AxisProfileResult SercosCyclicDataDrive::setCommandValuesDevice(CommandValuesDev
   m_telegramMDT->m_mdtData.m_cmdTorqueForceInfo.m_velLimitLow = m_scaling->convertVelocityScaledToRaw(convertedValue);
 
   // only check FPU when there is no FPU error
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_PROFILE(MAIN_DIAG_SCALING_ERR, DETAILED_DIAG_FPU_SCALING_VALUE_ERROR,
+                        m_profileBasicInfo.m_profileName.c_str(), "scaling of OUTPUT data");
 
   return AxisProfileResult::STS_OK;
 }

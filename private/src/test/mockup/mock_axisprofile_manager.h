@@ -1,14 +1,24 @@
 #pragma once
 
-/// @file
-///
-/// This source file is part of the axisprofile library and implement mock axisprofile manager.
-///
-/// SPDX-FileCopyrightText: Copyright (c) 2018 - 2026 Bosch Rexroth AG
-///
-/// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
-/// All rights reserved in the event of the grant of a patent, utility model or design.
+// ---------------------------------------------------------------------------
+//
+//! @file       mock_axisprofile_manager.h
+//!
+//! @author     DC-AE/ESW2
+//!
+//! @copyright  Bosch Rexroth Corporation http://www.boschrexroth.com
+//!
+//! @version    1.0.0
+//!
+//! @date       2019
+//
+// ---------------------------------------------------------------------------
+//
+//! This header file is part of the axisprofile library and declares a mockup
+//! of the axis profile manager for internal usage.
+//
+// ---------------------------------------------------------------------------
+
 
 // ---------------------------------------------------------------------------
 // Include Files
@@ -71,14 +81,14 @@ namespace test
     comm::axisprofile::AxisProfileResult processDataMdt() override { return m_returnValue; }
     void setDataLayer(comm::datalayer::IDataLayerFactory* /*datalayer*/, IBackgroundThread* /*bkThread*/) override {}
     comm::axisprofile::AxisProfileResult initManager(const bool& /*abortInitialization*/, double /*cycleTime*/) override { return m_returnValue; }
-    comm::axisprofile::AxisProfileResult validateMappingCfg() { return m_returnValue; };
-    comm::axisprofile::AxisProfileResult updateProfileAddress() { return m_returnValue; };
-    comm::axisprofile::AxisProfileResult validateProtocolInfo() {return m_returnValue;}
+    comm::axisprofile::AxisProfileResult validateMappingCfg() override { return m_returnValue; };
+    comm::axisprofile::AxisProfileResult updateProfileAddress() override { return m_returnValue; };
+    comm::axisprofile::AxisProfileResult validateProtocolInfo() override {return m_returnValue;}
     void getFieldbusInstances(ContainerFieldbusInst& setInstances)override
     {
       setInstances = m_deviceInfoMgr.getFieldbusMasters();
     };
-    comm::axisprofile::AxisProfileResult validateFieldbusMasterInfo() { return m_returnValue; }
+    comm::axisprofile::AxisProfileResult browseFieldbusMasterInstance(const bool& /*abortInitialization*/) { return m_returnValue; }
     comm::axisprofile::AxisProfileResult setProfileInputBuffer(const char* /*profileName*/, const char* /*inputBufferURI*/) override { return m_returnValue; }
     const char* getProfileInputBuffer(const char* /*profileName*/) override { return nullptr; }
     comm::axisprofile::AxisProfileResult setProfileOutputBuffer(const char* /*profileName*/, const char* /*outputBufferURI*/) override { return m_returnValue; }
@@ -106,7 +116,7 @@ namespace test
       return;
     }
 
-    comm::axisprofile::AxisProfileResult initDeviceInfoMgr() { return m_returnValue; }
+    comm::axisprofile::AxisProfileResult initDeviceInfoMgr() override { return m_returnValue; }
 
     comm::axisprofile::AxisProfileResult resetAllFPUFlag() override { return m_returnValue; }
     comm::axisprofile::AxisProfileResult execExternalChecking() override { return m_returnValue; };
@@ -122,9 +132,6 @@ namespace test
         }
       }
     };
-
-    comm::axisprofile::AxisProfileResult collectAllDeviceInfo(const bool& /*abortInitialization*/)override { return m_returnValue; }
-    comm::axisprofile::AxisProfileResult checkConsistency() override { return m_returnValue; }
 
     // ----------------------------- External Interface ---------------------------------
 
@@ -176,9 +183,9 @@ namespace test
 
   public: // data
 
-    comm::axisprofile::AxisProfileResult m_returnValue = comm::axisprofile::AxisProfileResult::STS_OK;   ///< Result of member functions
-    std::map<std::string, std::shared_ptr<comm::axisprofile::IAxisProfile>> m_mapAxisProfiles;           ///< Map containing all axisprofiles (key = device Address)
-    const comm::axisprofile::StateMachineState* m_stateMachineState{};                                   ///< pointer to statemachine state
+    comm::axisprofile::AxisProfileResult m_returnValue = comm::axisprofile::AxisProfileResult::STS_OK;   //!< Result of member functions
+    std::map<std::string, std::shared_ptr<comm::axisprofile::IAxisProfile>> m_mapAxisProfiles;           //!< Map containing all axisprofiles (key = device Address)
+    const comm::axisprofile::StateMachineState* m_stateMachineState{};                                   //!< pointer to statemachine state
     comm::axisprofile::DeviceInfoManager        m_deviceInfoMgr;                                         ///< Device information manager object
   };
 }

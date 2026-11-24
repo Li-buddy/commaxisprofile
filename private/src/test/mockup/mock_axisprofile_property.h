@@ -94,8 +94,6 @@ namespace test
     const std::string& getDeviceSoftwareVersion() const override { return m_softwareVersion.m_versionStr; }
     void enableChecksum(bool enable) override { m_enableChecksum = enable; };
     bool isChecksumEnabled() const override { return m_enableChecksum; };
-    const char* getEtherCATName() const override {return m_ethercatName.c_str(); }
-    AxisProfileResult setEtherCATName(const char* name) override { m_ethercatName = name; return comm::axisprofile::AxisProfileResult::STS_OK;  }
 
   protected: // data
     comm::axisprofile::AxisProfileResult m_returnValue = comm::axisprofile::AxisProfileResult::STS_OK;   ///< Result of member functions
@@ -107,6 +105,5 @@ namespace test
     DeviceSeries m_deviceSeries {DeviceSeries::NOTINDICATES};                                            ///< device series
     SoftwareVersion m_softwareVersion;                                                                   ///< software version info
     bool m_enableChecksum {false};                                                                       ///whether enable checksum funciton
-    std::string m_ethercatName;                                                                          ///< name of the configured EtherCAT master
   };
 }

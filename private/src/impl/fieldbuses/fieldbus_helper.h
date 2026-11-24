@@ -13,9 +13,6 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "fieldbus_defs.h"
-#include "profiles/profile_defs.h"
-#include "diagnosis/dia.h"
-#include <limits>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -26,6 +23,7 @@ namespace comm::axisprofile
   // ---------------------------------------------------------------------------
   // Declaration of symbolic constants
   // --------------------------------------------------------------------------- 
+  constexpr std::size_t LIST_BUFF_DEFAULT_SIZE = 64;    ///< Default buffer size for parameter list access
 
   // ---------------------------------------------------------------------------
   // Declaration of macros
@@ -74,7 +72,7 @@ namespace comm::axisprofile
         out[pos + 1] = hexDigits[c & 0x0F]; // Low 4 bits
         if (i != len - 1)
         {
-          out[pos + 2] = '|';               // Separator
+          out[pos + 2] = ':';               // Separator
         }
       }
 
@@ -99,7 +97,7 @@ namespace comm::axisprofile
         return AxisProfileResult::ERR_EXEC_NULL;
       }
 
-      const std::size_t cellSize = sizeof(T); // each data length in bytes
+      const std::size_t cellSize = sizeof(T); // each data length in bytes    
       std::size_t cellNum = rawSize / cellSize; // number of cells in the raw data
 
       if (cellSize * cellNum != rawSize)
@@ -223,118 +221,6 @@ namespace comm::axisprofile
       std::memcpy(outRaw.data(), &validLen, sizeof(std::uint16_t));
 
       return AxisProfileResult::STS_OK;
-    }
-
-    /// @brief Get EtherCAT name of the given uri string.
-    /// @param[in] uri The RT memory uri
-    /// @return The const pointer to string of EtherCAT name
-    static std::string_view getEtherCATNameOfURI(std::string_view uri)
-    {
-      std::string_view base = DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES;
-
-      size_t pos = uri.find(base);
-      if (pos == std::string_view::npos)
-      {
-        return {};
-      }
-
-      pos += base.size();
-
-      // skip optional '/'
-      if (pos < uri.size() && uri[pos] == '/')
-      {
-        ++pos;
-      }
-
-      size_t end = uri.find('/', pos);
-
-      return (end == std::string_view::npos) ? uri.substr(pos) : uri.substr(pos, end - pos);
-    }
-
-    /// @brief Get the EtherCAT master instance name from the RT memory buffer URI.
-    /// @param[in] inputURI   The const pointer to string of input RT memory.
-    /// @param[in] outputURI  The const pointer to string of output RT memory.
-    /// @return The const pointer to string of EtherCAT name
-    static std::string_view extractEtherCATNameFromBufString(const char* inputURI,
-                                                             const char* outputURI)
-    {
-      if (inputURI && *inputURI)
-      {
-        return getEtherCATNameOfURI(inputURI);
-      }
-
-      if (outputURI && *outputURI)
-      {
-        return getEtherCATNameOfURI(outputURI);
-      }
-      return {};
-    }
-
-    /// @brief Generate input/output buffer string with EtherCAT instance name.
-    ///        return empty string when name is empty
-    /// @param[in] ethercatName The EtherCAT instance name.
-    /// @param[in] buff         Input or output buffer
-    /// @return The corresponding buffer string
-    static std::string generateRTBufferString(const std::string& ethercatName, BufferOrient buff)
-    {
-      if (ethercatName.empty())
-      {
-        return {};
-      }
-      std::string uri = DL_ADDRESS_FIELDBUS_ECAT_MASTER_INSTANCES + "/" + ethercatName;
-      if (BufferOrient::INPUT_BUFFER == buff)
-      {
-        uri += "/realtime_data/input";
-      }
-      else
-      {
-        uri += "/realtime_data/output";
-      }
-      return uri;
-    }
-
-    /// @brief This method reads the parameter list from the device using CoE protocol and stores it in the output list.
-    /// @tparam T                     the type of the parameter list elements
-    /// @param[in]  profileBasicInfo  the basic information of the profile, including device address and fieldbus adapter
-    /// @param[in]  obj               the object directory entry of the parameter to read
-    /// @param[in]  maxElements       the maximum number of elements to read from the device
-    /// @param[out] outList           the output list to store the read parameters
-    /// @param[in]  convertFunc       the function to convert list type to raw data
-    /// @return returns an AxisProfileResult indicating the success or failure of the read operation
-    template <typename T>
-    static AxisProfileResult readParamListCoEImpl(ProfileBasicInfo& profileBasicInfo,
-                                                  const ObjectDirEntry& obj,
-                                                  std::size_t maxElements,
-                                                  std::vector<T>& outList,
-                                                  std::function<void(const std::uint8_t*, T&)> convertFunc = nullptr)
-    {
-      outList.clear();
-
-      constexpr std::size_t cellSize = sizeof(T);
-      constexpr std::size_t maxRawSize = static_cast<std::size_t>((std::numeric_limits<std::uint32_t>::max)());
-      if (maxElements > maxRawSize / cellSize)
-      {
-        return AxisProfileResult::ERR_WRONGDATASIZE;
-      }
-
-      const std::size_t rawSize = maxElements * cellSize;
-      std::vector<std::uint8_t> rawBuffer(rawSize);
-
-      ParamReqDataCoE requestData {profileBasicInfo.m_deviceAddress, obj};
-      requestData.maxLen = static_cast<std::uint32_t>(rawSize);
-
-      std::size_t readLen {};
-      AxisProfileResult res = profileBasicInfo.m_fieldbusAdapter->readSingleParamSync(requestData, rawBuffer.data(), rawBuffer.size(), readLen);
-      if (aprStatusFailed(res))
-      {
-        Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_READ_PARAM_FAILED,
-                           profileBasicInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                           "CoE: %s, error: 0x%08X",
-                           objDirToString(requestData.objEntry).c_str(), res);
-        return res;
-      }
-
-      return FieldbusHelper::rawToParamList<T>(rawBuffer.data(), readLen, outList, convertFunc);
     }
   };
 }

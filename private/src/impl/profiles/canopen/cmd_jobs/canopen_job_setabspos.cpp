@@ -5,7 +5,7 @@
 /// SPDX-FileCopyrightText: Copyright (c) 2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
-/// without express authorization is prohibited. Offenders will be held liable for the payment of damages.
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
 /// All rights reserved in the event of the grant of a patent, utility model or design.
 
 // ---------------------------------------------------------------------------
@@ -140,16 +140,6 @@ AxisProfileResult CanopenJobSetAbsPos::onSetArgument(IContainer* arg)
 
 AxisProfileResult CanopenJobSetAbsPos::onJobEnterActivating()
 {
-  // decide command execution way
-  SignalFuncHandler* signalFuncHandler {};
-  getSignalFuncHandler(signalFuncHandler);
-
-  m_signalFuncCmd.initSignalFuncHandler(signalFuncHandler);
-  FunctionSupportErrorInfo errorInfo {};
-  m_isSignalFuncCmd = m_signalFuncCmd.isSignalFuncSupported(errorInfo);
-  APR_TRACE_MESSAGE(m_isSignalFuncCmd ? "set absolute position command : handled as signal function." : "set absolute position command : handled as normal command.");
-  
-  //init jobs
   m_jobFuns.clear();
   m_jobStep = 0;
 
@@ -159,9 +149,19 @@ AxisProfileResult CanopenJobSetAbsPos::onJobEnterActivating()
   }
   else if (AxisProfileCategory::CATEGORY_DRIVE == m_shareHandle->getCategoryIF()->getProfileCategory())
   {
-    setupPrepareSetAbsPosJobs();
-    setupWriteConfigJobs();
-    setupActiveSetAbsPosJobs();
+    m_jobFuns.emplace_back([&]() {return setupReadListFromDevice();});
+    m_jobFuns.emplace_back([&]() {return exeParamListAccess();}); // read parameters from device
+    m_jobFuns.emplace_back([&]() {return writeToDeviceU16(CANCEL_REF_POINT, 0x00);}); // clear exist reference point
+    m_jobFuns.emplace_back([&]() {return writeToDeviceU16(CANCEL_REF_POINT, 0x03);});
+    m_jobFuns.emplace_back([&]() {return writeToDeviceU16(CANCEL_REF_POINT, 0x00);});
+    m_jobFuns.emplace_back([&]() {return setupWriteListToDevice();});
+    m_jobFuns.emplace_back([&]() {return exeParamListAccess();}); // write parameters to device
+    m_jobFuns.emplace_back([&]() {return writeToDeviceU16(SET_ABSOLUTE_POSITION_CMD, 0x00);}); // reset before enable the function
+    m_jobFuns.emplace_back([&]() {return writeToDeviceU16(SET_ABSOLUTE_POSITION_CMD, 0x03);});
+    m_jobFuns.emplace_back([&]() {return setCmdStatusInDevice(CmdStatusInDevice::DEVICE_IN_PROCESS);});
+    m_jobFuns.emplace_back([&]() {return initDelayCycles(0.5);}); // delay 0.1 second for synchronization
+    m_jobFuns.emplace_back([&]() {return exeDelayCycles();});
+    m_jobFuns.emplace_back([&]() {return setCmdStatusInDevice(CmdStatusInDevice::DEVICE_COMPLETED);});
   }
   else
   {
@@ -189,15 +189,8 @@ AxisProfileResult CanopenJobSetAbsPos::onJobEnterAborting()
   }
   else if (AxisProfileCategory::CATEGORY_DRIVE == m_shareHandle->getCategoryIF()->getProfileCategory())
   {
-    if (m_isSignalFuncCmd)
-    {
-      m_jobFuns.emplace_back([&](){return m_signalFuncCmd.onJobAborting();});
-    }
-    else
-    {
-      m_jobFuns.emplace_back([&](){return writeToDeviceU16(SET_ABSOLUTE_POSITION_CMD, 0x00);});
-    }
-    m_jobFuns.emplace_back([&]() {return setCmdStatusInDevice(CmdStatusInDevice::DEVICE_NOT_SET);});
+    m_jobFuns.emplace_back([&](){return writeToDeviceU16(SET_ABSOLUTE_POSITION_CMD, 0x00);});
+    m_jobFuns.emplace_back([&](){m_deviceStatus.getRef().store(CmdStatusInDevice::DEVICE_NOT_SET); return AxisProfileResult::STS_OK;});
   }
   else
   {
@@ -214,7 +207,7 @@ AxisProfileResult CanopenJobSetAbsPos::onJobAborting()
   return runJobsInternal();
 }
 
-////////////////////////////////////////// private methods ////////////////////////////////////////////
+////////////////////////////////////////// private methods //////////////////////////////////////////// 
 
 AxisProfileResult CanopenJobSetAbsPos::setupReadListFromDevice()
 {
@@ -246,39 +239,6 @@ AxisProfileResult CanopenJobSetAbsPos::setupWriteListToDevice()
 
   m_shareHandle->getScalingIF()->setHomeOffset(0.0); // clear homing offset of control
   return AxisProfileResult::STS_OK;
-}
-
-void CanopenJobSetAbsPos::setupPrepareSetAbsPosJobs()
-{
-  m_jobFuns.emplace_back([&]() {return setupReadListFromDevice();});
-  m_jobFuns.emplace_back([&]() {return exeParamListAccess();}); // read parameters from device
-  m_jobFuns.emplace_back([&]() {return writeToDeviceU16(CANCEL_REF_POINT, 0x00);}); // clear exist reference point
-  m_jobFuns.emplace_back([&]() {return writeToDeviceU16(CANCEL_REF_POINT, 0x03);});
-  m_jobFuns.emplace_back([&]() {return writeToDeviceU16(CANCEL_REF_POINT, 0x00);});
-}
-
-void CanopenJobSetAbsPos::setupWriteConfigJobs()
-{
-  m_jobFuns.emplace_back([&]() {return setupWriteListToDevice();});
-  m_jobFuns.emplace_back([&]() {return exeParamListAccess();}); // write parameters to device
-}
-
-void CanopenJobSetAbsPos::setupActiveSetAbsPosJobs()
-{
-  if(!m_isSignalFuncCmd)
-  {
-    m_jobFuns.emplace_back([&]() {return writeToDeviceU16(SET_ABSOLUTE_POSITION_CMD, 0x00);}); // reset before enable the function
-    m_jobFuns.emplace_back([&]() {return writeToDeviceU16(SET_ABSOLUTE_POSITION_CMD, 0x03);});
-    m_jobFuns.emplace_back([&]() {return setCmdStatusInDevice(CmdStatusInDevice::DEVICE_IN_PROCESS);});
-    m_jobFuns.emplace_back([&]() {return initDelayCycles(0.5);}); // delay 0.1 second for synchronization
-    m_jobFuns.emplace_back([&]() {return exeDelayCycles();});
-  }
-  else
-  {
-    m_jobFuns.emplace_back([&]() {return m_signalFuncCmd.onJobActivating(m_asyncSm);});
-    m_jobFuns.emplace_back([&]() {return setCmdStatusInDevice(CmdStatusInDevice::DEVICE_IN_PROCESS);});
-  }
-  m_jobFuns.emplace_back([&]() {return setCmdStatusInDevice(CmdStatusInDevice::DEVICE_COMPLETED);});
 }
 
 AxisProfileResult CanopenJobSetAbsPos::judgmentHandleBased()

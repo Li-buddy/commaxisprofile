@@ -101,8 +101,12 @@ namespace comm
       // ------------------------------------ Internal Interface -------------------------------------
 
       void setDataLayer(comm::datalayer::IDataLayerFactory* datalayer, IBackgroundThread* bkThread) override;
-      void getFieldbusInstances(ContainerFieldbusInst& mapInstances) final;      
-      AxisProfileResult initManager(const bool& abortInitialization, double cycleTime = STD_CYCLE_TIME) final;      
+      void getFieldbusInstances(ContainerFieldbusInst& mapInstances) final;
+      AxisProfileResult validateMappingCfg() final;
+      AxisProfileResult updateProfileAddress() final;
+      AxisProfileResult validateProtocolInfo() final;
+      AxisProfileResult initManager(const bool& abortInitialization, double cycleTime = STD_CYCLE_TIME) final;
+      AxisProfileResult browseFieldbusMasterInstance(const bool& abortInitialization) final;
       AxisProfileResult processDataAt() final;
       AxisProfileResult processDataMdt() final;
       IAxisProfile* getProfileByName(const char* profileName) final;
@@ -115,8 +119,6 @@ namespace comm
       AxisProfileResult resetAllFPUFlag() final;
       AxisProfileResult execExternalChecking() final;
       void getActivatedProfiles(std::vector<IAxisProfile*> &profiles) final;
-      AxisProfileResult collectAllDeviceInfo(const bool& abortInitialization) final;
-      AxisProfileResult checkConsistency() final;
 
       // ------------------------------------- External Interface -------------------------------------
 
@@ -143,7 +145,7 @@ namespace comm
 
       /// @brief This method initializes the device information manager.
       /// @return  Return value indicating success (>=0) or error (<0).
-      AxisProfileResult initDeviceInfoMgr();
+      AxisProfileResult initDeviceInfoMgr() final;
 
       //! @brief This method closes all realtime memory´s
       //! @return  Return value indicating success or error.
@@ -156,29 +158,6 @@ namespace comm
 
       /// @brief This method reset all realtime data
       void resetRtInputData();
-
-      /// @brief This method check for FPU errors.
-      void checkForFPUError();
-
-      /// @brief This method will validate all mapping item in each profile.
-      /// @return Return value indicating success (>=0) or error (<0).
-      AxisProfileResult validatePdoCfg();
-
-      /// @brief This method will update device address according to corresponding device name.
-      AxisProfileResult updateProfileAddress();
-
-      /// @brief This function will validate protocol information between device and profile
-      /// @return Return value indicating success (>=0) or error (<0).
-      AxisProfileResult validateProtocolInfo();
-
-      /// @brief This method browses the fieldbus master instances node via datalayer to get the correct address string.
-      ///        Note: If more than one instance is available, the one that matches the configured output buffer URI will be used.
-      /// @return  Return value indicating success or error.
-      AxisProfileResult validateFieldbusMasterInfo();
-
-      /// @brief Get all activated profile infomation.
-      /// @param[out] profiles  Holds all activated profiles information.
-      void getActivatedProfilesInfo(std::vector<ProfileInfo>& profilesInfo);
 
     private: // data
 

@@ -203,7 +203,6 @@ AxisProfileResult AxisProfileCmd::clearDeviceError2()
   {
     return retValue;
   }
-
   for (const auto& cmd : m_resetCmds)
   {
     if (getCmdState(cmd) == CmdState::STATE_ERROR)

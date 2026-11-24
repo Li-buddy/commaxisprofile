@@ -29,9 +29,7 @@ HRESULT TestCanopenScalingStrategyDrive::doInit()
   m_profileBasicInfo.m_deviceAddress = m_deviceAddress;
 
   m_testObject = std::make_unique<ScalingStrategyCoEDrive>(ScalingStrategyCoEDrive {m_profileBasicInfo});
-  m_bootParamSnapshot = std::make_unique<CanopenBootParamSnapshot>(m_profileBasicInfo);
   m_pMappingHandlerMockup = std::make_unique<test::MockAxisProfileMappingHandler>();
-  m_deviceParamMockup = std::make_unique<test::MockScalingDriveDeviceParam>(m_profileBasicInfo);
   AcknowledgeTelegram atData;
   MasterDataTelegram  mdtData;
   m_mockCategory = std::make_unique<DriveCategoryAdapterCoE>(m_profileBasicInfo, &atData, &mdtData);
@@ -39,9 +37,7 @@ HRESULT TestCanopenScalingStrategyDrive::doInit()
   m_sharingHandler = std::make_unique<AxisProfileSharingHandler>(AxisProfileSharingHandler {m_mockProfileTrace.get()});
   m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_SCALING, m_testObject.get());
   m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, m_pMappingHandlerMockup.get());
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, m_deviceParamMockup.get());
   m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY, m_mockCategory.get());
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, m_bootParamSnapshot.get());
   auto& assign = m_pMappingHandlerMockup->getProfileAssignedInfo();
   assign.m_input.m_position = true;
   assign.m_input.m_velocity = true;
@@ -158,11 +154,6 @@ HRESULT TestCanopenScalingStrategyDrive::doTest()
   {
     item.m_testFunctional(&item);
   }
-
-  log(L"\n<b>create test object without device param interface.</b>");
-  m_sharingHandler->removeSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM);
-  AxisProfileResult missingDeviceParamResult = m_testObject->calcPosScalingLSBWeight();
-  RETURN_TEST_RESULT(missingDeviceParamResult, L"\nUnexpected return value without device param interface", AxisProfileResult::ERR_EXEC_NULL);
   return S_OK;
 }
 

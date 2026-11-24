@@ -77,7 +77,7 @@ HRESULT TestDeviceInfoMgr::TestInitAvailableDeviceInfo()
 
   std::map<std::string, ProfileInfo> m_mapAxisProfiles{};
   ptrDeviceMgr->setProfiles(&m_mapAxisProfiles);
-  ptrDeviceMgr->collectAllDeviceInfo(false);
+  ptrDeviceMgr->initAvailableDeviceInfo();
 
   ProfileInfo testProfile1;
   ProfileInfo testProfile2;
@@ -89,49 +89,44 @@ HRESULT TestDeviceInfoMgr::TestInitAvailableDeviceInfo()
   ptrDeviceMgr->setProfiles(&m_mapAxisProfiles);
 
   log(L"\n  test for empty client");
-  ptrDeviceMgr->collectAllDeviceInfo(false);
+  ptrDeviceMgr->initAvailableDeviceInfo();
 
   test::MockDatalayerClient testclient{};
   ptrDeviceMgr->setDataLayer(&testclient);
 
   log(L"\n  test for empty address");
-  ptrDeviceMgr->collectAllDeviceInfo(false);
-  ptrDeviceMgr->linkProfileToFieldbusInstance(std::string("InstanceTest"), nullptr );
+  ptrDeviceMgr->initAvailableDeviceInfo();
+  ptrDeviceMgr->addFieldbusInstance(std::string("InstanceTest"), nullptr );
 
   log(L"\n  test for invalid address read result");
   testclient.m_returnValue = comm::datalayer::DlResult::DL_INVALID_ADDRESS;
-  ptrDeviceMgr->collectAllDeviceInfo(false);
+  ptrDeviceMgr->initAvailableDeviceInfo();
 
   log(L"\n  test for error read result");
   testclient.m_returnValue = comm::datalayer::DlResult::DL_OUT_OF_MEMORY;
-  ptrDeviceMgr->collectAllDeviceInfo(false);
+  ptrDeviceMgr->initAvailableDeviceInfo();
 
   log(L"\n  test for right read result extract");
   testclient.m_returnValue = comm::datalayer::DlResult::DL_OK;
-  ptrDeviceMgr->collectAllDeviceInfo(false);
+  ptrDeviceMgr->initAvailableDeviceInfo();
 
-  ptrDeviceMgr->linkProfileToFieldbusInstance(std::string("InstanceTest"), testProfile1.m_axisProfile);
+  ptrDeviceMgr->addFieldbusInstance(std::string("InstanceTest"), testProfile1.m_axisProfile);
   test::MockDatalayerClientEx testclientEx {};
   testclientEx.m_vecReturnValue.emplace_back(comm::datalayer::DlResult::DL_OK);
   testclientEx.m_vecReturnValue.emplace_back(comm::datalayer::DlResult::DL_TIMEOUT);
-  std::uint32_t nCount {1};
-  std::string slaveName {"test"};
   comm::datalayer::Variant varMapping {};
-  comm::datalayer::Variant varCfgedSlaveInfo {};
-  test::FlatbuffersHelperCommon fbHelper;
-  fbHelper.generateAddressMappingResponseFlatbuffer(nCount, varMapping);
+  generateSlaveAddressMappingResponse(1, varMapping);
   testclientEx.m_vecCallBackVariant.emplace_back(varMapping);
-
-  std::string masterName {"testEthercat"};
-  DeviceHardwareInfo info {1001, 26, 36, 2369540, masterName};
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &varCfgedSlaveInfo);
+  comm::datalayer::Variant varCfgedSlaveInfo {};
+  std::string slaveName {"test"};
+  generateCfgSlaveInfo(varCfgedSlaveInfo, slaveName);
   testclientEx.m_vecCallBackVariant.emplace_back(varCfgedSlaveInfo);
 
   ptrDeviceMgr->setDataLayer(&testclientEx);
-  ptrDeviceMgr->fillDeviceInfo(masterName);
+  ptrDeviceMgr->initAvailableDeviceInfo();
+
   return S_OK;
 }
-
 HRESULT TestDeviceInfoMgr::TestUpdateProfileAddressSimpleCase()
 {
   std::shared_ptr<DeviceInfoManager> ptrDeviceMgr = getNewDeviceInforMgr();
@@ -154,7 +149,7 @@ HRESULT TestDeviceInfoMgr::TestUpdateProfileAddressSimpleCase()
   test::MockDatalayerClientEx testclient {};
   testclient.m_returnValue = comm::datalayer::DlResult::DL_INVALID_ADDRESS;
   ptrDeviceMgr->setDataLayer(&testclient);
-  ptrDeviceMgr->linkProfileToFieldbusInstance("testEthercat", nullptr);
+  ptrDeviceMgr->addFieldbusInstance("testEthercat", nullptr);
   ptrDeviceMgr->updateProfileAddress();
 
   log(L"\nCall UpdateProfileAddress() with read result : DL_FAILED");
@@ -174,13 +169,12 @@ HRESULT TestDeviceInfoMgr::TestUpdateProfileAddressSimpleCase()
   std::string slaveName {"test"};
   comm::datalayer::Variant varMapping {};
   comm::datalayer::Variant varCfgedSlaveInfo {};
-  test::FlatbuffersHelperCommon fbHelper;
-  fbHelper.generateAddressMappingResponseFlatbuffer(nCount, varMapping);
+  generateSlaveAddressMappingResponse(nCount, varMapping);
   testclient.m_vecCallBackVariant.emplace_back(varMapping);
-  DeviceHardwareInfo info {1001, 26, 36, 2369540, "testEthercat"};
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &varCfgedSlaveInfo);
+
+  generateCfgSlaveInfo(varCfgedSlaveInfo, slaveName);
   testclient.m_vecCallBackVariant.emplace_back(varCfgedSlaveInfo);
-  ptrDeviceMgrNoDeviceName->linkProfileToFieldbusInstance("testEthercat", nullptr);
+  ptrDeviceMgrNoDeviceName->addFieldbusInstance("testEthercat", nullptr);
   ptrDeviceMgrNoDeviceName->updateProfileAddress();
   testclient.m_vecCallBackVariant.clear();
   testclient.m_nCalledTimes = 0;
@@ -196,7 +190,6 @@ HRESULT TestDeviceInfoMgr::TestUpdateProfileAddress()
   test::MockDatalayerClientEx testclient {};
   comm::datalayer::Variant varMapping {};
   comm::datalayer::Variant variantCfgedSlaveInfo {};
-  comm::datalayer::Variant master {};
 
   // case 1, device name not found in profile
   log(L"\nCall UpdateProfileAddress() with device not found data");
@@ -216,21 +209,16 @@ HRESULT TestDeviceInfoMgr::TestUpdateProfileAddress()
   ptrDeviceMgrNotFound->setProfiles(&m_mapAxisProfiles);
   testclient.m_returnValue = comm::datalayer::DlResult::DL_OK;
   ptrDeviceMgrNotFound->setDataLayer(&testclient);
-  ptrDeviceMgrNotFound->linkProfileToFieldbusInstance("testEthercat", testProfileWrong.m_axisProfile);
+  ptrDeviceMgrNotFound->addFieldbusInstance("testEthercat", testProfileWrong.m_axisProfile);
 
-  master.setValue("ethercatmaster");
-  testclient.m_vecCallBackVariant.push_back(master);
-  test::FlatbuffersHelperCommon fbHelper;
-  fbHelper.generateAddressMappingResponseFlatbuffer(2, varMapping);
+  generateSlaveAddressMappingResponse(2, varMapping);
   testclient.m_vecCallBackVariant.push_back(varMapping);
   std::string slaveName = {"testDevice1"};
-  DeviceHardwareInfo info {1001, 26, 36, 2369540, "testEthercat"};
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &variantCfgedSlaveInfo);
+  generateCfgSlaveInfo(variantCfgedSlaveInfo, slaveName);
   testclient.m_vecCallBackVariant.push_back(variantCfgedSlaveInfo);
   slaveName = {"testDevice2"};
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &variantCfgedSlaveInfo);
+  generateCfgSlaveInfo(variantCfgedSlaveInfo, slaveName);
   testclient.m_vecCallBackVariant.push_back(variantCfgedSlaveInfo);
-  ptrDeviceMgrNotFound->collectAllDeviceInfo(false);
   AxisProfileResult expResult {AxisProfileResult::ERR_NOK};
   AxisProfileResult actResult = ptrDeviceMgrNotFound->updateProfileAddress();
   if (expResult != actResult)
@@ -264,20 +252,18 @@ HRESULT TestDeviceInfoMgr::TestUpdateProfileAddress()
   ptrDeviceMgrCorrect->setDataLayer(&testclient);
   testclient.m_returnValue = comm::datalayer::DlResult::DL_OK;
 
-  ptrDeviceMgrCorrect->linkProfileToFieldbusInstance("testEthercat", testProfileSoE.m_axisProfile);
+  ptrDeviceMgrCorrect->addFieldbusInstance("testEthercat", testProfileSoE.m_axisProfile);
 
   //case for conflict address
-  master.setValue("testEthercat");
-  testclient.m_vecCallBackVariant.push_back(master);  
-  fbHelper.generateAddressMappingResponseFlatbuffer(2, varMapping);
+  generateSlaveAddressMappingResponse(2, varMapping);
   testclient.m_vecCallBackVariant.push_back(varMapping);
   slaveName = { "testDevice1" };
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &variantCfgedSlaveInfo);
+  generateCfgSlaveInfo(variantCfgedSlaveInfo, slaveName);
   testclient.m_vecCallBackVariant.push_back(variantCfgedSlaveInfo);
   slaveName = { "testDevice-add-1002" };
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &variantCfgedSlaveInfo);
+  generateCfgSlaveInfo(variantCfgedSlaveInfo, slaveName);
   testclient.m_vecCallBackVariant.push_back(variantCfgedSlaveInfo);
-  ptrDeviceMgrCorrect->collectAllDeviceInfo(false);
+
   expResult = AxisProfileResult::ERR_PROFILE_CONFIG;
   actResult = ptrDeviceMgrCorrect->updateProfileAddress();
   if ( expResult != actResult )
@@ -295,17 +281,14 @@ HRESULT TestDeviceInfoMgr::TestUpdateProfileAddress()
 
   // case 3, for conflict name
   log(L"\nCall UpdateProfileAddress() with duplicate address, and device with address 1001 will update address to 1002");
-  master.setValue("testEthercat");
-  testclient.m_vecCallBackVariant.push_back(master);
-  fbHelper.generateAddressMappingResponseFlatbuffer(2, varMapping);
+  generateSlaveAddressMappingResponse(2, varMapping);
   testclient.m_vecCallBackVariant.push_back(varMapping);
   slaveName = { "deviceName-1001" };//address:1001
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &variantCfgedSlaveInfo);
+  generateCfgSlaveInfo(variantCfgedSlaveInfo, slaveName);
   testclient.m_vecCallBackVariant.push_back(variantCfgedSlaveInfo);
-  slaveName = { "testDevice1" };//address:1002 but in profile it is 1001
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &variantCfgedSlaveInfo);
+  slaveName = { "testDevice1" };//address:1002
+  generateCfgSlaveInfo(variantCfgedSlaveInfo, slaveName);
   testclient.m_vecCallBackVariant.push_back(variantCfgedSlaveInfo);
-  ptrDeviceMgrCorrect->collectAllDeviceInfo(false);
   actResult = ptrDeviceMgrCorrect->updateProfileAddress();
   if (AxisProfileResult::STS_OK != actResult )
   {
@@ -335,20 +318,18 @@ HRESULT TestDeviceInfoMgr::TestUpdateProfileAddress()
   ptrDeviceMgrDupAdd->setProfiles(&m_mapAxisProfiles);
   testclient.m_returnValue = comm::datalayer::DlResult::DL_OK;
   ptrDeviceMgrDupAdd->setDataLayer(&testclient);
-  ptrDeviceMgrDupAdd->linkProfileToFieldbusInstance("testEthercat", testProfileDev1.m_axisProfile);
+  ptrDeviceMgrDupAdd->addFieldbusInstance("testEthercat", testProfileDev1.m_axisProfile);
 
-  master.setValue("testEthercat");
-  testclient.m_vecCallBackVariant.push_back(master);
-  fbHelper.generateAddressMappingResponseFlatbuffer(2, varMapping);
+  generateSlaveAddressMappingResponse(2, varMapping);
   testclient.m_vecCallBackVariant.push_back(varMapping);
 
   slaveName = {"testDevice1"};
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &variantCfgedSlaveInfo);
+  generateCfgSlaveInfo(variantCfgedSlaveInfo, slaveName);
   testclient.m_vecCallBackVariant.push_back(variantCfgedSlaveInfo);
   slaveName = {"testDevice2"};
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &variantCfgedSlaveInfo);
+  generateCfgSlaveInfo(variantCfgedSlaveInfo, slaveName);
   testclient.m_vecCallBackVariant.push_back(variantCfgedSlaveInfo);
-  ptrDeviceMgrDupAdd->collectAllDeviceInfo(false);
+
   actResult = ptrDeviceMgrDupAdd->updateProfileAddress();
   if (AxisProfileResult::STS_OK != actResult)
   {
@@ -419,21 +400,19 @@ HRESULT TestDeviceInfoMgr::TestValidateProtocolInfo()
   ptrDeviceMgrCorrect->setDataLayer(&testclientCorrect);
   testclientCorrect.m_returnValue = comm::datalayer::DlResult::DL_OK;
 
-  ptrDeviceMgrCorrect->linkProfileToFieldbusInstance("testEthercat", testProfileSoE.m_axisProfile);
+  ptrDeviceMgrCorrect->addFieldbusInstance("testEthercat", testProfileSoE.m_axisProfile);
   std::string slaveName {"test"};
   comm::datalayer::Variant varCfgedSlaveCount {};
   comm::datalayer::Variant varCfgedSlaveInfo {};
   comm::datalayer::Variant varMapping {};
   comm::datalayer::Variant variantCfgedSlaveInfo {};
-  test::FlatbuffersHelperCommon fbHelper;
-  fbHelper.generateAddressMappingResponseFlatbuffer(2, varMapping);
+  generateSlaveAddressMappingResponse(2, varMapping);
   testclientCorrect.m_vecCallBackVariant.push_back(varMapping);
   slaveName = {"testDevice1"};
-  DeviceHardwareInfo info {1001, 26, 36, 2369540, "testEthercat"};
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &variantCfgedSlaveInfo);
+  generateCfgSlaveInfo(variantCfgedSlaveInfo, slaveName);
   testclientCorrect.m_vecCallBackVariant.push_back(variantCfgedSlaveInfo);
   slaveName = {""};
-  fbHelper.generateSlaveCfgInfoResponseFlatbuffer(slaveName, info, &variantCfgedSlaveInfo);
+  generateCfgSlaveInfo(variantCfgedSlaveInfo, slaveName);
   testclientCorrect.m_vecCallBackVariant.push_back(variantCfgedSlaveInfo);
 
   ptrDeviceMgrCorrect->updateProfileAddress();
@@ -452,8 +431,52 @@ HRESULT TestDeviceInfoMgr::TestValidateProtocolInfo()
   return S_OK;
 }
 
+void TestDeviceInfoMgr::generateCfgSlaveInfo(comm::datalayer::Variant& variantCfgedSlaveInfo, std::string& slaveName)
+{
+  flatbuffers::FlatBufferBuilder builder;
+  builder.ForceDefaults(true);
+
+  auto slaveNameOffset = builder.CreateString(slaveName);
+  comm::ethercat::master::fbs::SlaveConfigInfoResponseBuilder responseBuilder(builder);
+  responseBuilder.add_slaveName(slaveNameOffset);
+  responseBuilder.add_mbxProtocols(0x1A);
+  comm::ethercat::master::fbs::EthercatIdentityInfo identityInfo(36, 2369540, 3, 0);
+  responseBuilder.add_slaveIdentity(&identityInfo);
+  auto numOffsetResponse = responseBuilder.Finish();
+
+  comm::ethercat::master::fbs::SlaveConfigInfoBuilder cfgSlaveName(builder);
+  cfgSlaveName.add_response(numOffsetResponse);
+  auto numOffset = cfgSlaveName.Finish();
+  builder.Finish(numOffset);
+  variantCfgedSlaveInfo.copyFlatbuffers(builder);
+}
+
 std::unique_ptr<comm::axisprofile::DeviceInfoManager> TestDeviceInfoMgr::getNewDeviceInforMgr()
 {
   return std::make_unique<DeviceInfoManager>();
 }
 
+void TestDeviceInfoMgr::generateSlaveAddressMappingResponse(std::uint16_t addressCnt, comm::datalayer::Variant& mappingResponse)
+{
+  flatbuffers::FlatBufferBuilder builder;
+
+  std::vector<flatbuffers::Offset<comm::ethercat::master::fbs::AddressMappingEntry>> entries;
+  for (int i = 0; i < addressCnt; ++i)
+  {
+    auto entryAddr = comm::ethercat::master::fbs::CreateAddressedRequest(builder, comm::ethercat::master::fbs::Addresstype_fixedphysical, 1001 + i);
+    auto entryName = builder.CreateString("SLAVE_" + std::to_string(i));
+
+    auto entry = comm::ethercat::master::fbs::CreateAddressMappingEntry(builder, entryAddr, entryName);
+    entries.push_back(entry);
+  }
+
+  auto entryList = builder.CreateVector(entries);
+  auto response = comm::ethercat::master::fbs::CreateSlaveAddressMappingResponse(builder, entryList);
+
+  comm::ethercat::master::fbs::SlaveAddressMappingBuilder mappingBuilder(builder);
+  mappingBuilder.add_response(response);
+  auto mappingRoot = mappingBuilder.Finish();
+
+  builder.Finish(mappingRoot);
+  mappingResponse.copyFlatbuffers(builder);
+}

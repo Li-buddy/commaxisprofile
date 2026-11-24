@@ -174,7 +174,6 @@ namespace comm::axisprofile
       m_profilePropertyMock.getDeviceState = AXISPROFILE_getDeviceStatePropertyMock;
       m_profilePropertyMock.getDeviceScalingType = AXISPROFILE_getDeviceScalingTypePropertyMock;
       m_profilePropertyMock.getProfileCategory = AXISPROFILE_getProfileCategoryPropertyMock;
-      m_profilePropertyMock.getCfgedFieldbusMasterName = AXISPROFILE_getCfgedFieldbusMasterNameMock;
     }
 
     /// @brief Set the return value of class methods.

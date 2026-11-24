@@ -99,9 +99,6 @@ HRESULT TestProfileProperty::testCInterface()
   log(L"\nCall AXISPROFILE_getDeviceState()...");
   propertyItf->getProfileCategory(propertyItf->handle);
 
-  log(L"\nCall AXISPROFILE_getCfgedEtherCATName()...");
-  propertyItf->getCfgedFieldbusMasterName(propertyItf->handle);
-
   log(L"\n");
   return hResult;
 }

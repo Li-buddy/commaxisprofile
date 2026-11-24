@@ -112,6 +112,13 @@ double Scaling::getHomeOffset() const
 
 AxisProfileResult Scaling::booting()
 {
+  bool needReadParamsFromDrive = m_sharingHandler->getDeviceParamIF()->isNeedReadBootParams();
+  bool isNodeChecksumEnable = m_sharingHandler->getPropertyIF()->isChecksumEnabled();
+  if (!needReadParamsFromDrive && isNodeChecksumEnable)
+  {
+    APR_TRACE_MESSAGE("%s; The checksum mechanism is activated, and scaling parameter reading is skipped.", m_profileBasicInfo.m_profileTrace.createTraceMsg());
+    return AxisProfileResult::STS_OK;
+  }
   loadBootingTasks();
   return calcScalingLSBWeights();
 }
@@ -150,10 +157,15 @@ AxisProfileResult Scaling::checkScalingUniform() const
     Dia::sendDiagnosis(MAIN_DIAG_SCALING_ERR, DETAILED_DIAG_INCONSISTENCE_SCALING_TYPE, __FILE__, __FUNCTION__, __LINE__,
                        "the unit system of velocity, position and acceleration do not match with each other, position: %s, velocity: %s, acceleration: %s",
                        m_posMetrication ? "metric" : "imperial", m_velMetrication ? "metric" : "imperial", m_accMetrication ? "metric" : "imperial");
+    return AxisProfileResult::ERR_NOK;
   }
   Dia::sendDiagnosis(MAIN_DIAG_SCALING_ERR, DETAILED_DIAG_INCONSISTENCE_SCALING_TYPE, __FILE__, __FUNCTION__, __LINE__,
-                     "the scaling type of velocity, position and acceleration do not match with each other, position: %d, velocity: %d, acceleration: %d",
-                     m_positionType, m_velocityType, m_accelerationType);
+                     "The device mapped to profile [%s] address : %d, exist Scaling type mismatch: position=%s, velocity=%s, acceleration=%s",
+                     m_profileBasicInfo.m_profileName.c_str(),
+                     m_profileBasicInfo.m_deviceAddress,
+                     scalingTypeToString(m_positionType),
+                     scalingTypeToString(m_velocityType),
+                     scalingTypeToString(m_accelerationType));
   return AxisProfileResult::ERR_NOK;
 }
 
@@ -240,7 +252,7 @@ AxisProfileResult Scaling::executeCalcScalingLSBWeights()
       APR_TRACE_ERROR("%s; Could not calculate %s data scaling factor", method.m_methodName->c_str(), m_profileBasicInfo.m_profileTrace.createTraceMsg());
       result = funcResult;
     }
-    APR_TRACE_MESSAGE("%s; New %s data scaling LSB weight = %f", m_profileBasicInfo.m_profileTrace.createTraceMsg(), method.m_methodName->c_str(), *(method.m_ptrScalingLSBWeight));
+    APR_TRACE_MESSAGE("%s; New %s data scaling LSB weight = %g", m_profileBasicInfo.m_profileTrace.createTraceMsg(), method.m_methodName->c_str(), *(method.m_ptrScalingLSBWeight));
   }
   return result;
 }

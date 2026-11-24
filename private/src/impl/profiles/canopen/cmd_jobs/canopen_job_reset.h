@@ -16,10 +16,6 @@
 #include "canopen_job_base.h"
 
 // ---------------------------------------------------------------------------
-// Forward references
-// ---------------------------------------------------------------------------
-class TestCanopenJobReset;
-// ---------------------------------------------------------------------------
 // Name Spaces
 // ---------------------------------------------------------------------------
 namespace comm::axisprofile::canopen
@@ -64,24 +60,10 @@ namespace comm::axisprofile::canopen
     AxisProfileResult onJobEnterActivating() final;
     AxisProfileResult onJobActivating() final;
     AxisProfileResult onJobAborting() final;
-    AxisProfileResult onUpdateStatusInDevice() final;
-
-    /// @brief The method executes the command with the given signal function and state machine.
-    /// @param[in] sFunc The signal function to be executed.
-    /// @param[in] stm   The state machine that manages the command execution.
-    /// @return returns the result of the command execution, indicating success or failure.
-    AxisProfileResult executeCmdBySignalFunc(SignalFunction sFunc, AsyncCommandStatemachine& stm);
-
-    /// @brief The method executes the command by handling related parameters and state machine without signal function.
-    /// @param[in] stm The state machine that manages the command execution.
-    /// @return returns the result of the command execution, indicating success or failure.
-    AxisProfileResult executeCmdByParamOperation(AsyncCommandStatemachine& stm);
 
   private: // data
-    friend class::TestCanopenJobReset;
+
     WordStruct m_controlWord {};   ///< Local control word value
     WordStruct m_statusWord {};    ///< Local status word value
-    SignalFunction m_signalFunc {FunctionSupport::CLEAR_DEVERR_CMD_CYCLIC}; ///< the signal function for reset command
-    SignalFuncHandler* m_signalFuncHandler {};                              ///< the signal function manager for reset command
   };
 }

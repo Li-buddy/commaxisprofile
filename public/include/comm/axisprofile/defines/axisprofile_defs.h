@@ -24,7 +24,7 @@ namespace comm::axisprofile
   // Declaration of symbolic constants
   // ---------------------------------------------------------------------------
   constexpr std::uint32_t MAX_PROFILE_NAME_LENGTH = 64u;   ///< maximum length of profile names (including the trailing '\0')
-  constexpr std::uint32_t MAX_NUMBER_OF_PROFILES = 256u;   ///< maximum number of profiles, 256 real axis
+  constexpr std::uint32_t MAX_NUMBER_OF_PROFILES = 128u;   ///< maximum number of profiles, 128 real axis
 
   // ---------------------------------------------------------------------------
   // Declaration of macros
@@ -332,11 +332,7 @@ namespace comm::axisprofile
     HOMING_STATUS_CYCLIC,  ///< The homing status information is from cyclic data.
     HOMING_CMD_CYCLIC,     ///< The homing command trigger is from cyclic data.
     ERROR_CODE_CYCLIC,     ///< The diagnostic message from cyclic data
-    CLEAR_DEVERR_CMD_CYCLIC,  ///< The clear device error command trigger is from cyclic data.
-    SET_ABS_POS_CMD_CYCLIC,   ///< The set absolute position command trigger is from cyclic data.    
-    PROBE1_ENABLE_CYCLIC,     ///< The probe 1 command trigger is from cyclic data.
-    PROBE2_ENABLE_CYCLIC,     ///< The probe 2 command trigger is from cyclic data.
-    MAX_VALUE                 ///< Maximum value of this enumeration, put new value above.
+    MAX_VALUE              ///< Maximum value of this enumeration, put new value above.
   };
 
   /// @brief This is the error types of a function not supported.

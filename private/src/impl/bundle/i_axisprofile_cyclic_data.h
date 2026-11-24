@@ -105,21 +105,5 @@ namespace comm::axisprofile
     /// @brief This method get latch time of acutal input in unit of second.
     /// @return Latch time of actual input
     virtual double getLatchTimeOfActInput() = 0;
-
-    /// @brief This method activate signal function in device via signal control word.
-    /// @param[in] bitOffset the bit offset of signal function in signal control word.
-    /// @return returns the result of the operation, indicating success or failure.
-    virtual AxisProfileResult activeSignalFunc(std::uint8_t bitOffset) = 0;
-
-    /// @brief This method reset the active state of signal function in device.
-    /// @param[in] bitOffset the bit offset of signal function in signal control word.
-    /// @return returns the result of the operation, indicating success or failure.
-    virtual AxisProfileResult resetSignalFuncBit(std::uint8_t bitOffset) = 0;
-
-    /// @brief This method get the state of signal function in device via signal status word.
-    /// @param[in] bitOffset the bit offset of signal function in signal status word.
-    /// @return returns the result of the operation, indicating success or failure.
-    virtual AxisProfileResult getSignalFuncState(std::uint8_t bitOffset, bool& value) = 0;
-
   };
 }

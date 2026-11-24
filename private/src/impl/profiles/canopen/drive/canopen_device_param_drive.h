@@ -74,6 +74,7 @@ namespace comm::axisprofile::canopen
 
     OpModeAvailInfo* getOpModeAvailInfo() final;
     bool checkFunctionSupported(const FunctionSupport function, FunctionSupportErrorInfo& errorInfo) final;
+    AxisProfileResult readSignalStatusWordCfg(std::vector<std::uint32_t>& params, std::vector<std::uint16_t>& assignBits) final;
     AxisProfileResult checkStandstill(bool& standStill) final;
     AxisProfileResult getChecksumIdnList(std::vector<std::string>& idnStrListRet) const final;
     AxisProfileResult checkAxisHomed(bool& homed) final;
@@ -118,13 +119,6 @@ namespace comm::axisprofile::canopen
     /// @brief This method gets job object of device parameter access, which used for read/write parameter in background thread
     /// @return      Return value indicating success or error.
     AxisProfileResult getDeviceParamJobObj();
-
-    /// @brief Read one CoE boot parameter from snapshot cache first, then drive.
-    /// @param[in] objEntry CoE object entry.
-    /// @param[out] bufPtr Raw target buffer.
-    /// @param[in] bufLen Raw target buffer size.
-    /// @return Return value indicating success or error.
-    AxisProfileResult getParameterValueFromSnapshot(const ObjectDirEntry& objEntry, std::uint8_t* bufPtr, std::size_t bufLen);
 
     AxisProfileResult readChecksumValueFromDevice(std::uint32_t& checkSum) override final;
 

@@ -151,7 +151,7 @@ void AxisProfileCommandDrive::resetHomeOffset()
   {
     m_sharingHandler->getScalingIF()->setHomeOffset(0);
   }
-  APR_TRACE_MESSAGE("Reset the offset of %s to %f", m_profileBasicInfo.m_profileName.c_str(), m_sharingHandler->getScalingIF()->getHomeOffset());
+  APR_TRACE_MESSAGE("Reset the offset of %s to %g", m_profileBasicInfo.m_profileName.c_str(), m_sharingHandler->getScalingIF()->getHomeOffset());
 }
 
 //////////////////////////////////////////////////setter and getter/////////////////////////////////////////////////////

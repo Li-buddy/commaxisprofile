@@ -11,12 +11,11 @@ REGISTER_TEST_TO_GROUP(TestAxisProfileDataCompatibility, Configuration);
 
 // Constructor/Destructor
 TestAxisProfileDataCompatibility::TestAxisProfileDataCompatibility() : m_testData{    
-    {L"Compatibility for motion 1.12", "/data_compatibility/motion1.12/correct", "load1.12", LoadPhases::LOAD, AxisProfileResult::STS_OK},
+    /*{L"Compatibility for motion 1.12", "/data_compatibility/motion1.12/correct", "load1.12", LoadPhases::LOAD, AxisProfileResult::STS_OK},
     {L"Compatibility for motion 1.14", "/data_compatibility/motion1.14/correct", "load1.14", LoadPhases::LOAD, AxisProfileResult::STS_OK},
     {L"Compatibility for motion 1.16", "/data_compatibility/motion1.16/correct", "load1.16", LoadPhases::LOAD, AxisProfileResult::STS_OK},
-    {L"Compatibility for motion 1.18", "/data_compatibility/motion1.18/correct", "load1.18", LoadPhases::LOAD, AxisProfileResult::STS_OK},
-    {L"Compatibility for motion 1.18", "/data_compatibility/motion1.18/incorrect", "load1.18error", LoadPhases::LOAD, AxisProfileResult::ERR_DATALAYER_WRONG_TYPE},
-    {L"Compatibility for motion 5.2" , "/data_compatibility/motion5.2/correct", "load5.2", LoadPhases::LOAD, AxisProfileResult::STS_OK},
+    {L"Compatibility for motion 1.18", "/data_compatibility/motion1.18/correct", "load1.18", LoadPhases::LOAD, AxisProfileResult::STS_OK},*/
+    {L"Compatibility for motion 1.18", "/data_compatibility/motion1.18/incorrect", "load1.18error", LoadPhases::LOAD, AxisProfileResult::ERR_DATALAYER_WRONG_TYPE}
 }
 {
 

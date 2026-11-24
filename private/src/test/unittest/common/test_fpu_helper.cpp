@@ -2,6 +2,7 @@
 #include <string.h>
 #include <limits>
 #include "common/fpu_helper.h"
+#include "common/axisprofile_fpu_helper.h"
 #include "test_fpu_helper.h"
 #include "helper/result_helper.h"
 
@@ -76,6 +77,7 @@ HRESULT TestCommonFPUHelper::doTest()
     // can't run these test cases, because Valgrind clears the FPU errors
     res |= runAllTestCases();
     res |= runAllTestCasesValid();
+    res |= runTestOfMacros();
   }
 
   fpu::clearFPUFlags();   //Clear all FPU exceptions
@@ -119,4 +121,31 @@ HRESULT TestCommonFPUHelper::runAllTestCasesValid()
     LOG_TEST_RESULT_STRING(resStr, L"\nUnexpected result!", testCase.m_expRes);
   }
   return res;
+}
+
+HRESULT TestCommonFPUHelper::runTestOfMacros()
+{
+  volatile double b {};
+  auto fpuFunc = [] (volatile double& b)
+    {
+      double a = sin(0.0);
+      b = 3.0 / a;
+    };
+
+  fpu::clearFPUFlags(); // Clear all FPU exceptions
+  log(L"\n test APR_CHECK_FPU_ERR_GEN when no FPU error");
+  APR_CHECK_FPU_ERR_GEN(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE, "before manual trigger");
+  fpuFunc(b);
+  log(L"\n test APR_CHECK_FPU_ERR_GEN when exit FPU error");
+  APR_CHECK_FPU_ERR_GEN(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE, "after manual trigger");
+
+  fpu::clearFPUFlags(); // Clear all FPU exceptions
+  fpu::g_FPUError = false;
+  log(L"\n test APR_CHECK_FPU_ERR_PROFILE when no FPU error");
+  APR_CHECK_FPU_ERR_PROFILE(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE, "profile1", "before manual trigger");
+  fpuFunc(b);
+  log(L"\n test APR_CHECK_FPU_ERR_PROFILE when exit FPU error");
+  APR_CHECK_FPU_ERR_PROFILE(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE, "profile1", "after manual trigger");
+
+  return S_OK;
 }

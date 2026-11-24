@@ -50,7 +50,6 @@ AxisProfileProperty::AxisProfileProperty(ProfileBasicInfo& profileBasicInfo)
   m_propertyInterface.getDeviceScalingType = AXISPROFILE_getDeviceScalingTypeProperty;
   m_propertyInterface.getDeviceState = AXISPROFILE_getDeviceStateProperty;
   m_propertyInterface.getProfileCategory = AXISPROFILE_getProfileCategoryProperty;
-  m_propertyInterface.getCfgedFieldbusMasterName = AXISPROFILE_getCfgedFieldbusMasterName;
 }
 
 const IAxisProfilePropertyC* AxisProfileProperty::getCInterface() const
@@ -171,15 +170,4 @@ void AxisProfileProperty::enableChecksum(bool enable)
 bool AxisProfileProperty::isChecksumEnabled() const
 {
   return m_enableChecksum;
-}
-
-const char* AxisProfileProperty::getEtherCATName() const
-{
-  return m_ethercatName.c_str();
-}
-
-AxisProfileResult AxisProfileProperty::setEtherCATName(const char* name)
-{
-  m_ethercatName = name;
-  return AxisProfileResult::STS_OK;
 }

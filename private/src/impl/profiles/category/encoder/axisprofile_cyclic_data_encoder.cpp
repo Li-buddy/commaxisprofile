@@ -2,7 +2,7 @@
 ///
 /// @brief This source file is part of the axisprofile library and implement the AxisProfileCyclicDataEncoder.
 ///
-/// SPDX-FileCopyrightText: Copyright (c) 2025 Bosch Rexroth AG
+/// SPDX-FileCopyrightText: Copyright (c) 2025-2026 Bosch Rexroth AG
 ///
 /// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
 /// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
@@ -14,6 +14,7 @@
 #include "axisprofile_cyclic_data_encoder.h"
 #include "axisprofile_internal_defs.h"
 #include "comm/axisprofile/defines/axisprofile_defs.h"
+#include "common/axisprofile_fpu_helper.h"
 #include "common/fpu_helper.h"
 #include "diagnosis/dia.h"
 
@@ -22,21 +23,17 @@
 // ---------------------------------------------------------------------------
 using namespace comm::axisprofile;
 
-
 // ---------------------------------------------------------------------------
 // Declaration of constants
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Declaration of macros
 // ---------------------------------------------------------------------------
 
-
 // ---------------------------------------------------------------------------
 // Forward function references
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Class implementation
@@ -66,7 +63,8 @@ AxisProfileResult AxisProfileCyclicDataEncoder::initAllSharedData()
 
 AxisProfileResult AxisProfileCyclicDataEncoder::getActualValuesDevice(ActualValuesDevice* const actualValues)
 {
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_PROFILE(MAIN_DIAG_SYSTEM_ERR, DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE,
+                        m_profileBasicInfo.m_profileName.c_str(), "scaling of INPUT data");
 
   if (!m_stateMachineState)
   {
@@ -78,7 +76,8 @@ AxisProfileResult AxisProfileCyclicDataEncoder::getActualValuesDevice(ActualValu
   actualValues->m_dataValid = (StateMachineState::RUNNING == (*m_stateMachineState)) ? true : false;
   
   // only check FPU when there is no FPU error
-  checkForFPUError();
+  APR_CHECK_FPU_ERR_PROFILE(MAIN_DIAG_SCALING_ERR, DETAILED_DIAG_FPU_SCALING_VALUE_ERROR,
+                        m_profileBasicInfo.m_profileName.c_str(), "scaling of INPUT data");
 
   return AxisProfileResult::STS_OK;
 }
@@ -144,20 +143,3 @@ AxisProfileResult AxisProfileCyclicDataEncoder::activeNewRefOperation(bool activ
   return AxisProfileResult::STS_OK;
 }
 
-AxisProfileResult AxisProfileCyclicDataEncoder::activeSignalFunc(std::uint8_t /*bitOffset*/)
-{
-  rejectCmdDiagnosis("activeSignalFunc");
-  return AxisProfileResult::ERR_NOT_SUPPORTED;
-}
-
-AxisProfileResult AxisProfileCyclicDataEncoder::resetSignalFuncBit(std::uint8_t /*bitOffset*/)
-{
-  rejectCmdDiagnosis("resetSignalFuncBit");
-  return AxisProfileResult::ERR_NOT_SUPPORTED;
-}
-
-AxisProfileResult AxisProfileCyclicDataEncoder::getSignalFuncState(std::uint8_t /*bitOffset*/, bool& /*value*/)
-{
-  rejectCmdDiagnosis("getSignalFuncState");
-  return AxisProfileResult::ERR_NOT_SUPPORTED;
-}

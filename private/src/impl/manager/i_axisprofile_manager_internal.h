@@ -103,6 +103,12 @@ namespace comm
       //! @return  Return value indicating success (>=0) or error (<0).
       virtual AxisProfileResult initManager(const bool& abortInitialization, double cycleTime) = 0;
 
+      //! @brief This method browses the fieldbus master instances node via datalayer to get the correct address string.
+      //!        Note: If more than one instance is available, the one that matches the configured output buffer URI will be used.
+      //! @param[in]   abortInitialization   Flag indicating if the initialization should be aborted (e.g. used to exit the infinite while loop)
+      //! @return  Return value indicating success or error.
+      virtual AxisProfileResult browseFieldbusMasterInstance(const bool& abortInitialization) = 0;
+
       //! @brief This method searches for an existing profile by the given name.
       //! @param[in]   profileName   Name of the profile.
       //! @return  Pointer to the profile or nullptr if not found.
@@ -142,10 +148,21 @@ namespace comm
       ///         if job list is empty,this function will do nothing.
       /// @return Return value indicating success (>=0) or error (<0).
       virtual AxisProfileResult processAuxJobs() = 0;
-            
+
+      /// @brief This method initializes the device information manager.
+      /// @return  Return value indicating success (>=0) or error (<0).
+      virtual AxisProfileResult initDeviceInfoMgr() = 0;
+      
       /// @brief This method gets the fieldbus instances name and its object.
       /// @param[in]   mapInstances   The fieldbus instances container
       virtual void getFieldbusInstances(ContainerFieldbusInst& mapInstances) = 0;
+
+      /// @brief This method will update device address according to corresponding device name.
+      virtual AxisProfileResult updateProfileAddress() = 0;
+
+      /// @brief This method will validate all mapping item in each profile.
+      /// @return Return value indicating success (>=0) or error (<0).
+      virtual AxisProfileResult validateMappingCfg() = 0;
 
       /// @brief Reset FPU error flag member inside all profile and the cpu.
       /// @return Return value indicating success (>=0) or error (<0).
@@ -154,6 +171,10 @@ namespace comm
       /// @brief This method runs all jobs of all profiles.
       virtual void runAllJobs() = 0;
 
+      /// @brief This function will validate protocol information between device and profile
+      /// @return Return value indicating success (>=0) or error (<0).
+      virtual AxisProfileResult validateProtocolInfo() = 0;
+
       /// @brief Execute all check callback functions registered by external bundle.
       /// @return  Return value indicating success or error.
       virtual AxisProfileResult execExternalChecking() = 0;
@@ -161,14 +182,6 @@ namespace comm
       /// @brief Get all activated profile.
       /// @param[out] profiles  Holds all activated profiles
       virtual void getActivatedProfiles(std::vector<IAxisProfile*> &profiles) = 0;
-
-      /// @brief Collect necessary information about device, topology.
-      /// @return  Return value indicating success or error.
-      virtual AxisProfileResult collectAllDeviceInfo(const bool& abortInitialization) = 0;
-
-      /// @brief This method will check the consitency between profile configuration and device actual data.
-      /// @return Return value indicating success or error.
-      virtual AxisProfileResult checkConsistency() = 0;
     };
   }
 }
