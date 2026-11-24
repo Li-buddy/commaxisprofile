@@ -202,6 +202,14 @@ namespace comm::axisprofile
     NOTINDICATES                        ///< drive not supports for current fieldbus protocol
   };
 
+  /// @brief The scaling data category, which is used to identify the scaling data type
+  enum class ScalingDataCategory: std::uint16_t
+  {
+    SCALINGDATA_POSITION,         ///< position scaling data
+    SCALINGDATA_VELOCITY,         ///< velocity scaling data
+    SCALINGDATA_TORQUE            ///< torque scaling data
+  };
+
   // ---------------------------------------------------------------------------
   // Declaration of field bus protocol specific types
   // ---------------------------------------------------------------------------

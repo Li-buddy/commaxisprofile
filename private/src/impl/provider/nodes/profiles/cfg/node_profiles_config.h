@@ -70,6 +70,7 @@ namespace comm::axisprofile::provider
       std::uint8_t m_driveNumber {};                                                ///< Number of the drive
       AxisProfileCategory m_profileCategory {AxisProfileCategory::CATEGORY_DRIVE};  ///< category of profile
       bool m_checksumEnable {true};                                                 ///< whether checksum activated
+      std::uint32_t m_outOfRangeErrLimit {1};                                            ///< maximum number of out-of-range values before error is reported
     };
 
   public: // methods

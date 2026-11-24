@@ -1,6 +1,8 @@
 #include <thread>
+#include <limits>
 #include "functest_provider_configuration.h"
 #include "provider/provider_helper.h"
+#include "profiles/scaling/i_scaling.h"
 #include "helper/provider_helper_functest.h"
 #include "comm/axisprofile/datatypes/valueMapping_generated.h"
 
@@ -234,6 +236,41 @@ HRESULT FuncTestProviderConfiguration::testCreateOfProfiles()
       error(L"\nID: %ls, Uri: %ls", test::StringHelper::utf8ToWide(flatbuffers::GetString(elem->valueID())).c_str(), test::StringHelper::utf8ToWide(flatbuffers::GetString(elem->datalayerURI())).c_str());
     }
   }
+
+  log(L"\nCheck the out-of-range limit and per-category counters via datalayer.");
+  auto* scaling = testProfile1->getScaling();
+  RETURN_TEST_RESULT_SET_PTR(scaling, L"Profile has no scaling interface.");
+
+  const auto readUInt32 = [&](std::string address, std::uint32_t expected)
+  {
+    test::ProviderHelperCommon::insertProfileName(address, profileName);
+    expData.setValue(expected);
+    return test::ProviderHelperFunctest::readNodeSync(this, m_datalayerTestClient, address.c_str(), &actData, true, &expData);
+  };
+  const std::uint32_t limit = 10U;
+  std::string limitAddress = provider::NodeTree.APR_PROFILES_CFG_MAX_CONSECUTIVE_OOR_CNT;
+  test::ProviderHelperCommon::insertProfileName(limitAddress, profileName);
+  writeData.setValue(limit);
+  result = test::ProviderHelperFunctest::writeNodeSync(this, m_datalayerTestClient, limitAddress.c_str(), &writeData, true);
+  if (FAILED(result))
+  {
+    return result;
+  }
+  hresult |= readUInt32(provider::NodeTree.APR_PROFILES_CFG_MAX_CONSECUTIVE_OOR_CNT, limit);
+
+  const double outOfRange = std::numeric_limits<double>::infinity();
+  scaling->convertPositionScaledToRaw(outOfRange);
+  for (unsigned sample = 0; sample < 2; ++sample)
+  {
+    scaling->convertVelocityScaledToRaw(outOfRange);
+  }
+  for (unsigned sample = 0; sample < 3; ++sample)
+  {
+    scaling->convertTorqueScaledToRaw(outOfRange);
+  }
+  hresult |= readUInt32(provider::NodeTree.APR_PROFILES_DATA_OUT_RANGE_TIMES_POS, 1U);
+  hresult |= readUInt32(provider::NodeTree.APR_PROFILES_DATA_OUT_RANGE_TIMES_VEL, 2U);
+  hresult |= readUInt32(provider::NodeTree.APR_PROFILES_DATA_OUT_RANGE_TIMES_TOR, 3U);
 
   return hresult;
 }

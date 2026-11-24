@@ -95,6 +95,9 @@ namespace test
     };
     void loadBootingTasks() override {}
     comm::axisprofile::AxisProfileResult booting() override {return m_returnValue;}
+    std::uint32_t getOutOfRangeErrCnt(const comm::axisprofile::ScalingDataCategory& /*category*/) const override{return m_clampCount;}
+    void setOutOfRangeErrLimit(std::uint32_t /*maxTimes*/) override {}
+    std::uint32_t getOutOfRangeErrLimit() const override {return 0;}
 
   public: // Data
 
@@ -114,6 +117,7 @@ namespace test
     comm::axisprofile::TorqueScalingType m_torqueType{comm::axisprofile::TorqueScalingType::UNDEFINED};   //!< current torque scaling type configuration
     comm::axisprofile::AxisProfileResult m_returnValue = comm::axisprofile::AxisProfileResult::STS_OK;    //!< Return value of member functions
     comm::axisprofile::AxisProfilePosDataFormat m_dataFormat {comm::axisprofile::AxisProfilePosDataFormat::FORMAT_ABSOLUTE};  ///< position data format
-    comm::axisprofile::IAxisProfileSharingHandler* m_pSharingHandler {};    ///< mediator for sharing data 
+    comm::axisprofile::IAxisProfileSharingHandler* m_pSharingHandler {};    ///< mediator for sharing data
+    std::uint32_t m_clampCount {0};      ///< counter for position clamp
   };
 }

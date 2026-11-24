@@ -32,9 +32,9 @@ using namespace comm::axisprofile;
 // ---------------------------------------------------------------------------
 // Declaration of constants
 // ---------------------------------------------------------------------------
-const std::string Scaling::POSITION{"position"};          
-const std::string Scaling::VELOCITY{"velocity"};         
-const std::string Scaling::TORQUE{"torque"};            
+const std::string Scaling::POSITION{"position"};
+const std::string Scaling::VELOCITY{"velocity"};
+const std::string Scaling::TORQUE{"torque"};
 const std::string Scaling::ACCELERATION{"acceleration"};
 
 // ---------------------------------------------------------------------------
@@ -53,6 +53,7 @@ const std::string Scaling::ACCELERATION{"acceleration"};
 Scaling::Scaling(ProfileBasicInfo& profileBasicInfo):
   m_profileBasicInfo(profileBasicInfo)
 {
+  m_allowedMaxOutOfRangeTimes = 1;
 }
 
 AxisProfilePosDataFormat Scaling::getPosDataFormat() const
@@ -112,6 +113,10 @@ double Scaling::getHomeOffset() const
 
 AxisProfileResult Scaling::booting()
 {
+  m_positionClamp.reset();
+  m_velocityClamp.reset();
+  m_torqueClamp.reset();
+
   bool needReadParamsFromDrive = m_sharingHandler->getDeviceParamIF()->isNeedReadBootParams();
   bool isNodeChecksumEnable = m_sharingHandler->getPropertyIF()->isChecksumEnabled();
   if (!needReadParamsFromDrive && isNodeChecksumEnable)
@@ -138,18 +143,18 @@ AxisProfileResult Scaling::checkScalingUniform() const
     return AxisProfileResult::STS_OK;
   }
 
-  if((PosScalingType::ROTARY == m_positionType) 
-  && (VelScalingType::ROTARY == m_velocityType) 
+  if((PosScalingType::ROTARY == m_positionType)
+  && (VelScalingType::ROTARY == m_velocityType)
   && (AccScalingType::ROTARY == m_accelerationType) )
   {
     return AxisProfileResult::STS_OK;
   }
 
-  if((PosScalingType::LINEAR == m_positionType) 
-  && (VelScalingType::LINEAR == m_velocityType) 
+  if((PosScalingType::LINEAR == m_positionType)
+  && (VelScalingType::LINEAR == m_velocityType)
   && (AccScalingType::LINEAR == m_accelerationType))
   {
-    if(m_velMetrication == m_posMetrication 
+    if(m_velMetrication == m_posMetrication
     && m_velMetrication == m_accMetrication)
     {
       return AxisProfileResult::STS_OK;
@@ -215,7 +220,7 @@ AxisProfileDeviceScalingType Scaling::getDeviceScalingType(const AxisProfileDevi
       {
         deviceScalingType = AxisProfileDeviceScalingType::UNDEFINED;
       }
-      break;      
+      break;
     case AxisProfileDeviceValueType::TORQUE_FORCE:
       if (TorqueScalingType::LINEAR == m_torqueType)
       {
@@ -229,7 +234,7 @@ AxisProfileDeviceScalingType Scaling::getDeviceScalingType(const AxisProfileDevi
       {
         deviceScalingType = AxisProfileDeviceScalingType::PERCENTAGE;
       }
-      else 
+      else
       {
         deviceScalingType = AxisProfileDeviceScalingType::UNDEFINED;
       }
@@ -243,7 +248,7 @@ AxisProfileDeviceScalingType Scaling::getDeviceScalingType(const AxisProfileDevi
 
 AxisProfileResult Scaling::executeCalcScalingLSBWeights()
 {
-  AxisProfileResult result{AxisProfileResult::STS_OK};  
+  AxisProfileResult result{AxisProfileResult::STS_OK};
   for (auto& method : m_scalingLSBWeightsMethods)
   {
     AxisProfileResult funcResult = method.m_fnct();
@@ -264,10 +269,26 @@ double Scaling::convertPositionRawToScaled(std::int32_t rawTelegramValue) const
   return (convertedRawValue) * getPosScalingLSBWeight();
 }
 
+template<typename T>
+T Scaling::convertScaledToRaw(double scaledInternalValue, double inverseWeight, ClampState& state, const char* valueName) const
+{
+  const double rawValue = scaledInternalValue * inverseWeight;
+  bool clamped = false;
+  const T rawTelegramValue = clampCast<T>(rawValue, clamped);
+  if (!clamped)
+  {
+    state.reset();
+  }
+  else if (updateClampCounter(state))
+  {
+    reportClampError(rawValue, rawTelegramValue, state, valueName);
+  }
+  return rawTelegramValue;
+}
+
 std::int32_t Scaling::convertPositionScaledToRaw(double scaledInternalValue) const
 {
-  std::int32_t rawTelegramValue = static_cast<std::int32_t>(scaledInternalValue * getPosScalingLSBWeight_inv());
-  return rawTelegramValue;
+  return convertScaledToRaw<std::int32_t>(scaledInternalValue, getPosScalingLSBWeight_inv(), m_positionClamp, "Position");
 }
 
 double Scaling::convertVelocityRawToScaled(std::int32_t rawTelegramValue) const
@@ -275,10 +296,10 @@ double Scaling::convertVelocityRawToScaled(std::int32_t rawTelegramValue) const
   double convertedRawValue = static_cast<double>(rawTelegramValue);
   return (convertedRawValue) * getVelScalingLSBWeight();
 }
+
 std::int32_t Scaling::convertVelocityScaledToRaw(double scaledInternalValue) const
 {
-  std::int32_t rawTelegramValue = static_cast<std::int32_t>(scaledInternalValue * getVelScalingLSBWeight_inv());
-  return rawTelegramValue;
+  return convertScaledToRaw<std::int32_t>(scaledInternalValue, getVelScalingLSBWeight_inv(), m_velocityClamp, "Velocity");
 }
 
 double Scaling::convertTorqueRawToScaled(std::int16_t rawTelegramValue) const
@@ -289,8 +310,54 @@ double Scaling::convertTorqueRawToScaled(std::int16_t rawTelegramValue) const
 
 std::int16_t Scaling::convertTorqueScaledToRaw(double scaledInternalValue) const
 {
-  std::int16_t rawTelegramValue = static_cast<std::int16_t>(scaledInternalValue * getTorqueScalingLSBWeight_inv());
-  return rawTelegramValue;
+  return convertScaledToRaw<std::int16_t>(scaledInternalValue, getTorqueScalingLSBWeight_inv(), m_torqueClamp, "Torque");
+}
+
+template<typename T>
+void Scaling::reportClampError(double rawValue, T rawTelegramValue, ClampState& state, const char* valueName) const
+{
+  if (state.reported)
+  {
+    return;
+  }
+
+  Dia::sendDiagnosis(MAIN_DIAG_SCALING_ERR, DETAILED_DIAG_SCALING_VALUE_CLAMPED, m_profileBasicInfo.m_profileName.c_str(),
+                      __FILE__, __FUNCTION__, __LINE__,
+                      "%s data of profile [%s]. "
+                      "Raw value [%.17g] exceeds range [%d, %d]. "
+                      "Clamped output [%d].",
+                      valueName,
+                      m_profileBasicInfo.m_profileName.c_str(),
+                      rawValue,
+                      static_cast<int>(std::numeric_limits<T>::min()),
+                      static_cast<int>(std::numeric_limits<T>::max()),
+                      static_cast<int>(rawTelegramValue));
+  state.reported = true;
+}
+
+std::uint32_t Scaling::getOutOfRangeErrCnt(const ScalingDataCategory& category) const
+{
+  switch (category)
+  {
+    case ScalingDataCategory::SCALINGDATA_POSITION:
+      return m_positionClamp.count;
+    case ScalingDataCategory::SCALINGDATA_VELOCITY:
+      return m_velocityClamp.count;
+    case ScalingDataCategory::SCALINGDATA_TORQUE:
+      return m_torqueClamp.count;
+    default:
+      return 0;
+  }
+}
+
+void Scaling::setOutOfRangeErrLimit(std::uint32_t maxTimes)
+{
+  m_allowedMaxOutOfRangeTimes = maxTimes;
+}
+
+std::uint32_t Scaling::getOutOfRangeErrLimit() const
+{
+  return m_allowedMaxOutOfRangeTimes;
 }
 
 AxisProfileResult Scaling::checkAndSetModulo(double modValue, std::string& dynErrTxt)
@@ -337,4 +404,14 @@ double Scaling::getRateTorqueForce() const
 void Scaling::setSharingHandler(IAxisProfileSharingHandler* handler)
 {
   m_sharingHandler = handler;
+}
+
+bool Scaling::updateClampCounter(ClampState& clamp) const
+{
+  if ((++clamp.count) >= m_allowedMaxOutOfRangeTimes)
+  {
+    clamp.count = 0;
+    return true;
+  }
+  return false;
 }

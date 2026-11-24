@@ -2,7 +2,7 @@
 
 /// @file
 ///
-/// @brief This file is part of the axisprofile library and defines template for simple uint profile nodes.
+/// @brief This file is part of the axisprofile library and declare datalayer node of vendor adaption configuration.
 ///
 /// SPDX-FileCopyrightText: Copyright (c) 2026 Bosch Rexroth AG
 ///
@@ -21,149 +21,166 @@
 namespace comm::axisprofile::provider
 {
   // ---------------------------------------------------------------------------
-  // Declaration of symbolic constants
-  // ---------------------------------------------------------------------------
-
-  // ---------------------------------------------------------------------------
-  // Declaration of macros
-  // ---------------------------------------------------------------------------
-
-  // ---------------------------------------------------------------------------
   // Declaration of data types
+  // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // Forward references
   // ---------------------------------------------------------------------------
 
   // ---------------------------------------------------------------------------
   // Declaration of classes and structures
   // ---------------------------------------------------------------------------
 
-  /// @brief This is the state node class for simple data types.
-  template <typename SIMPLE_TYPE, typename DATA_OBJ, typename SET_RET_TYPE>
+  /// @brief This is the config node template class for simple data types.
+  /// @tparam SIMPLE_TYPE   The simple data type (e.g., double, bool, ...)
+  /// @tparam PROFILE_IF    The profile interface type (e.g., IAxisProfilePropertyInternal, IAxisProfileInternal, ...)
+  template <typename SIMPLE_TYPE, typename PROFILE_IF>
   class NodeCfgSimple : public NodeProfilesBase
   {
   public: // methods
 
-    /// Declaration of data types
-    /// deduce function pointer type from template
-    /// function pointer to getter cfg interface
-    typedef std::function<SIMPLE_TYPE(const DATA_OBJ&)> GetterProfile;
+    /// function pointer to getter of profile interface interface
+    typedef std::function<SIMPLE_TYPE(const PROFILE_IF&)> GetterAxs;
 
-    /// function pointer to setter cfg interface
-    typedef std::function<SET_RET_TYPE(DATA_OBJ&, SIMPLE_TYPE)> SetterProfile;
+    /// function pointer to setter of profile interface interface
+    typedef std::function<bool(PROFILE_IF&, SIMPLE_TYPE)> SetterAxs;
 
-  public:
-    /// @brief construct
-    /// @param mgr           pointer to the provider manager
-    /// @param getter        get value function pointer
-    /// @param setter        set value function pointer
-    /// @param metaDataInfo   metadata info of this node
-    NodeCfgSimple(ProviderMgr* mgr, const GetterProfile& getter, const SetterProfile& setter, const MetaDataInfo& metaDataInfo)
-      : NodeProfilesBase(mgr), m_cfgGetterFnPtr(getter), m_cfgSetterFnPtr(setter)
+    /// @brief function pointer to a function, that is called after the write operation
+    using PostWriteFct = std::function<bool(const std::string& address, SIMPLE_TYPE value, const ResponseCallback& callback)>;
+
+    /// @brief Constructor
+    /// @param[in]   mgr             pointer to the provider manager
+    /// @param[in]   getter          function pointer for getter to return config values
+    /// @param[in]   setter          function pointer for setter to set config values
+    /// @param[in]   metaDataInfo    metadata info of this node
+    NodeCfgSimple(ProviderMgr* mgr, const GetterAxs& getter, const SetterAxs& setter, const MetaDataInfo& metaDataInfo, const PostWriteFct& postWriteFct = {})
+      : NodeProfilesBase(mgr), m_cfgGetterFnPtr(getter), m_cfgSetterFnPtr(setter), m_postWriteFct(postWriteFct)
     {
       this->m_metaDataInfo = metaDataInfo;
-      m_metaDataInfo.m_nodeClass = comm::datalayer::NodeClass::NodeClass_Variable;
-      m_metaDataInfo.nodeActions = node_actions::READ | node_actions::WRITE;
-    }
+      this->m_metaDataInfo.m_nodeClass = comm::datalayer::NodeClass::NodeClass_Variable;
+      this->m_metaDataInfo.nodeActions = node_actions::WRITE | node_actions::READ;
+    };
 
-    /// Destructor
+    /// @brief Destructor
     virtual ~NodeCfgSimple() noexcept override = default;
 
-    /// Read function of a node. Function will be called whenever a node should be read.
-    /// @param[in]  address   Address of the node to read
-    /// @param[in]  data      Data of the object
-    /// @param[in]  callback  Callback to call when function is finished
     void onRead(const std::string& address, const comm::datalayer::Variant* data, const ResponseCallback& callback) final;
-
-    /// Read function of a node. Function will be called whenever a node should be write.
-    /// @param[in]  address   Address of the node to write
-    /// @param[in]  data      Data of the object
-    /// @param[in]  callback  Callback to call when function is finished
     void onWrite(const std::string& address, const comm::datalayer::Variant* data, const ResponseCallback& callback) final;
-
-    /// Read function of a node. Function will be called whenever a node need metadata.
-    /// @param[in]  address   Address of the node to get metadata
-    /// @param[in]  callback  Callback to call when function is finished
     void onMetadata(const std::string& address, const ResponseCallback& callback) final;
 
   protected: // data
-    GetterProfile m_cfgGetterFnPtr;  ///< function pointer to getter cfg interface class
-    SetterProfile m_cfgSetterFnPtr;  ///< function pointer to setter cfg interface class
+
+    GetterAxs m_cfgGetterFnPtr;  ///< function pointer to getter cfg interface class
+    SetterAxs m_cfgSetterFnPtr;  ///< function pointer to setter cfg interface class
+    PostWriteFct m_postWriteFct; ///< function pointer to a function, that is called after the write operation
   };
 
   // -------------------------------------------------------------------------------
   // -------------------------------Implementation----------------------------------
-  // ------------------------------------------------------------------------------
-  template <typename SIMPLE_TYPE, typename DATA_OBJ, typename SET_RET_TYPE>
-  void NodeCfgSimple<SIMPLE_TYPE, DATA_OBJ, SET_RET_TYPE>::onRead(const std::string& address, const comm::datalayer::Variant* /*data*/, const ResponseCallback& callback)
+  // -------------------------------------------------------------------------------
+
+  template <typename SIMPLE_TYPE, typename PROFILE_IF>
+  void NodeCfgSimple<SIMPLE_TYPE, PROFILE_IF>::onRead(const std::string& address, const comm::datalayer::Variant* /*data*/, const ResponseCallback& callback)
   {
-    // get object data
-    DATA_OBJ* profile = getProfileByAddress(address, callback);
-    if (!profile)
+    comm::datalayer::Variant retVariant;
+    comm::datalayer::DlResult dlResult;
+
+    PROFILE_IF* profileIf {};
+    dlResult = NodeProfilesBase::getObjectData(address, profileIf, callback);
+    if (comm::datalayer::STATUS_FAILED(dlResult))
     {
       return;
     }
 
-    auto value = m_cfgGetterFnPtr(*profile);
-    comm::datalayer::Variant returnVal;
-    returnVal.setValue(value);
-    callback(comm::datalayer::DlResult::DL_OK, &returnVal);
+    // return variant
+    retVariant.setValue(m_cfgGetterFnPtr(*profileIf));
+    callback(comm::datalayer::DlResult::DL_OK, &retVariant);
   }
 
-  template <typename SIMPLE_TYPE, typename DATA_OBJ, typename SET_RET_TYPE>
-  void NodeCfgSimple<SIMPLE_TYPE, DATA_OBJ, SET_RET_TYPE>::onWrite(const std::string& address, const comm::datalayer::Variant* data, const ResponseCallback& callback)
+  template <typename SIMPLE_TYPE, typename PROFILE_IF>
+  void NodeCfgSimple<SIMPLE_TYPE, PROFILE_IF>::onWrite(const std::string& address, const comm::datalayer::Variant* data, const ResponseCallback& callback)
   {
+    if (!data)
+    {
+      ProviderHelper::sendDlErrorResponse(callback, comm::datalayer::DlResult::DL_INVALID_HANDLE,
+                                          MAIN_DIAG_DATALAYER_ERR, DETAILED_DIAG_DL_INVALID_VALUE, "Can not write address: %s", address.c_str());
+      return;
+    }
+
     auto type = comm::datalayer::getVariantTypeID<SIMPLE_TYPE>();
-    if (!ProviderHelper::checkVariantType(data, type, callback))
+    if constexpr (std::is_same_v<SIMPLE_TYPE, std::vector<std::string>>)
+    {
+      type = comm::datalayer::VariantType::ARRAY_OF_STRING;
+    }
+    if (data->getType() != type)
+    {
+      ProviderHelper::sendDlErrorResponse(callback, comm::datalayer::DlResult::DL_TYPE_MISMATCH,
+                                          MAIN_DIAG_DATALAYER_ERR, DETAILED_DIAG_DL_INVALID_VALUE, "Wrong type of data");
+      return;
+    }
+
+    PROFILE_IF* profileIf {};
+    comm::datalayer::DlResult dlResult;
+
+    dlResult = NodeProfilesBase::getObjectData(address, profileIf, callback);
+    if (comm::datalayer::STATUS_FAILED(dlResult))
     {
       return;
     }
 
-    const SIMPLE_TYPE value = *(reinterpret_cast<SIMPLE_TYPE*>(data->getData()));
-    auto* profile = getProfileByAddress(address, callback);
-    if (!profile)
+    SIMPLE_TYPE value {};
+    if constexpr (std::is_same_v<SIMPLE_TYPE, std::string>)
     {
-      return;
-    }
-    SET_RET_TYPE ret = m_cfgSetterFnPtr(*profile, value);
-    bool result = false;
-    if constexpr (std::is_same_v<SET_RET_TYPE, comm::axisprofile::AxisProfileResult>)
-    {
-      result = aprStatusSucceeded(ret);
+      // specialization for std::string
+      const char* txt = *data;
+      value = txt;       // cppcheck-suppress AssignmentAddressToInteger    - false positive: value is a std::string and no integer
     }
     else
     {
-      result = static_cast<bool>(ret);
-    }
-    if (result)
-    {
-      callback(comm::datalayer::DlResult::DL_OK, nullptr);
-    }
-    else
-    {
-      ProviderHelper::sendDlErrorResponse(callback, comm::datalayer::DlResult::DL_INVALID_VALUE, MAIN_DIAG_DATALAYER_ERR, DETAILED_DIAG_INVALID_DEVICE_ADR, "%d Write failed", value);
-    }
-  }
-
-  template <typename SIMPLE_TYPE, typename DATA_OBJ, typename SET_RET_TYPE>
-  void NodeCfgSimple<SIMPLE_TYPE, DATA_OBJ, SET_RET_TYPE>::onMetadata(const std::string& address, const ResponseCallback& callback)
-  {
-    std::string name;
-    ProviderHelper::getProfileNameFromAddress(address, name);
-
-    if (!name.empty())
-    {
-      // The address string contains a profile name. Check if it exists in the system.
-      if (!getProfileByAddress(address, callback))
+      if constexpr (std::is_same_v<SIMPLE_TYPE, std::vector<std::string>>)
       {
-        return;
+        // specialization for std::vector<std::string>
+        const char** txt = data->operator const char** ();
+        for (std::uint32_t i = 0; i < data->getCount(); i++)
+        {
+          value.push_back(txt[i]);
+        }
+      }
+      else
+      {
+        value = *data;
       }
     }
 
-    auto type = comm::datalayer::getVariantTypeID<SIMPLE_TYPE>();
-    std::string typeString {};
-    if (!createBasicTypeString(name, type, typeString, callback))
+    if (!m_cfgSetterFnPtr(*profileIf, value))
+    {
+      ProviderHelper::sendDlErrorResponse(callback, comm::datalayer::DlResult::DL_SUBMODULE_FAILURE,
+                                          MAIN_DIAG_DATALAYER_ERR, DETAILED_DIAG_DL_INVALID_VALUE, "Write failed");
+      return;
+    }
+
+    if (m_postWriteFct && !m_postWriteFct(address, value, callback))
     {
       return;
     }
-    ProviderHelper::createMetaData(typeString, m_metaDataInfo, callback);
+
+    callback(comm::datalayer::DlResult::DL_OK, nullptr);
+  }
+
+  template <typename SIMPLE_TYPE, typename PROFILE_IF>
+  void NodeCfgSimple<SIMPLE_TYPE, PROFILE_IF>::onMetadata(const std::string& address, const ResponseCallback& callback)
+  {
+    comm::datalayer::VariantType variantTypeID = comm::datalayer::getVariantTypeID<SIMPLE_TYPE>();
+    if constexpr (std::is_same_v<SIMPLE_TYPE, std::vector<std::string>>)
+    {
+      variantTypeID = comm::datalayer::VariantType::ARRAY_OF_STRING;
+    }
+    std::string typeString;
+    if (!createBasicTypeString(address, variantTypeID, typeString, callback))
+    {
+      return;
+    }
+    ProviderHelper::createMetaData3(address, typeString, this->m_metaDataInfo, callback);
   }
 }

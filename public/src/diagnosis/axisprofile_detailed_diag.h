@@ -157,6 +157,7 @@ namespace comm::axisprofile
   constexpr std::uint32_t DETAILED_DIAG_SCALLING_TYPE_ERROR                 = 0x0C580402;
   constexpr std::uint32_t DETAILED_DIAG_SCALING_VALUE_ERROR                 = 0x0C580403;
   constexpr std::uint32_t DETAILED_DIAG_FPU_SCALING_VALUE_ERROR             = 0x0C580404;
+  constexpr std::uint32_t DETAILED_DIAG_SCALING_VALUE_CLAMPED               = 0x0C580405;    ///< A scaled-to-raw conversion value exceeds the representable range of the target data type.
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // *********************************************** WARNINGS *********************************************** //

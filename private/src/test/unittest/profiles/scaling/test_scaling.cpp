@@ -2,6 +2,7 @@
 #include "profiles/canopen/drive/canopen_scaling_strategy_drive.h"
 #include "test_scaling.h"
 #include "profiles/data_sharing/sharing_handler.h"
+#include <limits>
 
 // Mockups
 #include "mockup/external_bundles/mock_datalayer_client.h"
@@ -56,6 +57,64 @@ HRESULT TestScaling::doTest()
   hResult |= testcheckScalingUniform();
   hResult |= testGetDeviceType();
   hResult |= testModuloMethods();
+
+  ProfileBasicInfo profileBasicInfo;
+  canopen::ScalingStrategyCoEDrive scaling{profileBasicInfo};
+  scaling.setOutOfRangeErrLimit(2U);
+
+  const auto checkClamp = [&](auto toRaw, ScalingDataCategory category, const ClampState& state) -> HRESULT
+  {
+    const auto convert = [&](double value) { return (scaling.*toRaw)(value); };
+    using Raw = decltype(convert(0.0));
+    constexpr Raw minimum = std::numeric_limits<Raw>::min();
+    constexpr Raw maximum = std::numeric_limits<Raw>::max();
+    const auto count = [&]() { return scaling.getOutOfRangeErrCnt(category); };
+
+    if (convert(minimum) != minimum || count() != 0U || convert(maximum) != maximum || count() != 0U)
+    {
+      error(L"Exact limits must not count as a clamp (category %u).", static_cast<unsigned>(category));
+      return E_FAIL;
+    }
+    for (unsigned burst = 0; burst < 2; ++burst)
+    {
+      if (convert(static_cast<double>(minimum) - 1.0) != minimum || count() != 1U || state.reported ||
+          convert(static_cast<double>(maximum) + 1.0) != maximum || count() != 0U || !state.reported)
+      {
+        error(L"Unexpected saturation or threshold state (category %u).", static_cast<unsigned>(category));
+        return E_FAIL;
+      }
+      if (convert(std::numeric_limits<double>::quiet_NaN()) != 0 || count() != 1U ||
+          convert(std::numeric_limits<double>::infinity()) != maximum || count() != 0U || !state.reported ||
+          convert(-std::numeric_limits<double>::infinity()) != minimum || count() != 1U)
+      {
+        error(L"Unexpected conversion or counter for non-finite input (category %u).", static_cast<unsigned>(category));
+        return E_FAIL;
+      }
+      if (convert(-3.75) != -3 || count() != 0U || state.reported)
+      {
+        error(L"An in-range sample must truncate and reset the clamp state (category %u).", static_cast<unsigned>(category));
+        return E_FAIL;
+      }
+    }
+    return S_OK;
+  };
+  hResult |= checkClamp(&Scaling::convertPositionScaledToRaw, ScalingDataCategory::SCALINGDATA_POSITION, scaling.m_positionClamp);
+  hResult |= checkClamp(&Scaling::convertVelocityScaledToRaw, ScalingDataCategory::SCALINGDATA_VELOCITY, scaling.m_velocityClamp);
+  hResult |= checkClamp(&Scaling::convertTorqueScaledToRaw, ScalingDataCategory::SCALINGDATA_TORQUE, scaling.m_torqueClamp);
+
+  scaling.m_posScalingLSBWeight = 2.0;
+  scaling.m_posScalingLSBWeight_inv = 0.5;
+  scaling.m_velScalingLSBWeight = 4.0;
+  scaling.m_velScalingLSBWeight_inv = 0.25;
+  scaling.m_torqueScalingLSBWeight = 0.5;
+  scaling.m_torqueScalingLSBWeight_inv = 2.0;
+  if (scaling.convertPositionRawToScaled(3) != 6.0 || scaling.convertPositionScaledToRaw(6.0) != 3 ||
+      scaling.convertVelocityRawToScaled(3) != 12.0 || scaling.convertVelocityScaledToRaw(12.0) != 3 ||
+      scaling.convertTorqueRawToScaled(3) != 1.5 || scaling.convertTorqueScaledToRaw(1.5) != 3)
+  {
+    error(L"Conversion did not use the configured weight for its category.");
+    hResult = E_FAIL;
+  }
 
   log(L"\n");
   return hResult;

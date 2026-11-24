@@ -166,6 +166,19 @@ namespace comm
       /// @brief This method get rate torque force of the load in IS unit
       /// @return Rate torque for rotary axis or rate force for linear axis in IS unit
       virtual double getRateTorqueForce() const = 0;
+
+      /// @brief This method gets the number of times the data was out of range for the given scaling data category
+      /// @param[in] category The scaling data category to query
+      /// @return The number of times the data was out of range
+      virtual std::uint32_t getOutOfRangeErrCnt(const ScalingDataCategory& category) const = 0;
+
+      /// @brief This method sets the maximum number of times the data can be out of range.
+      /// @param[in] maxTimes The maximum number of times the data can be out of range before an error is reported.
+      virtual void setOutOfRangeErrLimit(std::uint32_t maxTimes) = 0;
+
+      /// @brief This method gets the maximum number of times the data can be out of range.
+      /// @return the maximum number of times
+      virtual std::uint32_t getOutOfRangeErrLimit() const = 0;
     };
   }
 }

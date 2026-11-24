@@ -43,6 +43,8 @@ impl\profiles\axisprofile_job_base.cpp:50
 impl\profiles\canopen\drive\canopen_device_param_drive.cpp:80
 impl\profiles\canopen\drive\canopen_device_param_drive.h:30
 impl\profiles\sercos\drive\sercos_device_param_drive.cpp:80
+impl\provider\nodes\profiles\node_profiles_creator.cpp:85
 
 # files from motion core
 impl\provider\nodes\profiles\templates\node_state_simple.h:0
+impl\provider\nodes\profiles\templates\node_cfg_simple.h:0
