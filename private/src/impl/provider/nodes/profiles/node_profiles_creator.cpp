@@ -78,28 +78,28 @@ using namespace comm::axisprofile::provider;
 
 void NodeProfilesCreator::addNodes(ProviderMgr* mgr)
 {
+  // ------------------------------------------------
+  // ----------   out-of-range monitoring  ----------
+  // ------------------------------------------------
+  const auto getOutOfRangeCounter = [] (ScalingDataCategory category)
+    {
+      return [category] (const IScaling& scaling)
+        {
+          return scaling.getOutOfRangeErrCnt(category);
+        };
+    };
+
   //original parallel compatible node
   mgr->addNode(NodeTree.APR_PROFILES_WC,                             new NodeProfiles(mgr));                                  ///< axisprofile/profiles/[name]
 
   //subnode under cfg node
   mgr->addNode(NodeTree.APR_PROFILES_WC,                             new NodeProfiles(mgr));                                  ///< axisprofile/profiles/[name]
   mgr->addNode(NodeTree.APR_PROFILES_CFG,                            new NodeProfilesConfig(mgr));                            ///< axisprofile/profiles/[name]/config
-  mgr->addNode(NodeTree.APR_PROFILES_CFG_MAX_CONSECUTIVE_OOR_CNT,
-               new NodeCfgSimple<std::uint32_t, IAxisProfileInternal>(mgr, [] (const IAxisProfileInternal& profile) -> std::uint32_t
-                                                                      {
-                                                                        const auto* scaling = profile.getScaling();
-                                                                        return scaling ? scaling->getOutOfRangeErrLimit() : 0U;
-                                                                      },
-                                                                      [] (IAxisProfileInternal& profile, std::uint32_t maxTimes) -> bool
-                                                                      {
-                                                                        if (auto* scaling = profile.getScaling())
-                                                                        {
-                                                                          scaling->setOutOfRangeErrLimit(maxTimes);
-                                                                          return true;
-                                                                        }
-                                                                        return false;
-                                                                      },
-                                                                      {"The max consecutive out of range count", ""}));
+  mgr->addNode(NodeTree.APR_PROFILES_CFG_SCALINGINFO_OUTOFRANGE_THRESHOLD,
+               new NodeCfgSimple<std::uint32_t, IScaling>(mgr,
+                                                          &IScaling::getOutOfRangeErrLimit,
+                                                          &IScaling::setOutOfRangeErrLimit,
+                                                          {"The max consecutive out of range count", ""}));
   // ----------------------------------------
   // ----------   backup restore  -----------
   // ----------------------------------------
@@ -154,26 +154,17 @@ void NodeProfilesCreator::addNodes(ProviderMgr* mgr)
   mgr->addNode(NodeTree.APR_PROFILES_CHECKSUM_IDN_LIST,              new NodeProfilesChecksumList(mgr));                      ///< axisprofile/profiles/[name]/state/device-app-data/checksum-idn-list
 
   mgr->addNode(NodeTree.APR_PROFILES_DATA_OUT_RANGE_TIMES_POS,
-               new NodeStateSimple<std::uint32_t, IAxisProfileInternal>(mgr, [] (const IAxisProfileInternal& profile) -> std::uint32_t
-                                                                        {
-                                                                          const auto* scaling = profile.getScaling();
-                                                                          return scaling ? scaling->getOutOfRangeErrCnt(ScalingDataCategory::SCALINGDATA_POSITION) : 0U;
-                                                                        },
-                                                                        {"the position data out of range times", ""}));
+               new NodeStateSimple<std::uint32_t, IScaling>(mgr,
+                                                            getOutOfRangeCounter(ScalingDataCategory::SCALINGDATA_POSITION),
+                                                            {"Position out-of-range counter", ""}));
 
   mgr->addNode(NodeTree.APR_PROFILES_DATA_OUT_RANGE_TIMES_VEL,
-               new NodeStateSimple<std::uint32_t, IAxisProfileInternal>(mgr, [] (const IAxisProfileInternal& profile) -> std::uint32_t
-                                                                        {
-                                                                          const auto* scaling = profile.getScaling();
-                                                                          return scaling ? scaling->getOutOfRangeErrCnt(ScalingDataCategory::SCALINGDATA_VELOCITY) : 0U;
-                                                                        },
-                                                                        {"the velocity data out of range times", ""}));
+               new NodeStateSimple<std::uint32_t, IScaling>(mgr,
+                                                            getOutOfRangeCounter(ScalingDataCategory::SCALINGDATA_VELOCITY),
+                                                            {"Velocity out-of-range counter", ""}));
 
   mgr->addNode(NodeTree.APR_PROFILES_DATA_OUT_RANGE_TIMES_TOR,
-               new NodeStateSimple<std::uint32_t, IAxisProfileInternal>(mgr, [] (const IAxisProfileInternal& profile) -> std::uint32_t
-                                                                        {
-                                                                          const auto* scaling = profile.getScaling();
-                                                                          return scaling ? scaling->getOutOfRangeErrCnt(ScalingDataCategory::SCALINGDATA_TORQUE) : 0U;
-                                                                        },
-                                                                        {"the torque data out of range times", ""}));
+               new NodeStateSimple<std::uint32_t, IScaling>(mgr,
+                                                            getOutOfRangeCounter(ScalingDataCategory::SCALINGDATA_TORQUE),
+                                                            {"Torque/force out-of-range counter", ""}));
 }

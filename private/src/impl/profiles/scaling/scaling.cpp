@@ -53,7 +53,7 @@ const std::string Scaling::ACCELERATION{"acceleration"};
 Scaling::Scaling(ProfileBasicInfo& profileBasicInfo):
   m_profileBasicInfo(profileBasicInfo)
 {
-  m_allowedMaxOutOfRangeTimes = 1;
+  m_outOfRangeThreshold = 1;
 }
 
 AxisProfilePosDataFormat Scaling::getPosDataFormat() const
@@ -350,14 +350,18 @@ std::uint32_t Scaling::getOutOfRangeErrCnt(const ScalingDataCategory& category) 
   }
 }
 
-void Scaling::setOutOfRangeErrLimit(std::uint32_t maxTimes)
+bool Scaling::setOutOfRangeErrLimit(std::uint32_t maxTimes)
 {
-  m_allowedMaxOutOfRangeTimes = maxTimes;
+  m_outOfRangeThreshold = maxTimes;
+  m_positionClamp.reset();
+  m_velocityClamp.reset();
+  m_torqueClamp.reset();
+  return true;
 }
 
 std::uint32_t Scaling::getOutOfRangeErrLimit() const
 {
-  return m_allowedMaxOutOfRangeTimes;
+  return m_outOfRangeThreshold;
 }
 
 AxisProfileResult Scaling::checkAndSetModulo(double modValue, std::string& dynErrTxt)
@@ -408,7 +412,7 @@ void Scaling::setSharingHandler(IAxisProfileSharingHandler* handler)
 
 bool Scaling::updateClampCounter(ClampState& clamp) const
 {
-  if ((++clamp.count) >= m_allowedMaxOutOfRangeTimes)
+  if ((++clamp.count) >= m_outOfRangeThreshold)
   {
     clamp.count = 0;
     return true;

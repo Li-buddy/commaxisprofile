@@ -132,7 +132,7 @@ namespace comm::axisprofile
     double getRateTorqueForce() const final;
     AxisProfileResult booting() final;
     std::uint32_t getOutOfRangeErrCnt(const ScalingDataCategory& category) const final;
-    void setOutOfRangeErrLimit(std::uint32_t maxTimes) final;
+    bool setOutOfRangeErrLimit(std::uint32_t maxTimes) final;
     std::uint32_t getOutOfRangeErrLimit() const final;
 
     /// @brief This method reports a clamping error if the value has been clamped.
@@ -277,6 +277,6 @@ namespace comm::axisprofile
     mutable ClampState m_positionClamp {};      ///< counter for position clamp
     mutable ClampState m_velocityClamp {};      ///< counter for velocity clamp
     mutable ClampState m_torqueClamp {};        ///< counter for torque clamp
-    mutable std::uint32_t m_allowedMaxOutOfRangeTimes; ///< the maximum number of times that the value can be out of range before reporting an error
+    mutable std::uint32_t m_outOfRangeThreshold; ///< the maximum number of times that the value can be out of range before reporting an error
   };
 }

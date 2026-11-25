@@ -37,10 +37,7 @@ table profileConfig {
   category         : ProfileCategory; 
 
   /// whether checksum activated
-  checksumEnabled    : bool;
-
-  /// allowed maximum error for data
-  outOfRangeErrLimit : uint = 1;
+  checksumEnabled    : bool;  
 }
 
 root_type profileConfig;

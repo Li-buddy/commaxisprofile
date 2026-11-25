@@ -96,7 +96,7 @@ namespace test
     void loadBootingTasks() override {}
     comm::axisprofile::AxisProfileResult booting() override {return m_returnValue;}
     std::uint32_t getOutOfRangeErrCnt(const comm::axisprofile::ScalingDataCategory& /*category*/) const override{return m_clampCount;}
-    void setOutOfRangeErrLimit(std::uint32_t /*maxTimes*/) override {}
+    bool setOutOfRangeErrLimit(std::uint32_t /*maxTimes*/) override {return true;}
     std::uint32_t getOutOfRangeErrLimit() const override {return 0;}
 
   public: // Data

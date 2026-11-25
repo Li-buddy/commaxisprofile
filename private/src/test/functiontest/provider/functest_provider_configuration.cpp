@@ -248,7 +248,7 @@ HRESULT FuncTestProviderConfiguration::testCreateOfProfiles()
     return test::ProviderHelperFunctest::readNodeSync(this, m_datalayerTestClient, address.c_str(), &actData, true, &expData);
   };
   const std::uint32_t limit = 10U;
-  std::string limitAddress = provider::NodeTree.APR_PROFILES_CFG_MAX_CONSECUTIVE_OOR_CNT;
+  std::string limitAddress = provider::NodeTree.APR_PROFILES_CFG_SCALINGINFO_OUTOFRANGE_THRESHOLD;
   test::ProviderHelperCommon::insertProfileName(limitAddress, profileName);
   writeData.setValue(limit);
   result = test::ProviderHelperFunctest::writeNodeSync(this, m_datalayerTestClient, limitAddress.c_str(), &writeData, true);
@@ -256,7 +256,7 @@ HRESULT FuncTestProviderConfiguration::testCreateOfProfiles()
   {
     return result;
   }
-  hresult |= readUInt32(provider::NodeTree.APR_PROFILES_CFG_MAX_CONSECUTIVE_OOR_CNT, limit);
+  hresult |= readUInt32(provider::NodeTree.APR_PROFILES_CFG_SCALINGINFO_OUTOFRANGE_THRESHOLD, limit);
 
   const double outOfRange = std::numeric_limits<double>::infinity();
   scaling->convertPositionScaledToRaw(outOfRange);

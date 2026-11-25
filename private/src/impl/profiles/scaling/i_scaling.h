@@ -174,7 +174,8 @@ namespace comm
 
       /// @brief This method sets the maximum number of times the data can be out of range.
       /// @param[in] maxTimes The maximum number of times the data can be out of range before an error is reported.
-      virtual void setOutOfRangeErrLimit(std::uint32_t maxTimes) = 0;
+      /// @return true if the limit was set successfully, false otherwise.
+      virtual bool setOutOfRangeErrLimit(std::uint32_t maxTimes) = 0;
 
       /// @brief This method gets the maximum number of times the data can be out of range.
       /// @return the maximum number of times

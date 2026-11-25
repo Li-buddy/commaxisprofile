@@ -88,7 +88,6 @@ void NodeProfilesConfig::onRead(const std::string& address, const comm::datalaye
   profileConfigData.m_driveNumber        = profile->getDriveNumber();
   profileConfigData.m_profileCategory    = profile->getPropertyInterface()->getProfileCategory();
   profileConfigData.m_checksumEnable     = profile->getPropertyInterface()->isChecksumEnabled();
-  profileConfigData.m_outOfRangeErrLimit = profile->getScaling()->getOutOfRangeErrLimit();
 
   // Convert internal data into flatbuffer variant
   comm::datalayer::Variant retVariant;
@@ -149,7 +148,6 @@ void NodeProfilesConfig::onWrite(const std::string& address, const comm::datalay
   profile->setDriveNumber(profileConfigData.m_driveNumber);
   profile->setProfileCategory(profileConfigData.m_profileCategory);
   profile->getPropertyInterface()->enableChecksum(profileConfigData.m_checksumEnable);
-  profile->getScaling()->setOutOfRangeErrLimit(profileConfigData.m_outOfRangeErrLimit);
 
   // Finish
   callback(comm::datalayer::DlResult::DL_OK, nullptr);
@@ -230,16 +228,7 @@ comm::axisprofile::AxisProfileResult NodeProfilesConfig::extractFlatbufferData(c
   {
     profileConfigData.m_checksumEnable = variantData->checksumEnabled();
   }
-
-  // Extract profile allowed max error count
-  if (flatbuffers::IsFieldPresent(variantData, fbtypes::profileConfig::VT_OUTOFRANGEERRLIMIT))
-  {
-    profileConfigData.m_outOfRangeErrLimit = variantData->outOfRangeErrLimit();
-  }
-  else
-  {
-    profileConfigData.m_outOfRangeErrLimit = 1;
-  }
+    
   return AxisProfileResult::STS_OK;
 }
 
@@ -284,7 +273,6 @@ comm::axisprofile::AxisProfileResult NodeProfilesConfig::generateFlatbufferData(
   profileConfigBuilder.add_driveNumber(profileConfigData.m_driveNumber);
   profileConfigBuilder.add_category(categoryOffset);
   profileConfigBuilder.add_checksumEnabled(profileConfigData.m_checksumEnable);
-  profileConfigBuilder.add_outOfRangeErrLimit(profileConfigData.m_outOfRangeErrLimit);
 
   // Finish
   builder.Finish(profileConfigBuilder.Finish());

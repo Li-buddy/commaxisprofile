@@ -26,6 +26,9 @@ table profileScalingCfg {
 
   /// velocity scaling factor cfg
   velocityFactor  : ScalingFactor;
+
+  /// allowed maximum error for data
+  outOfRangeThreshold : uint = 1;
 }
 
 root_type profileScalingCfg;

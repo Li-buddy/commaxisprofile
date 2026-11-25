@@ -854,6 +854,7 @@ namespace comm::axisprofile
     std::uint32_t                m_denominator = 1;                                                  ///< denominator for scaling factor
     std::uint32_t                m_resolution = 1;                                                   ///< resolution of the motor encoder
     ScalingFactor                m_velFactor {};                                                     ///< velocity scaling factor
+    std::uint32_t                m_outOfRangeThreshold {1};                                          ///< maximum number of out-of-range values before error is reported
   }AxisProfileScalingStrategyCfg;
 
   /// @brief Configure the probe control word
