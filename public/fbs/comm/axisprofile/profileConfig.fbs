@@ -40,7 +40,7 @@ table profileConfig {
   checksumEnabled    : bool;
 
   /// allowed maximum error for data
-  outOfRangeErrLimit : uint;
+  outOfRangeErrLimit : uint = 1;
 }
 
 root_type profileConfig;
