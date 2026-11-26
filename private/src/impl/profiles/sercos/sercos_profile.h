@@ -68,6 +68,7 @@ namespace comm::axisprofile::sercos
     AxisProfileResult processDataMdt(std::uint8_t* dataByteArray) final;
     AxisProfileResult getDeviceState() final;
     AxisProfileScalingStrategyCfg getProfileScalingStrategyCfg() const final;
+    AxisProfileResult setProfileScalingStrategyCfg(const AxisProfileScalingStrategyCfg& strategyCfg) final;
     std::vector<std::unique_ptr<IJobObj>> onGetJobList() final;
 
   private: // data
