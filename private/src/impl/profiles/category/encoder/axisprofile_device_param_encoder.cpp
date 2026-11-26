@@ -161,7 +161,6 @@ AxisProfileResult AxisProfileDeviceParamEncoder::getChecksumIdnList(std::vector<
 
 SignalFuncHandler* AxisProfileDeviceParamEncoder::getSignalFuncHandler()
 {
-  rejectCmdDiagnosis("getSignalFuncHandler");
   return nullptr;
 }
 

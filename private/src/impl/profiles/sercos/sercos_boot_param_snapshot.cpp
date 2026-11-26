@@ -70,7 +70,7 @@ AxisProfileResult SercosBootParamSnapshot::getParameterValueFromSnapshot(const c
   return snapshot->getParameter(idn, bufPtr, bufLen, devParamIF->isNeedReadBootParams(), elementFlag);
 }
 
-std::unique_ptr<ParamReqDataBase> SercosBootParamSnapshot::generateReqData(const BootParamId& paramId) const
+std::unique_ptr<ParamReqDataBase> SercosBootParamSnapshot::generateReqData(const BootParamId& paramId, std::uint32_t maxLen) const
 {
   const auto* idn = paramId.getIdn();
   if (idn == nullptr)
@@ -78,7 +78,8 @@ std::unique_ptr<ParamReqDataBase> SercosBootParamSnapshot::generateReqData(const
     return nullptr;
   }
 
-  return std::make_unique<ParamReqDataSoE>(m_profileBasicInfo.m_deviceAddress, *idn, m_elementFlag, m_profileBasicInfo.m_driveNumber);
+  return std::make_unique<ParamReqDataSoE>(m_profileBasicInfo.m_deviceAddress, *idn, m_elementFlag,
+                                           m_profileBasicInfo.m_driveNumber, nullptr, 0, maxLen);
 }
 
 const BootParamSnapshotBase::BootParamDescriptorBase* SercosBootParamSnapshot::getBootParamDescriptor(const BootParamId& paramId) const

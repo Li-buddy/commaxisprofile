@@ -20,6 +20,8 @@ HRESULT TestCanopenSignalFuncMgr::doTest()
   hresult |= testSignalWordMappingRequired();
   hresult |= testReadParamListUsesActualReadLength();
   hresult |= testConfigurationReadErrors();
+  hresult |= testIndraDriveSkipsCtrlxSignalWordCfg();
+
   return hresult;
 }
 
@@ -210,6 +212,41 @@ HRESULT TestCanopenSignalFuncMgr::testConfigurationReadErrors()
   homingStatusFunc = {FunctionSupport::HOMING_STATUS_CYCLIC};
   isSupported = missingControlAssignContext.testClass.isFuncInSignalStatusWord(homingStatusFunc, errorInfo);
   LOG_TEST_RESULT(isSupported, L"homing status should still use status word data when control word read fails", true);
+
+  return S_OK;
+}
+
+HRESULT TestCanopenSignalFuncMgr::testIndraDriveSkipsCtrlxSignalWordCfg()
+{
+  log(L"\n<b>Test IndraDrive skips ctrlX DRIVE signal word configuration.</b>");
+
+  using namespace comm::axisprofile::canopen;
+
+  TestContext context {};
+
+  context.property.setDeviceSeries(DeviceSeries::INDRADRIVE);
+
+  // Intentionally don't provide responses for the ctrlX DRIVE
+  // signal word configuration objects.
+  AxisProfileResult result = context.testClass.init(&context.sharingHandler);
+
+  LOG_TEST_RESULT(result, L"signal function manager init should succeed for IndraDrive", AxisProfileResult::STS_OK);
+
+  LOG_TEST_RESULT(context.fieldbusAdapter.getReadCount(context.getObj(SIGNAL_CONTROL_WORD_CONFIG_LIST)),
+                  L"IndraDrive should not read ctrlX signal control word config list",
+                  0);
+
+  LOG_TEST_RESULT(context.fieldbusAdapter.getReadCount(context.getObj(SIGNAL_CONTROL_WORD_ASSIGN_LIST)),
+                  L"IndraDrive should not read ctrlX signal control word assign list",
+                  0);
+
+  LOG_TEST_RESULT(context.fieldbusAdapter.getReadCount(context.getObj(SIGNAL_STATUS_WORD_CONFIG_LIST)),
+                  L"IndraDrive should not read ctrlX signal status word config list",
+                  0);
+
+  LOG_TEST_RESULT(context.fieldbusAdapter.getReadCount(context.getObj(SIGNAL_STATUS_WORD_ASSIGN_LIST)),
+                  L"IndraDrive should not read ctrlX signal status word assign list",
+                  0);
 
   return S_OK;
 }

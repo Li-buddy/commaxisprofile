@@ -20,7 +20,7 @@
 #include "profiles/data_sharing/i_sharing_handler.h"
 #include "profiles/i_device_boot_param_snapshot.h"
 #include "diagnosis/dia.h"
-
+#include "helper/device_id_helper.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -100,6 +100,24 @@ AxisProfileResult CanopenSignalFuncHandler::readDriveSignalStatusWordCfg(std::ve
   params.clear();
   assignBits.clear();
 
+  if (!m_sharingHandler || !m_sharingHandler->getPropertyIF())
+  {
+    return AxisProfileResult::ERR_EXEC_NULL;
+  }
+
+  const DeviceSeries deviceSeries = m_sharingHandler->getPropertyIF()->getDeviceSeries();
+  // Current CoE signal-word implementation is based on ctrlX DRIVE.
+  // IndraDrive uses different parameter definitions.
+  if (!DeviceIdHelper::isRexrothCtrlXDrive(deviceSeries))
+  {
+    APR_TRACE_MESSAGE(
+      "%s; signal status word configuration check skipped for device series %s",
+      m_profileBasicInfo.m_profileTrace.createTraceMsg(),
+      deviceSeriesToString(deviceSeries));
+
+    return AxisProfileResult::STS_OK;
+  }
+
   constexpr std::size_t maxCfgParams = 16;
   auto signalControlObj = getObjDir(SIGNAL_STATUS_WORD_CONFIG_LIST, m_profileBasicInfo.m_driveNumber);
   auto res = readParamListCoE(signalControlObj, maxCfgParams, params);
@@ -118,6 +136,22 @@ AxisProfileResult CanopenSignalFuncHandler::readDriveSignalControlWordCfg(std::v
   // The lists in 0x2C82:02 and 0x2C80:03 have the same length
   params.clear();
   assignBits.clear();
+
+  if (!m_sharingHandler || !m_sharingHandler->getPropertyIF())
+  {
+    return AxisProfileResult::ERR_EXEC_NULL;
+  }
+
+  const DeviceSeries deviceSeries = m_sharingHandler->getPropertyIF()->getDeviceSeries();
+  if (!DeviceIdHelper::isRexrothCtrlXDrive(deviceSeries))
+  {
+    APR_TRACE_MESSAGE(
+      "%s; signal control word configuration check skipped for device series %s",
+      m_profileBasicInfo.m_profileTrace.createTraceMsg(),
+      deviceSeriesToString(deviceSeries));
+
+    return AxisProfileResult::STS_OK;
+  }
 
   constexpr std::size_t maxCfgParams = 16;
   auto signalControlObj = getObjDir(SIGNAL_CONTROL_WORD_CONFIG_LIST, m_profileBasicInfo.m_driveNumber);

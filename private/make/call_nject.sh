@@ -30,7 +30,7 @@ fi
 
 echo ---- check mount directories ----
 MNT_PRIMARY="/mnt/xi02fs01.xi-dept-rd/ENG6/04_BuildResults" # used for developers in Xian
-MNT_SECONDARY="/mnt/lo-edepartment.mscex/BuildResults"      # used for developers in German
+MNT_SECONDARY="/mnt/msc_bd/BuildResults"      # used for developers in German
 check_mount() {
   local mount_point="$1"
   if [ -d "$mount_point" ]; then

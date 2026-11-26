@@ -132,6 +132,7 @@ namespace comm::axisprofile
     UNDEFINED = -1,     ///< undefined
     ROTARY    = 0,      ///< rotary
     LINEAR    = 2,      ///< linear
+    RAMP_TIME = 3,      ///< ramp time
   };
 
   /// @brief torque scaling type
@@ -801,6 +802,46 @@ namespace comm::axisprofile
       case DeviceSeries::INNOVANCE:           return "innovance";
       case DeviceSeries::MOON:                return "moon";
       default:                                return "undefined";
+    }
+  }
+
+  /// @brief convert position scaling type to string
+  /// @param[in] type The position scaling type
+  /// @return The converted position scaling type string
+  inline const char* scalingTypeToString(const PosScalingType type)
+  {
+    switch (type)
+    {
+      case PosScalingType::LINEAR: return "linear";
+      case PosScalingType::ROTARY: return "rotary";
+      default: return "undefined";
+    }
+  }
+
+  /// @brief convert velocity scaling type to string
+  /// @param[in] type The velocity scaling type
+  /// @return The converted velocity scaling type string
+  inline const char* scalingTypeToString(const VelScalingType type)
+  {
+    switch (type)
+    {
+      case VelScalingType::LINEAR: return "linear";
+      case VelScalingType::ROTARY: return "rotary";
+      default: return "undefined";
+    }
+  }
+
+  /// @brief Convert acceleration scaling type to string
+  /// @param[in] type The acceleration scaling type
+  /// @return The converted acceleration scaling type string
+  inline const char* scalingTypeToString(const AccScalingType type)
+  {
+    switch (type)
+    {
+      case AccScalingType::LINEAR: return "linear";
+      case AccScalingType::ROTARY: return "rotary";
+      case AccScalingType::RAMP_TIME: return "ramp_time";
+      default: return "undefined";
     }
   }
 }

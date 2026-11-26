@@ -71,8 +71,8 @@ namespace comm::axisprofile
   constexpr std::uint32_t DETAILED_DIAG_MASTER_STATUS_ERROR                 = 0x0C580033;
   constexpr std::uint32_t DETAILED_DIAG_SLAVE_STATUS_ERROR                  = 0x0C580034;
   constexpr std::uint32_t DETAILED_DIAG_FUNCTION_NOT_SUPPORTED              = 0x0C580035;
-  constexpr std::uint32_t DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE          = 0x0C580036; ///< FPU error occurred before axisprofile execution
-  constexpr std::uint32_t DETAILED_DIAG_FPU_ERR_DURING_AXISPROFILE          = 0x0C580037; ///< FPU error occurred during axisprofile execution
+  constexpr std::uint32_t DETAILED_DIAG_FPU_ERR_DURING_AXISPROFILE          = 0x0C580036; ///< FPU error occurred during axisprofile execution
+  constexpr std::uint32_t DETAILED_DIAG_FPU_ERR_BEFORE_AXISPROFILE          = 0x0C580037; ///< FPU error occurred before axisprofile execution
 
   // --------------------------------------------- Backup restore ---------------------------------------- //
 
@@ -172,6 +172,7 @@ namespace comm::axisprofile
   constexpr std::uint32_t DETAILED_DIAG_BOOT_SLAVE_STATUS_ERROR             = 0x0C580505;    ///< Slave device status get an error
   constexpr std::uint32_t DETAILED_DIAG_BOOT_CALLABLE_NOT_READY             = 0x0C580506;    ///< Axisprofile adaption callable not ready
   constexpr std::uint32_t DETAILED_DIAG_BOOT_FIELDBUS_INCONSISTENCE         = 0x0C580507;    ///< Fieldbus inconsistence between device and configured
+  constexpr std::uint32_t DETAILED_DIAG_BOOT_MASTER_STATUS_NOT_READY        = 0x0C580508;    ///< The fieldbus master should be in operating or switching to operating before the Axis Profile is boot.
 
   // ------------------------------------------ Booting config diagnoses ------------------------------------------ //
   constexpr std::uint32_t DETAILED_DIAG_READ_PARAM_FAILED                   = 0x0C580600;

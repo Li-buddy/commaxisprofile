@@ -53,10 +53,10 @@ namespace test
   constexpr std::uint32_t MASTER_STATUS_INIT     = 0x00001707;   ///< Master status all bits in error state
   constexpr std::uint32_t MASTER_STATUS_INOP     = 0x00000000;   ///< Master status in OP
   constexpr std::uint32_t MASTER_STATUS_PREOP    = 0x00000026;   ///< Master status in Pre-OP
-  constexpr std::uint32_t MASTER_STATUS_NOT_INIT = 0x00000002;   ///< Master status in not initial yet
+  constexpr std::uint32_t MASTER_STATUS_NOT_INIT = 0x00000006;   ///< Master status in not initial yet(not in request)
   constexpr std::uint32_t DEVICE_STATUS_INIT     = 0x00000007;   ///< Device status all bits in error state
   constexpr std::uint32_t DEVICE_STATUS_INOP     = 0x00000000;   ///< Device status in OP
-
+  
   // ---------------------------------------------------------------------------
   // Declaration of classes and structures
   // ---------------------------------------------------------------------------

@@ -11,6 +11,7 @@
 #include "mockup/mock_axisprofile_mapping_handler.h"
 #include "mockup/mock_fieldbus_adapter_coe.h"
 #include "mockup/mock_profile_trace.h"
+#include "mockup/mock_axisprofile_property.h"
 #include <algorithm>
 #include <cstring>
 #include <unordered_map>
@@ -88,21 +89,36 @@ namespace
   struct TestContext
   {
     TestContext()
-      : sharingHandler(&profileTrace), testClass(profileBasicInfo)
+      : sharingHandler(&profileTrace),
+      testClass(profileBasicInfo)
     {
       profileBasicInfo.m_deviceAddress = 1;
       profileBasicInfo.m_driveNumber = 0;
       profileBasicInfo.m_fieldbusAdapter = &fieldbusAdapter;
       profileBasicInfo.m_profileName = "testProfile";
 
-      m_deviceParam = std::make_unique<canopen::CanopenDeviceParamDrive>(profileBasicInfo, nullptr, nullptr);
-      m_bootParamSnapshot = std::make_unique<canopen::CanopenBootParamSnapshot>(profileBasicInfo);
+      // Existing Canopen signal word tests are based on ctrlX DRIVE.
+      property.setDeviceSeries(DeviceSeries::CTRLXDRIVE);
+
+      m_deviceParam = std::make_unique<canopen::CanopenDeviceParamDrive>(
+          profileBasicInfo, nullptr, nullptr);
+
+      m_bootParamSnapshot = std::make_unique<canopen::CanopenBootParamSnapshot>(
+          profileBasicInfo);
+
       auto& profileAssignedInfo = mappingHandler.getProfileAssignedInfo();
+
       profileAssignedInfo.m_input.m_signalStatusWord = true;
       profileAssignedInfo.m_output.m_signalControlWord = true;
+
+      sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_PROPERTY, &property);
+
       sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappingHandler);
+
       sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_CYCLICDATA, &cyclicData);
+
       sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_BOOTPARAMSNAPSHOT, m_bootParamSnapshot.get());
+
       sharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_DEVICEPARAM, m_deviceParam.get());
     }
 
@@ -145,6 +161,7 @@ namespace
     std::unique_ptr <canopen::CanopenDeviceParamDrive> m_deviceParam {};
     std::unique_ptr<canopen::CanopenBootParamSnapshot> m_bootParamSnapshot {};
     comm::axisprofile::canopen::CanopenSignalFuncHandler testClass;
+    test::MockAxisProfileProperty property {};
   };
 }
 
@@ -182,4 +199,8 @@ private:
   /// @brief Test configuration read error handling.
   /// @return S_OK, if test was successful.
   HRESULT testConfigurationReadErrors();
+
+  /// @brief Test that ctrlX DRIVE signal word objects are not accessed for IndraDrive.
+  /// @return S_OK, if test was successful.
+  HRESULT testIndraDriveSkipsCtrlxSignalWordCfg();
 };

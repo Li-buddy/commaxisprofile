@@ -912,11 +912,13 @@ AxisProfileResult AxisProfileManager::execExternalChecking()
       {
         const std::string& profileName = profile.second.m_axisProfile->getProfileName();
         auto res = chkFunc.second(profileName);
-        profile.second.m_axisProfile->setProfileActivated(res != CheckResponse::OK_DONT_USE_PROFILE);
+        profile.second.m_axisProfile->setProfileActivated(res == CheckResponse::OK_USE_PROFILE);
         if (!profile.second.m_axisProfile->checkProfileActivated())
         {
           Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_PROFILE_CHECK_RESP_DONTUSE,
-                             __FILE__, __FUNCTION__, __LINE__, "%s, %s", chkFunc.first.c_str(), profileName.c_str());
+                             __FILE__, __FUNCTION__, __LINE__, "%s, %s, %s",
+                             chkFunc.first.c_str(), profileName.c_str(),
+                             res == CheckResponse::OK_DONT_USE_PROFILE ? "disabled by axis" : "not linked to axis");
           break;
         }
       }

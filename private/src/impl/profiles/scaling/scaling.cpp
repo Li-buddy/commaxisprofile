@@ -150,10 +150,15 @@ AxisProfileResult Scaling::checkScalingUniform() const
     Dia::sendDiagnosis(MAIN_DIAG_SCALING_ERR, DETAILED_DIAG_INCONSISTENCE_SCALING_TYPE, __FILE__, __FUNCTION__, __LINE__,
                        "the unit system of velocity, position and acceleration do not match with each other, position: %s, velocity: %s, acceleration: %s",
                        m_posMetrication ? "metric" : "imperial", m_velMetrication ? "metric" : "imperial", m_accMetrication ? "metric" : "imperial");
+    return AxisProfileResult::ERR_NOK;
   }
   Dia::sendDiagnosis(MAIN_DIAG_SCALING_ERR, DETAILED_DIAG_INCONSISTENCE_SCALING_TYPE, __FILE__, __FUNCTION__, __LINE__,
-                     "the scaling type of velocity, position and acceleration do not match with each other, position: %d, velocity: %d, acceleration: %d",
-                     m_positionType, m_velocityType, m_accelerationType);
+                     "The device mapped to profile [%s] address : %d, exist Scaling type mismatch: position=%s, velocity=%s, acceleration=%s",
+                     m_profileBasicInfo.m_profileName.c_str(),
+                     m_profileBasicInfo.m_deviceAddress,
+                     scalingTypeToString(m_positionType),
+                     scalingTypeToString(m_velocityType),
+                     scalingTypeToString(m_accelerationType));
   return AxisProfileResult::ERR_NOK;
 }
 

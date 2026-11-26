@@ -17,6 +17,7 @@
 #include "component/statemachine/i_state_machine.h"
 #include "i_backup_restore_mgr.h"
 #include "i_boot_mgr.h"
+#include "fieldbuses/fieldbus_defs.h"
 #include <atomic>
 
 // ToDo: Remove standard threads
@@ -50,15 +51,18 @@ namespace comm::axisprofile
   constexpr std::int32_t POLLING_SLEEP_DEVICE_OP_MS     = 10;              ///< sleep time when polling, for fieldbus status checking, in milliseconds
   constexpr std::int32_t TIMEOUT_FIELDBUS_DEVICE_OP_MS  = 200;             ///< timeout value for waiting masters and devices switch to OP state, in milliseconds
   constexpr std::int32_t TIMEOUT_FIELDBUS_DEVICE_ERROR  = 100;             ///< timeout value for acceptable error state when waiting masters and devices to OP
+  constexpr std::int32_t TIMEOUT_CHECK_REQUEST_CURRENT_MS = 10 * 10;      ///< timeout value for target and current state check, in milliseconds
 #else // taken more time on real core
   constexpr std::int32_t POLLING_SLEEP_DEVICE_OP_MS     = 1000;            ///< sleep time when polling, for fieldbus status checking, in milliseconds
   constexpr std::int32_t TIMEOUT_FIELDBUS_DEVICE_OP_MS  = 100000;          ///< timeout value for waiting masters and devices switch to OP state, in milliseconds
   constexpr std::int32_t TIMEOUT_FIELDBUS_DEVICE_ERROR  = 10000;           ///< timeout value for acceptable error state when waiting masters and devices to OP
+  constexpr std::int32_t TIMEOUT_CHECK_REQUEST_CURRENT_MS = 10 * 1000;     ///< timeout value for target and current state check, in milliseconds
 #endif
     
   constexpr std::int32_t TIMEOUT_SCHED_IN_RUN_STATE_MS  = 2000;            ///< timeout value for expecting scheduler/callable in RUN state, in milliseconds
   constexpr std::int32_t TIMEOUT_READ_DEVICE_PRAMETERS  = 40 * 10 * 2;     ///< timeout value for reading parameters from device, in milliseconds
   constexpr std::int32_t TIMEOUT_WAIT_BEFORE_DEVICE_OP  = 1000 * 60 * 2;   ///< timeout value before checking fieldbus, in milliseconds, 2 minutes same as EtherCAT master
+  
 
   // ---------------------------------------------------------------------------
   // Declaration of macros
@@ -92,6 +96,33 @@ namespace comm::axisprofile
     double getMaxBootingTimeout() const final;
     bool isInitBooting() final;
 
+  private: // type
+
+    /// @brief manage the context for checking fieldbus master status
+    struct ECMStatusContext
+    {
+      /// @brief reset the context to default values
+      void reset()
+      {
+        *this = ECMStatusContext {};
+      }
+
+      /// @brief judge if the timeout for checking fieldbus master status is reached
+      ///        also decrease the timeout counter for next check
+      /// @return true if timeout is reached, false otherwise
+      bool isTimeOut()
+      {
+        if (m_timeoutTargetCurrentCheck > 0)
+        {
+          --m_timeoutTargetCurrentCheck;
+          return false;
+        }
+        return true;
+      }
+    private:
+      std::int32_t m_timeoutTargetCurrentCheck {TIMEOUT_CHECK_REQUEST_CURRENT_MS/POLLING_SLEEP_DEVICE_OP_MS}; ///< timeout counter for checking fieldbus master status
+    };
+
   private: // methods
 
     /// @brief This method triggers the boot thread in a loop until it is finished.
@@ -109,11 +140,13 @@ namespace comm::axisprofile
     /// @return   Return value indicating success or error.
     AxisProfileResult checkFieldbusAndDeviceStatus();
 
-    /// @brief This method checks fieldbus status
-    /// @param[in]     adapter      Field bus instance adapter
+    /// @brief This method checks fieldbus status    /// 
+    /// @param[in]     masterName    Field bus instance name
+    /// @param[in]     adapter       Field bus instance adapter
+    /// @param[in,out] context       ECM state context
     /// @return   Return value indicating STS_OK for status check success, STS_PENGDING for still checking, ERR_xxx for error
-    static AxisProfileResult checkFieldbusStatus(const std::string& masterName, IFieldbusAdapter* adapter);
-
+    static AxisProfileResult checkFieldbusStatus(const std::string& masterName, IFieldbusAdapter* adapter, ECMStatusContext& context);
+    
     /// @brief This method checks device status
     /// @param[in]     profileName   Profile name
     /// @return   Return value indicating STS_OK for status check success, STS_PENGDING for still checking, ERR_xxx for error
@@ -148,7 +181,7 @@ namespace comm::axisprofile
         : m_name(name), m_methodName(methodName), m_fnct(fnct)
       {
       };
-    };
+    };    
 
   private: // data
 
@@ -170,6 +203,8 @@ namespace comm::axisprofile
                                                         ///< timeout value for expecting scheduler/callable in RUN state
     std::int32_t m_timeoutFieldBusDeviceOP = { TIMEOUT_FIELDBUS_DEVICE_OP_MS / POLLING_SLEEP_DEVICE_OP_MS};
                                                         ///< timeout value for waiting masters and devices switch to OP state
+    ECMStatusContext m_context {};                      ///< context for checking fieldbus master status     
+
     const std::uint32_t BOOT_FAILED = static_cast<std::uint32_t>(-1);    ///< some constant, that is put into the m_actBootStep when the booting failed
     const std::uint32_t BOOT_ABORT  = static_cast<std::uint32_t>(-2);    ///< some constant, that is put into the m_actBootStep when the booting is aborted
 

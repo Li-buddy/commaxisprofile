@@ -90,6 +90,14 @@ HRESULT TestConfigurationBootManager::testMiscellaneous()
   log(L"\nCall getBootState when everything is OK.");
   testClass.getBootingState(actStep, maxSteps, txt);
 
+
+  log(L"\nCall status check context");
+  testClass.m_context.reset();
+  for (int i = 0; i <= TIMEOUT_CHECK_REQUEST_CURRENT_MS / POLLING_SLEEP_DEVICE_OP_MS; i++)
+  {
+    testClass.m_context.isTimeOut();
+  }
+
   log(L"\n");
   return hResult;
 }
@@ -186,7 +194,7 @@ HRESULT TestConfigurationBootManager::testCheckFieldbusStatus()
 
   log(L"\nCall checkFieldbusStatus() when datalayer returns an error...");
   static_cast<test::MockDatalayerClient*>(testClass.m_datalayerClient)->m_returnValue = comm::datalayer::DlResult::DL_FAILED;
-  AxisProfileResult actResult = testClass.checkFieldbusStatus(masterName, &adapter);
+  AxisProfileResult actResult = testClass.checkFieldbusStatus(masterName, &adapter, testClass.m_context);
   LOG_TEST_RESULT(actResult, L"unexpected return value.", AxisProfileResult::ERR_FIELDBUS_READ_VALUE);
 
   static_cast<test::MockDatalayerClient*>(testClass.m_datalayerClient)->m_returnValue = comm::datalayer::DlResult::DL_OK;
@@ -195,40 +203,40 @@ HRESULT TestConfigurationBootManager::testCheckFieldbusStatus()
   fbHelper.m_masterStatus.m_status = test::MASTER_STATUS_PREOP;     // in pre-op
   fbHelper.m_masterStatus.m_statusBits.SettingsInconsistent = TRUE; // everything is find but SettingsInconsistent
   fbHelper.generateMasterStatusResponseFlatbuffer(&static_cast<test::MockDatalayerClient*>(testClass.m_datalayerClient)->m_callbackVariant);
-  actResult = testClass.checkFieldbusStatus(masterName, &adapter);
+  actResult = testClass.checkFieldbusStatus(masterName, &adapter, testClass.m_context);
   LOG_TEST_RESULT(actResult, L"unexpected return value.", AxisProfileResult::ERR_FIELDBUS);
 
   log(L"\nCall checkFieldbusStatus() when PortError...");
   fbHelper.m_masterStatus.m_status = test::MASTER_STATUS_PREOP;
   fbHelper.m_masterStatus.m_statusBits.PortError = TRUE; // everything is find but PortError
   fbHelper.generateMasterStatusResponseFlatbuffer(&static_cast<test::MockDatalayerClient*>(testClass.m_datalayerClient)->m_callbackVariant);
-  actResult = testClass.checkFieldbusStatus(masterName, &adapter);
+  actResult = testClass.checkFieldbusStatus(masterName, &adapter, testClass.m_context);
   LOG_TEST_RESULT(actResult, L"unexpected return value.", AxisProfileResult::ERR_FIELDBUS);
 
   log(L"\nCall checkFieldbusStatus() when LicenseError...");
   fbHelper.m_masterStatus.m_status = test::MASTER_STATUS_PREOP;
   fbHelper.m_masterStatus.m_statusBits.LicenseError = TRUE; // everything is find LicenseError
   fbHelper.generateMasterStatusResponseFlatbuffer(&static_cast<test::MockDatalayerClient*>(testClass.m_datalayerClient)->m_callbackVariant);
-  actResult = testClass.checkFieldbusStatus(masterName, &adapter);
+  actResult = testClass.checkFieldbusStatus(masterName, &adapter, testClass.m_context);
   LOG_TEST_RESULT(actResult, L"unexpected return value.", AxisProfileResult::ERR_FIELDBUS);
 
   log(L"\nCall checkFieldbusStatus() when not in OP...");
   fbHelper.m_masterStatus.m_status = test::MASTER_STATUS_PREOP;
   fbHelper.m_masterStatus.m_statusBits.DcNotInSync = TRUE; // DC not ready
   fbHelper.generateMasterStatusResponseFlatbuffer(&static_cast<test::MockDatalayerClient*>(testClass.m_datalayerClient)->m_callbackVariant);
-  actResult = testClass.checkFieldbusStatus(masterName, &adapter);
+  actResult = testClass.checkFieldbusStatus(masterName, &adapter, testClass.m_context);
   LOG_TEST_RESULT(actResult, L"unexpected return value.", AxisProfileResult::STS_PENDING);
 
   log(L"\nCall checkFieldbusStatus() when not initialized...");
   fbHelper.m_masterStatus.m_status = test::MASTER_STATUS_NOT_INIT;
   fbHelper.generateMasterStatusResponseFlatbuffer(&static_cast<test::MockDatalayerClient*>(testClass.m_datalayerClient)->m_callbackVariant);
-  actResult = testClass.checkFieldbusStatus(masterName, &adapter);
+  actResult = testClass.checkFieldbusStatus(masterName, &adapter, testClass.m_context);
   LOG_TEST_RESULT(actResult, L"unexpected return value.", AxisProfileResult::STS_FIELDBUS_NOT_INIT);
 
   log(L"\nCall checkFieldbusStatus() when in OP...");
   fbHelper.m_masterStatus.m_status = test::MASTER_STATUS_INOP;
   fbHelper.generateMasterStatusResponseFlatbuffer(&static_cast<test::MockDatalayerClient*>(testClass.m_datalayerClient)->m_callbackVariant);
-  actResult = testClass.checkFieldbusStatus(masterName, &adapter);
+  actResult = testClass.checkFieldbusStatus(masterName, &adapter, testClass.m_context);
   LOG_TEST_RESULT(actResult, L"unexpected return value.", AxisProfileResult::STS_OK);
 
   log(L"\n");

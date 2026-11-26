@@ -434,8 +434,8 @@ HRESULT TestCanopenBootParmSnapshot::testGenerateReqDataNullForInvalidBootParamI
   test::MockFieldbusAdapterCoE mockFieldbusAdapter {};
   auto profileBasicInfo = createProfileBasicInfo(mockFieldbusAdapter);
   CanopenBootParamSnapshot testClass {profileBasicInfo};
-
-  const auto reqData = testClass.generateReqData(BootParamId(static_cast<std::uint16_t>(0x1234)));
+  std::uint32_t maxLen {16};
+  const auto reqData = testClass.generateReqData(BootParamId(static_cast<std::uint16_t>(0x1234)), maxLen);
   RETURN_TEST_RESULT_ANY(reqData == nullptr, L"\nExpected nullptr request data for non-Canopen BootParamId.");
 
   return S_OK;

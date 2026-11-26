@@ -3,36 +3,36 @@
   <Info Org="com.boschrexroth" Name="comm.axisprofile"/>
   <Dependencies>
     <!-- Bundles -->
-    <DependsOn Org="com.boschrexroth" Name="comm.datalayer"          Version="3.5.1"              Destination="./private/dependencies/bundle/comm.datalayer"       UsedFor="interface"   Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="comm.ethercat.master"    Version="1.10.0-rc.6715"     Destination="./private/dependencies/bundle/comm.ethercat.master" UsedFor="interface"   Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="common.scheduler"        Version="3.2.2"              Destination="./private/dependencies/bundle/common.scheduler"     UsedFor="interface"   Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="common.log.trace"        Version="4.2.1"              Destination="./private/dependencies/bundle/common.log.trace"     UsedFor="interface"   Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="common.log.diagnosis"    Version="4.2.0"              Destination="./private/dependencies/bundle/common.log.diagnosis" UsedFor="interface"   Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="common.systemhandler"    Version="3.4.1"              Destination="./private/dependencies/bundle/common.systemhandler" UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="comm.datalayer"          Version="3.6.6"              Destination="./private/dependencies/bundle/comm.datalayer"       UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="comm.ethercat.master"    Version="1.13.0-rc.7313"     Destination="./private/dependencies/bundle/comm.ethercat.master" UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="common.scheduler"        Version="3.2.9"              Destination="./private/dependencies/bundle/common.scheduler"     UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="common.log.trace"        Version="4.5.0"              Destination="./private/dependencies/bundle/common.log.trace"     UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="common.log.diagnosis"    Version="4.4.2"              Destination="./private/dependencies/bundle/common.log.diagnosis" UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="common.systemhandler"    Version="3.7.0"              Destination="./private/dependencies/bundle/common.systemhandler" UsedFor="interface"   Ignore="/public/doc;"/>
 
     <!-- Libraries -->
-    <DependsOn Org="com.boschrexroth" Name="oss.celix"               Version="3.0.4+2.4.0"        Destination="./private/dependencies/oss.celix"                   UsedFor="interface"   Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="oss.flatbuffers"         Version="3.4.0+25.2.10"      Destination="./private/dependencies/oss.flatbuffers"             UsedFor="interface"   Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="oss.zmq"                 Version="1.3.8+4.3.5"        Destination="./private/dependencies/oss.zmq"                     UsedFor="interface"   Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="oss.ubuntu.packages"     Version="4.1.7"              Destination="./private/dependencies/oss.ubuntu.packages"         UsedFor="interface"   Ignore="/public/sources;"/>
-    <DependsOn Org="com.boschrexroth" Name="web.automation"          Version="3.0.6"              Destination="./private/dependencies/bundle/web.automation"       UsedFor="interface"   Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="common.aox"              Version="3.0.1"              Destination="./private/dependencies/common.aox"                  UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="oss.celix"               Version="3.1.0+2.4.0"        Destination="./private/dependencies/oss.celix"                   UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="oss.flatbuffers"         Version="3.5.0+25.2.10"      Destination="./private/dependencies/oss.flatbuffers"             UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="oss.zmq"                 Version="1.3.9+4.3.5"        Destination="./private/dependencies/oss.zmq"                     UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="oss.ubuntu.packages"     Version="4.1.11"             Destination="./private/dependencies/oss.ubuntu.packages"         UsedFor="interface"   Ignore="/public/sources;"/>
+    <DependsOn Org="com.boschrexroth" Name="web.automation"          Version="3.1.3"              Destination="./private/dependencies/bundle/web.automation"       UsedFor="interface"   Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="common.aox"              Version="3.1.0"              Destination="./private/dependencies/common.aox"                  UsedFor="interface"   Ignore="/public/doc;"/>
     <DependsOn Org="org"              Name="boost"                   Version="1.87.0"             Destination="./private/dependencies/org.boost"                   UsedFor="interface"   Ignore="/doc/;/libs/;/tools/;"/>
 
     <!-- Tools -->
-    <DependsOn Org="com.boschrexroth" Name="appBuildBuddy"           Version="2.24.0"             Destination="./private/dependencies/appbuildbuddy"               UsedFor="build"       Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="appBuildBuddy"           Version="2.25.0"             Destination="./private/dependencies/appbuildbuddy"               UsedFor="build"       Ignore="/public/doc;"/>
     <DependsOn Org="com.boschrexroth" Name="oss.cppcheck"            Version="*"                  Destination="./private/dependencies/oss.cppcheck"                UsedFor="build"       Ignore="/public/doc;"/>
 
     <!-- Tests -->
-    <DependsOn Org="com.boschrexroth" Name="motion.lib.test"         Version="4.4.1"              Destination="./private/dependencies/motion.lib.test"             UsedFor="test"        Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="appTestBuddy"            Version="5.11.5"             Destination="./private/dependencies/apptestbuddy"                UsedFor="test"        Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="app.automationframework" Version="3.1.1"              Destination="./private/dependencies/automationframework"         UsedFor="test"        Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="motion.lib.test"         Version="4.5.0"              Destination="./private/dependencies/motion.lib.test"             UsedFor="test"        Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="appTestBuddy"            Version="5.11.9"             Destination="./private/dependencies/apptestbuddy"                UsedFor="test"        Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="app.automationframework" Version="3.3.0"              Destination="./private/dependencies/automationframework"         UsedFor="test"        Ignore="/public/doc;"/>
     <DependsOn Org="com.boschrexroth" Name="libBase"                 Version="1.4.1"              Destination="./private/dependencies/libbase"                     UsedFor="test"        Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="test.core"               Version="0.3.30"             Destination="./private/dependencies/test.core"                   UsedFor="test"        Ignore="/public/doc;"/>
-    <DependsOn Org="com.boschrexroth" Name="oss.restbed"             Version="1.0.3+4.7.4"        Destination="./private/dependencies/oss.restbed"                 UsedFor="test"        Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="test.core"               Version="0.4.0"              Destination="./private/dependencies/test.core"                   UsedFor="test"        Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="oss.restbed"             Version="1.0.5+4.7.4"        Destination="./private/dependencies/oss.restbed"                 UsedFor="test"        Ignore="/public/doc;"/>
     <DependsOn Org="com.boschrexroth" Name="oss.opensslv3"           Version="3.0.12+3.0.8"       Destination="./private/dependencies/oss.openssl"                 UsedFor="test"        Ignore="/public/doc;"/>
 
     <!-- Nject Diagnosis -->
-    <DependsOn Org="com.boschrexroth" Name="diagnostics.MOT.de_DE.en_US" Version="4.6"  PreRelease=".*"    Destination="./private/dependencies/diagnostics.MOT.de_DE.en_US" UsedFor="assemble"  Ignore="/public/doc;"/>
+    <DependsOn Org="com.boschrexroth" Name="diagnostics.MOT.de_DE.en_US" Version="5.4"  PreRelease=".*"    Destination="./private/dependencies/diagnostics.MOT.de_DE.en_US" UsedFor="assemble"  Ignore="/public/doc;"/>
   </Dependencies>
 </cdf>
