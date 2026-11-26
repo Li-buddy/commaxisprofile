@@ -83,17 +83,6 @@ AxisProfileResult CanopenJobSetAbsPos::onSetArgument(IContainer* arg)
 
   // new reference position should in range of travel limit of device
   const auto& deviceCfgData = deviceParamIf->getDeviceCfgData();
-  if (deviceCfgData.m_softwareLimitActive && // check only when limitation is activated in device
-      (m_newRefRaw > deviceCfgData.m_positivePosLimit || m_newRefRaw < deviceCfgData.m_negativePosLimit))
-  {
-    // CtrlX drive: 0x607D:1 and 0x607D:2 are positive and negative limit
-    Dia::sendDiagnosis(MAIN_DIAG_COMMAND_ERR, DETAILED_DIAG_DEVICE_OUT_OF_TRAVEL_LIMIT,
-                       m_profileInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "%g out range of [%s, %s] of device", m_cmdData.newPos,
-                       objDirToString(MIN_POS_RANGE_LIMIT).c_str(),
-                       objDirToString(MAX_POS_RANGE_LIMIT).c_str());
-    return AxisProfileResult::ERR_INVALID_ARGUMENT;
-  }
 
   WordStructure encoderProperty;
   ObjectDirEntry encoderPropertyObj;

@@ -14,9 +14,9 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "axisprofile_internal_defs.h"
-#include "profiles/axisprofile_device_param.h"
 #include "common/debug_trace.h"
 #include "profiles/profile_defs.h"
+#include "job_object/i_job_obj.h"
 
 // ---------------------------------------------------------------------------
 // Forward references

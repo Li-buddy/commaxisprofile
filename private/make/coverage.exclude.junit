@@ -21,5 +21,7 @@ impl\profiles\sercos\sercos_boot_params.h:80
 # TODO: unit test in future
 impl\profiles\axisprofile_job_base.cpp:50
 
+impl\provider\nodes\profiles\node_profiles_creator.cpp:85
+
 # files from motion core
 impl\provider\nodes\profiles\templates\node_state_simple.h:0

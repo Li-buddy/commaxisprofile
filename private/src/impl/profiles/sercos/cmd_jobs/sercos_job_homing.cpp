@@ -67,7 +67,6 @@ AxisProfileResult SercosJobHoming::onSetArgument(IContainer* arg)
 
   // validate encoder and get related parameter idn and property
   auto scaling = m_shareHandle->getScalingIF();
-  auto deviceParamIf = m_shareHandle->getDeviceParamIF();
   if (m_cmdData.encoder == AxisProfileEncoder::ENCODER_1)
   {
     m_devData.idnRefDist = S_0_0052_REFERENCE_DISTANCE_ENCODER_1;
@@ -85,18 +84,7 @@ AxisProfileResult SercosJobHoming::onSetArgument(IContainer* arg)
                        "Encoder id = %d", static_cast<std::int16_t>(m_cmdData.encoder));
     return AxisProfileResult::ERR_INVALID_ARGUMENT;
   }
-
-  // new reference position should in range of travel limit of device
   m_devData.cmdPosRaw = scaling->convertPositionScaledToRaw(m_cmdData.newPos);
-  const auto& deviceCfgData = deviceParamIf->getDeviceCfgData();
-  if (deviceCfgData.m_softwareLimitActive && // check only when limitation is activated in device
-      (m_devData.cmdPosRaw > deviceCfgData.m_positivePosLimit || m_devData.cmdPosRaw < deviceCfgData.m_negativePosLimit))
-  {
-    Dia::sendDiagnosis(MAIN_DIAG_COMMAND_ERR, DETAILED_DIAG_DEVICE_OUT_OF_TRAVEL_LIMIT,
-                       m_profileInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "%g out range of [S-0-0049, S-0-0050] of device", m_cmdData.newPos);
-    return AxisProfileResult::ERR_INVALID_ARGUMENT;
-  }
 
   return AxisProfileResult::STS_OK;
 }

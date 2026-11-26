@@ -3,6 +3,7 @@
 #include "mockup/mock_axisprofile_mapping_handler.h"
 #include "mockup/mock_axisprofile_property.h"
 #include "mockup/mock_axisprofile_cyclic_data.h"
+#include "mockup/mock_job_mgr.h"
 
 using namespace test;
 using namespace comm::axisprofile;
@@ -25,6 +26,7 @@ HRESULT TestAxisProfileDeviceParamEncoder::doInit()
 
   log(L"\nInit test data member...");
   m_profileInfo = std::make_shared<ProfileBasicInfo>();
+  m_profileInfo->m_axisProfileType = AxisProfileType::CANOPEN_OVER_ETHERCAT;
   m_telegramAT = std::make_shared<AcknowledgeTelegram>();
   m_category = std::make_unique<EncoderCategoryAdapterCoE>(*m_profileInfo.get(), m_telegramAT.get(), m_telegramMDT.get());
   m_sharingHandler = std::make_unique<AxisProfileSharingHandler>(&m_profileInfo->m_profileTrace);
@@ -77,14 +79,18 @@ HRESULT TestAxisProfileDeviceParamEncoder::doTest()
   assigned.m_output.m_setReference = true;
   assigned.m_output.m_referenceOffset = true;
   m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &mappinghandler);
+  
+  func = FunctionSupport::HOMING_CMD_CYCLIC;
+  isSupport = m_category->getDeviceParamInternal()->checkFunctionSupported(func, info);
+  RETURN_TEST_RESULT(isSupport, L"\nUnexpected return value", true);
 
   func = FunctionSupport::HOMING_STATUS_CYCLIC;
   isSupport = m_category->getDeviceParamInternal()->checkFunctionSupported(func, info);
   RETURN_TEST_RESULT(isSupport, L"\nUnexpected return value", true);
 
-  func = FunctionSupport::HOMING_CMD_CYCLIC;
+  assigned.m_input.m_isInReference = false;
   isSupport = m_category->getDeviceParamInternal()->checkFunctionSupported(func, info);
-  RETURN_TEST_RESULT(isSupport, L"\nUnexpected return value", true);
+  RETURN_TEST_RESULT(isSupport, L"\nUnexpected return value", false);
 
   log(L"\n\t Test of getCInterface...");
   m_category->getDeviceParamInternal()->getCInterface();
@@ -125,12 +131,6 @@ HRESULT TestAxisProfileDeviceParamEncoder::doTest()
   result = m_category->getDeviceParamInternal()->getPositionDataFormat(format);
   RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
 
-  log(L"\n\t Test of readDriveSignalStatusWordCfg...");  
-  test::MockAxisProfileCyclicData cyclicData {};
-  m_sharingHandler->registSharingITF(SharingInterfaceType::ITF_TYPE_CYCLICDATA, &cyclicData);
-  auto signalFuncMgr = m_category->getDeviceParamInternal()->getSignalFuncHandler();
-  RETURN_TEST_RESULT_PTR(signalFuncMgr, L"\nUnexpected return value", nullptr);
-
   log(L"\n\t Test of getOpModeAvailInfo...");
   m_category->getDeviceParamInternal()->getOpModeAvailInfo();
 
@@ -144,8 +144,14 @@ HRESULT TestAxisProfileDeviceParamEncoder::doTest()
   m_category->getDeviceParamInternal()->checkStandstill(standStill);
   RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOT_SUPPORTED);
 
-  log(L"\n\t Test of checkAxisHomed...");
+  log(L"\n\t Test of checkAxisHomed for a ctrlX IO device");
   bool homed {};
+  assigned.m_input.m_isInReference = true;
+  result = m_category->getDeviceParamInternal()->checkAxisHomed(homed);
+  RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::STS_OK);
+
+  log(L"\n\t Test of checkAxisHomed for a ctrlX drive");
+  assigned.m_input.m_isInReference = false;
   result = m_category->getDeviceParamInternal()->checkAxisHomed(homed);
   RETURN_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::STS_OK);
 

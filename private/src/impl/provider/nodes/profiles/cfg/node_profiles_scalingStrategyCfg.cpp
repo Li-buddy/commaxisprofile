@@ -168,6 +168,16 @@ comm::axisprofile::AxisProfileResult NodeProfilesScalingStrategyCfg::extractFlat
     auto factorCfg = data->velocityFactor();
     NodeProfilesScalingFactorCfg::extractFlatbufferData(factorCfg, profileScalingCfg.m_velFactor);
   }
+
+  // Extract profile allowed max error count
+  if (flatbuffers::IsFieldPresent(data, fbtypes::profileScalingCfg::VT_OUTOFRANGETHRESHOLD))
+  {
+    profileScalingCfg.m_outOfRangeThreshold = data->outOfRangeThreshold();
+  }
+  else
+  {
+    profileScalingCfg.m_outOfRangeThreshold = 1;
+  }
   return AxisProfileResult::STS_OK;
 }
 
@@ -190,6 +200,7 @@ flatbuffers::Offset<comm::axisprofile::fbtypes::profileScalingCfg> NodeProfilesS
   ScalingCfgDataBuilder.add_numerator(scalingStrategyCfg.m_numerator);
   ScalingCfgDataBuilder.add_resolution(scalingStrategyCfg.m_resolution);
   ScalingCfgDataBuilder.add_velocityFactor(factorOffset);
+  ScalingCfgDataBuilder.add_outOfRangeThreshold(scalingStrategyCfg.m_outOfRangeThreshold);
 
   return ScalingCfgDataBuilder.Finish();
 }

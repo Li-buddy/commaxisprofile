@@ -19,8 +19,10 @@
 #include "data_sharing/i_sharing_handler.h"
 #include "helper/requset_statemachine.h"
 #include "i_axisprofile_device_param_internal.h"
+#include "axisprofile_param_helper.h"
+#include "sercos/cmd_jobs/sercos_job_device_param.h"
+#include "canopen/cmd_jobs/canopen_job_device_param.h"
 #include <atomic>
-#include <map>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -61,10 +63,12 @@ namespace comm::axisprofile
 
     /// @brief Constructor      
     /// @param[in]   profileBasicInfo     Pointer to the Profile Basic Information
-    explicit AxisProfileDeviceParam(ProfileBasicInfo& profileBasicInfo);
+    /// @param[in]   at                   Pointer to the Acknowledge Telegram (AT)
+    /// @param[in]   mdt                  Pointer to the Master Data Telegram (MDT)
+    explicit AxisProfileDeviceParam(ProfileBasicInfo& profileBasicInfo, const AcknowledgeTelegram* at, MasterDataTelegram* mdt);
 
     /// @brief Destructor
-    virtual ~AxisProfileDeviceParam() noexcept override = default;
+    virtual ~AxisProfileDeviceParam() noexcept override;
 
     const IAxisProfileBootingConfigC* getDeprecatedCInterface() const final;
     const IAxisProfileDeviceParamC* getCInterface() const final;
@@ -75,9 +79,43 @@ namespace comm::axisprofile
     AxisProfileResult checkAxisHomed(bool& homed) override;
     AxisProfileResult setAxisHomed(bool homed) final;
 
+    /// @brief Warp method of deviceParamBase for Sercos device param access with SoE
+    /// @tparam T               Type of internal value to be read/write
+    /// @param[in] info         Profile basic information
+    /// @param[in] jobObj       Job object of device parameter read/write
+    /// @param[in] type         Read or write
+    /// @param[in] idn          IDN of the parameter in the drive
+    /// @param[in,out] value    Value to be read/write
+    /// @param[in] size         Size of the value
+    /// @return Return value indicating success or error.
+    template<typename VALUTE_TYPE>
+    static AxisProfileResult deviceParamSoE(ProfileBasicInfo& info, IJobObj* jobObj, ReadWriteType type,
+                                            std::uint16_t id, VALUTE_TYPE& value, std::size_t size)
+    {
+      return ParamHelper::template deviceParamBase<std::uint16_t, VALUTE_TYPE, sercos::DatJobDeviceParamSoE>(info, jobObj, type, id, value, size);
+    }
+
+    /// @brief Warp method of deviceParamBase for Sercos device param access with CoE
+    /// @tparam T               Type of internal value to be read/write
+    /// @param[in] info         Profile basic information
+    /// @param[in] jobObj       Job object of device parameter read/write
+    /// @param[in] type         Read or write
+    /// @param[in] idn          IDN of the parameter in the drive
+    /// @param[in,out] value    Value to be read/write
+    /// @param[in] size         Size of the value
+    /// @return Return value indicating success or error.
+    template<typename VALUTE_TYPE>
+    static AxisProfileResult deviceParamCoE(ProfileBasicInfo& info, IJobObj* jobObj, ReadWriteType type,
+                                            ObjectDirEntry id, VALUTE_TYPE& value, std::size_t size)
+    {
+      return ParamHelper::template deviceParamBase<ObjectDirEntry, VALUTE_TYPE, canopen::DatJobDeviceParamCoE>(info, jobObj, type, id, value, size);
+    }
+
   protected: // methods
 
     void setSharingHandler(IAxisProfileSharingHandler* handler) final;
+
+    SignalFuncHandler* getSignalFuncHandler() final;
 
     /// @brief This method read distribution clock config information of the slave
     /// @return      Return value indicating success or error.
@@ -87,10 +125,20 @@ namespace comm::axisprofile
     /// @return Return value indicating success or error.
     AxisProfileResult initHomeState();
 
+    /// @brief This method prepares the signal function handler for the drive.
+    /// @return return the result of preparing the signal function handler for the drive.
+    AxisProfileResult prepareSignalFuncHandler();
+
+    /// @brief This method update the homed state of the axis based on cyclic data, if cyclic data available.
+    /// @return Return value indicating success or error.
+    bool updateHomedByCyclicData();
+
   protected: // data
 
     friend class ::TestProfileDeviceParam;                                      ///< Unit test of the booting config
     ProfileBasicInfo& m_profileBasicInfo;                                       ///< Profile basic information
+    const comm::axisprofile::AcknowledgeTelegram* m_telegramAT {nullptr};       ///< Pointer to the Acknowledge Telegram (AT)
+    comm::axisprofile::MasterDataTelegram* m_telegramMDT {nullptr};             ///< Pointer to the Master Data Telegram (MDT)    
     IAxisProfileSharingHandler* m_sharingHandler {};                            ///< mediator for sharing data
     std::vector<std::function<AxisProfileResult()>> m_initDeviceParam;          ///< vector contains all init methods
 
@@ -100,7 +148,8 @@ namespace comm::axisprofile
 
     bool m_hasOutputEffectiveDelay {false};                                     ///< If the device has output delay
     double m_outputEffectiveDelay {0.0};                                        ///< Output latch delay of the device, in second    
-    std::atomic_bool m_homed {false};                                           ///< whether axis is homed             
+    std::atomic_bool m_homed {false};                                           ///< whether axis is homed
+    SignalFuncHandler* m_signalFuncHandler {nullptr};                           ///< Signal function handler
 
   private:  // data
 

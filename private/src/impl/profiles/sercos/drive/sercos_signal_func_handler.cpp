@@ -45,6 +45,11 @@ using namespace comm::axisprofile::sercos;
 SercosSignalFuncHandler::SercosSignalFuncHandler(ProfileBasicInfo& profileBasicInfo)
   :SignalFuncHandler(profileBasicInfo)
 {
+  prepareSignalWordInfo(profileBasicInfo.m_profileCategory);
+}
+
+void SercosSignalFuncHandler::registDriveSignalWordFuncs()
+{
   // Register function of homing status checking with cyclic data.
   registerSignalStatusWordFuncs(FunctionSupport::HOMING_STATUS_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
                                 {
@@ -53,10 +58,10 @@ SercosSignalFuncHandler::SercosSignalFuncHandler(ProfileBasicInfo& profileBasicI
                                 });
 
   registerSignalControlWordFuncs(FunctionSupport::CLEAR_DEVERR_CMD_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
-                                 {
-                                   // Homing command is supported when IDN S-0-0099.0 is configured in the signal control word.
-                                   return param == S_0_0099_RESET_CLASS_1_DIAGNOSTIC && bit == 0;
-                                 });
+                                  {
+                                    // Homing command is supported when IDN S-0-0099.0 is configured in the signal control word.
+                                    return param == S_0_0099_RESET_CLASS_1_DIAGNOSTIC && bit == 0;
+                                  });
   registerSignalStatusWordFuncs(FunctionSupport::CLEAR_DEVERR_CMD_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
                                 {
                                   // Homing command is supported when IDN S-0-0099.0 is configured in the signal status word.
@@ -64,10 +69,10 @@ SercosSignalFuncHandler::SercosSignalFuncHandler(ProfileBasicInfo& profileBasicI
                                 });
 
   registerSignalControlWordFuncs(FunctionSupport::SET_ABS_POS_CMD_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
-                                 {
-                                   // Set absolute position command is supported when IDN S-0-0447.0 is configured in the signal control word.
-                                   return param == S_0_0447_SET_ABSOLUTE_POSITION && bit == 0;
-                                 });
+                                  {
+                                    // Set absolute position command is supported when IDN S-0-0447.0 is configured in the signal control word.
+                                    return param == S_0_0447_SET_ABSOLUTE_POSITION && bit == 0;
+                                  });
   registerSignalStatusWordFuncs(FunctionSupport::SET_ABS_POS_CMD_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
                                 {
                                   // Set absolute position command is supported when IDN S-0-0447.0 is configured in the signal status word.
@@ -75,22 +80,22 @@ SercosSignalFuncHandler::SercosSignalFuncHandler(ProfileBasicInfo& profileBasicI
                                 });
 
   registerSignalControlWordFuncs(FunctionSupport::HOMING_CMD_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
-                                 {
-                                   // Homing command is supported when IDN S-0-0148.0 is configured in the signal control word.
-                                   return param == S_0_0148_DRIVE_CONTROLLED_HOMING && bit == 0;
-                                 });
+                                  {
+                                    // Homing command is supported when IDN S-0-0148.0 is configured in the signal control word.
+                                    return param == S_0_0148_DRIVE_CONTROLLED_HOMING && bit == 0;
+                                  });
 
   registerSignalStatusWordFuncs(FunctionSupport::HOMING_CMD_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
-                                 {
-                                   // Homing command is supported when IDN S-0-0148.0 is configured in the signal status word.
-                                   return param == S_0_0148_DRIVE_CONTROLLED_HOMING && bit == 0;
-                                 });
-    
+                                {
+                                  // Homing command is supported when IDN S-0-0148.0 is configured in the signal status word.
+                                  return param == S_0_0148_DRIVE_CONTROLLED_HOMING && bit == 0;
+                                });
+
   registerSignalControlWordFuncs(FunctionSupport::PROBE1_ENABLE_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
-                                 {
-                                   // probe enable is supported when IDN S-0-0405.0 is configured in the signal control word.
-                                   return param == S_0_0405_ENABLE_PROBE_1 && bit == 0;
-                                 });
+                                  {
+                                    // probe enable is supported when IDN S-0-0405.0 is configured in the signal control word.
+                                    return param == S_0_0405_ENABLE_PROBE_1 && bit == 0;
+                                  });
 
   registerSignalStatusWordFuncs(FunctionSupport::PROBE1_ENABLE_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
                                 {
@@ -99,15 +104,25 @@ SercosSignalFuncHandler::SercosSignalFuncHandler(ProfileBasicInfo& profileBasicI
                                 });
 
   registerSignalControlWordFuncs(FunctionSupport::PROBE2_ENABLE_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
-                                 {
-                                   // probe enable is supported when IDN S-0-0406.0 is configured in the signal control word.
-                                   return param == S_0_0406_ENABLE_PROBE_2 && bit == 0;
-                                 });
+                                  {
+                                    // probe enable is supported when IDN S-0-0406.0 is configured in the signal control word.
+                                    return param == S_0_0406_ENABLE_PROBE_2 && bit == 0;
+                                  });
 
   registerSignalStatusWordFuncs(FunctionSupport::PROBE2_ENABLE_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
                                 {
                                   // probe enable is supported when IDN S-0-0406.0 is configured in the signal status word.
                                   return param == S_0_0406_ENABLE_PROBE_2 && bit == 0;
+                                });
+}
+
+void SercosSignalFuncHandler::registEncoderSignalWordFuncs()
+{
+  // Register function of homing status checking with cyclic data.
+  registerSignalStatusWordFuncs(FunctionSupport::HOMING_STATUS_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
+                                {
+                                  // Measuring encoder Homing status is supported when IDN P-0-0331 Bit0 is configured in the signal status word.
+                                  return param == P_0_0331_MEASURING_ENCODER_STATUS && bit == 0;
                                 });
 }
 

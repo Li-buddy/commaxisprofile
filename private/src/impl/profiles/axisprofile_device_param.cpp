@@ -16,6 +16,7 @@
 #include "bundle/axisprofile_device_param_c.h"
 #include "diagnosis/dia.h"
 #include "scaling/i_scaling.h"
+#include "helper/device_id_helper.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -38,8 +39,8 @@ using namespace comm::axisprofile;
 // Class implementation
 // ---------------------------------------------------------------------------
 
-AxisProfileDeviceParam::AxisProfileDeviceParam(ProfileBasicInfo& profileBasicInfo)
-  : m_profileBasicInfo(profileBasicInfo), m_sharingHandler(nullptr)
+AxisProfileDeviceParam::AxisProfileDeviceParam(ProfileBasicInfo& profileBasicInfo, const AcknowledgeTelegram* at, MasterDataTelegram* mdt)
+  : m_profileBasicInfo(profileBasicInfo), m_telegramAT(at), m_telegramMDT(mdt), m_sharingHandler(nullptr)
 {
   // *** Initialize deprecated C-Interface *** //
   m_cDeprecatedInterface.handle = this;
@@ -62,6 +63,11 @@ AxisProfileDeviceParam::AxisProfileDeviceParam(ProfileBasicInfo& profileBasicInf
   m_cInterface.checkStandstill = AXISPROFILE_checkStandstill;
   m_cInterface.getRateTorqueForce = AXISPROFILE_getRateTorqueForce;
   m_cInterface.checkAxisHomed = AXISPROFILE_checkAxisHomed;
+}
+
+AxisProfileDeviceParam::~AxisProfileDeviceParam()
+{
+  delete m_signalFuncHandler; m_signalFuncHandler = nullptr;
 }
 
 const IAxisProfileBootingConfigC* AxisProfileDeviceParam::getDeprecatedCInterface() const
@@ -150,7 +156,7 @@ AxisProfileResult AxisProfileDeviceParam::getRateTorqueForce(double& rateTorqueF
 AxisProfileResult AxisProfileDeviceParam::checkAxisHomed(bool& homed)
 {
   homed = m_homed.load();
-  return AxisProfileResult::ERR_NOTIMPLEMENTED;
+  return AxisProfileResult::STS_OK;
 }
 
 AxisProfileResult AxisProfileDeviceParam::setAxisHomed(bool homed)
@@ -163,4 +169,57 @@ AxisProfileResult AxisProfileDeviceParam::initHomeState()
 {
   m_homed.store(false);
   return AxisProfileResult::STS_OK;
+}
+
+SignalFuncHandler* AxisProfileDeviceParam::getSignalFuncHandler()
+{
+  return m_signalFuncHandler;
+}
+
+AxisProfileResult AxisProfileDeviceParam::prepareSignalFuncHandler()
+{
+  if (!m_signalFuncHandler || !m_sharingHandler)
+  {
+    return AxisProfileResult::ERR_EXEC_NULL;
+  }
+  m_signalFuncHandler->init(m_sharingHandler);
+  return AxisProfileResult::STS_OK;
+}
+
+bool AxisProfileDeviceParam::updateHomedByCyclicData()
+{
+  SignalFunction func;
+  func.function = FunctionSupport::HOMING_STATUS_CYCLIC;
+  FunctionSupportErrorInfo errorInfo;
+  if (m_signalFuncHandler->isFuncInSignalStatusWord(func, errorInfo))
+  {
+    // for ctrlX drive, the homed status is read from signal status word, bit 16 of signal status word
+    // S-0-0403.0 / 0x2508:01 Status of position feedback value of reference encoder (encoder 1 or 2)
+    // 0: Relative 1: Homed
+    // for ctrlX encoder, the homed status is read from signal status word, bit 16 of signal status word
+    // P-0-0331.0 / 0x24CE:02 Measuring encoder status 
+    bool homed = (m_telegramAT->m_signalStatusword & MASK1(16, 1, func.statusBitOffset)) != 0;
+    m_homed.store(homed);
+    return true;
+  }
+
+  if (!m_sharingHandler || !m_sharingHandler->getPropertyIF() || !m_sharingHandler->getMappingHandlerIF())
+  {
+    return false;
+  }
+
+  auto* propertyIf = m_sharingHandler->getPropertyIF();
+  auto deviceSeries = propertyIf->getDeviceSeries();
+  // 3rd-party with "homed" cyclic data
+  auto mapping = m_sharingHandler->getMappingHandlerIF();
+  const auto& assigned = mapping->getProfileAssignedInfo();
+  // For 3rd-party drives, the homed status is read from the assigned mapping item,
+  // the "homed" state is from a user defined bit data
+  // which is updated by the homing command.
+  if (!DeviceIdHelper::isRexrothDrive(deviceSeries) && assigned.m_input.m_homed)
+  {
+    m_homed.store(m_telegramAT->m_bitStatusHomed.m_bit);
+    return true;
+  }
+  return false;
 }

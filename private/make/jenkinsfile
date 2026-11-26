@@ -431,7 +431,7 @@ def deploy()
       :copyit
       echo Copying artefact to build results
       attrib private\\generated\\${buildConfig.assembly}*.zip +R
-      xcopy private\\generated\\${buildConfig.assembly}*.zip \\\\lo-edepartment\\MSC\$\\BuildResults\\${buildConfig.assembly}\\ /Y /K
+      xcopy private\\generated\\${buildConfig.assembly}*.zip \\\\lo01fs01.de.bosch.com\\msc_bd\$\\BuildResults\\${buildConfig.assembly}\\ /Y /K
 
       :end
   """

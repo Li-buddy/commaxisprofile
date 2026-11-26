@@ -41,7 +41,7 @@ using namespace comm::axisprofile;
 // ---------------------------------------------------------------------------
 
 AxisProfileDeviceParamDrive::AxisProfileDeviceParamDrive(ProfileBasicInfo& profileBasicInfo, const AcknowledgeTelegram* at, MasterDataTelegram* mdt)
-  :AxisProfileDeviceParam(profileBasicInfo), m_telegramAT(at), m_telegramMDT(mdt)
+  :AxisProfileDeviceParam(profileBasicInfo, at, mdt)
 {
 }
 
@@ -59,12 +59,6 @@ AxisProfileResult AxisProfileDeviceParamDrive::booting()
 bool AxisProfileDeviceParamDrive::isNeedReadBootParams() const
 {
   return m_needReadBootParams;
-}
-
-AxisProfileDeviceParamDrive::~AxisProfileDeviceParamDrive() noexcept
-{
-  delete m_signalFuncHandler;
-  m_signalFuncHandler = nullptr;
 }
 
 bool AxisProfileDeviceParamDrive::checkBrakeDelaySupport() const
@@ -147,56 +141,6 @@ DeviceCfgData& AxisProfileDeviceParamDrive::getDeviceCfgData()
 bool AxisProfileDeviceParamDrive::isLatchParamSupport() const
 {
   return m_prbLatTimesSupport;
-}
-
-AxisProfileResult AxisProfileDeviceParamDrive::prepareSignalFuncHandler()
-{
-  if (!m_signalFuncHandler||!m_sharingHandler)
-  {
-    return AxisProfileResult::ERR_EXEC_NULL;
-  }
-  m_signalFuncHandler->init(m_sharingHandler);
-  return AxisProfileResult::STS_OK;
-}
-
-SignalFuncHandler* AxisProfileDeviceParamDrive::getSignalFuncHandler()
-{
-  return m_signalFuncHandler;
-}
-
-bool AxisProfileDeviceParamDrive::isHomedInCyclicData()
-{
-  SignalFunction func;
-  func.function = FunctionSupport::HOMING_STATUS_CYCLIC;
-  FunctionSupportErrorInfo errorInfo;
-  if (m_signalFuncHandler->isFuncInSignalStatusWord(func, errorInfo))
-  {
-    // S-0-0403.0 / 0x2508:01 Status of position feedback value of reference encoder (encoder 1 or 2)
-    // 0: Relative 1: Homed
-    bool homed = (m_telegramAT->m_signalStatusword & MASK1(16, 1, func.statusBitOffset)) != 0;
-    m_homed.store(homed);
-    return true;
-  }
-
-  if (!m_sharingHandler || !m_sharingHandler->getPropertyIF() || !m_sharingHandler->getMappingHandlerIF())
-  {
-    return false;
-  }
-
-  auto* propertyIf = m_sharingHandler->getPropertyIF();
-  auto deviceSeries = propertyIf->getDeviceSeries();
-  // 3rd-party with "homed" cyclic data
-  auto mapping = m_sharingHandler->getMappingHandlerIF();
-  const auto& assigned = mapping->getProfileAssignedInfo();
-  // For 3rd-party drives, the homed status is read from the assigned mapping item,
-  // the "homed" state is from a user defined bit data
-  // which is updated by the homing command.
-  if (!DeviceIdHelper::isRexrothDrive(deviceSeries) && assigned.m_input.m_homed)
-  {
-    m_homed.store(m_telegramAT->m_bitStatusHomed.m_bit);
-    return true;
-  }
-  return false;
 }
 
 bool AxisProfileDeviceParamDrive::checkNeedReadBootParams()

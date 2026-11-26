@@ -43,6 +43,11 @@ namespace comm::axisprofile::sercos
     ~SercosSignalFuncHandler() noexcept override = default;
 
   private:
+
+    void registDriveSignalWordFuncs() final;
+
+    void registEncoderSignalWordFuncs() final;
+
     AxisProfileResult readDriveSignalStatusWordCfg(std::vector<std::uint32_t>& params, std::vector<std::uint16_t>& assignBits) final;
 
     AxisProfileResult readDriveSignalControlWordCfg(std::vector<std::uint32_t>& params, std::vector<std::uint16_t>& assignBits) final;

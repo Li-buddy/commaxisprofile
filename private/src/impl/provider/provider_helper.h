@@ -136,6 +136,8 @@ namespace comm::axisprofile::provider
     const std::string CHECKSUM_VALUE     = "/checksum-value";      ///< sub node for checksum-value
     const std::string CHECKSUM_IDN_LIST  = "/checksum-idn-list";   ///< sub node for checksum-idn-list
     const std::string ETHERCAT_MASTER    = "/ethercat-master";     ///< sub node for ethercat-master-name
+    const std::string OUTOFRANGE_TIMES    = "/data-out-of-range-times";   ///< sub node for data-out-of-range_times
+    const std::string OUTOFRANGE_THRESHOLD = "/out-of-range-diagnosis-threshold";   ///< sub node for max-consecutive-out-of-range-count
 
     // -----------------------------------------
     // ---------   axisprofile/admin   ---------
@@ -190,12 +192,13 @@ namespace comm::axisprofile::provider
     const std::string APR_PROFILES_CFG_ETHERCAT                   = APR_PROFILES_CFG + ETHERCAT_MASTER;                     ///< axisprofile/profiles/[name]/cfg/ethercat-master-name
 
     const std::string APR_PROFILES_CFG_SCALINGINFO                = APR_PROFILES_CFG + SCALINGINFO;                         ///< axisprofile/profiles/[name]/cfg/profile-scaling-strategy-configuration
-    const std::string APR_PROFILES_CFG_SCALINGINFO_STRATEGY       = APR_PROFILES_CFG_SCALINGINFO + ScalingStrategy;         ///< axisprofile/profiles/[name]/cfg/profile-scaling-strategy
-    const std::string APR_PROFILES_CFG_SCALINGINFO_TYPE           = APR_PROFILES_CFG_SCALINGINFO + DEVICESCALINGTYPE;       ///< axisprofile/profiles/[name]/cfg/device-scaling-type
-    const std::string APR_PROFILES_CFG_SCALINGINFO_NUMERATOR      = APR_PROFILES_CFG_SCALINGINFO + SCALINGNUMERATOR;        ///< axisprofile/profiles/[name]/cfg/profile-scaling-numerator
-    const std::string APR_PROFILES_CFG_SCALINGINFO_DENOMINATOR    = APR_PROFILES_CFG_SCALINGINFO + SCALINGDENOMINATOR;      ///< axisprofile/profiles/[name]/cfg/profile-scaling-denominator
-    const std::string APR_PROFILES_CFG_SCALINGINFO_RESOLUTION     = APR_PROFILES_CFG_SCALINGINFO + SCALINGRESOLUTION;       ///< axisprofile/profiles/[name]/cfg/profile-encoder-resolution
-    const std::string APR_PROFILES_CFG_SCALINGINFO_VELOCITYFACTOR = APR_PROFILES_CFG_SCALINGINFO + VELOCITYFACTOR;          ///< axisprofile/profiles/[name]/cfg/velocity-factor
+    const std::string APR_PROFILES_CFG_SCALINGINFO_STRATEGY       = APR_PROFILES_CFG_SCALINGINFO + ScalingStrategy;         ///< axisprofile/profiles/[name]/cfg/scaling-information/profile-scaling-strategy
+    const std::string APR_PROFILES_CFG_SCALINGINFO_TYPE           = APR_PROFILES_CFG_SCALINGINFO + DEVICESCALINGTYPE;       ///< axisprofile/profiles/[name]/cfg/scaling-information/device-scaling-type
+    const std::string APR_PROFILES_CFG_SCALINGINFO_NUMERATOR      = APR_PROFILES_CFG_SCALINGINFO + SCALINGNUMERATOR;        ///< axisprofile/profiles/[name]/cfg/scaling-information/profile-scaling-numerator
+    const std::string APR_PROFILES_CFG_SCALINGINFO_DENOMINATOR    = APR_PROFILES_CFG_SCALINGINFO + SCALINGDENOMINATOR;      ///< axisprofile/profiles/[name]/cfg/scaling-information/profile-scaling-denominator
+    const std::string APR_PROFILES_CFG_SCALINGINFO_RESOLUTION     = APR_PROFILES_CFG_SCALINGINFO + SCALINGRESOLUTION;       ///< axisprofile/profiles/[name]/cfg/scaling-information/profile-encoder-resolution
+    const std::string APR_PROFILES_CFG_SCALINGINFO_VELOCITYFACTOR = APR_PROFILES_CFG_SCALINGINFO + VELOCITYFACTOR;          ///< axisprofile/profiles/[name]/cfg/scaling-information/velocity-factor
+    const std::string APR_PROFILES_CFG_SCALINGINFO_OUTOFRANGE_THRESHOLD = APR_PROFILES_CFG_SCALINGINFO + OUTOFRANGE_THRESHOLD;    ///< axisprofile/profiles/[name]/cfg/scaling-information/out-of-range-diagnosis-threshold
 
     // -----------------------------------------------------
     // ----------   axisprofile/profiles/state/  -----------
@@ -207,6 +210,10 @@ namespace comm::axisprofile::provider
     const std::string APR_PROFILES_CHECKSUM_IDN_LIST              = APR_PROFILES_STATE + DEVICE_APP_DATA + CHECKSUM_IDN_LIST;///< axisprofile/profiles/[name]/state/device-app-data/checksum-idn-list
     const std::string APR_PROFILES_CFG_BOOTPARAMS                 = APR_PROFILES_STATE + BOOTPARAMS;                         ///< axisprofile/profiles/[name]/state/boot-params
 
+    const std::string APR_PROFILES_DATA_OUT_RANGE_TIMES           = APR_PROFILES_STATE + OUTOFRANGE_TIMES;                   ///< axisprofile/profiles/[name]/state/data-out-of-range-times
+    const std::string APR_PROFILES_DATA_OUT_RANGE_TIMES_POS       = APR_PROFILES_DATA_OUT_RANGE_TIMES + POSITION;            ///< axisprofile/profiles/[name]/state/data-out-of-range-times/position
+    const std::string APR_PROFILES_DATA_OUT_RANGE_TIMES_VEL       = APR_PROFILES_DATA_OUT_RANGE_TIMES + VELOCITY;            ///< axisprofile/profiles/[name]/state/data-out-of-range-times/velocity
+    const std::string APR_PROFILES_DATA_OUT_RANGE_TIMES_TOR       = APR_PROFILES_DATA_OUT_RANGE_TIMES + TORQUEFORCE;         ///< axisprofile/profiles/[name]/state/data-out-of-range-times/torque-force
   } NodeTree; ///< the node tree that stores all strings as data layer addresses
 
   ///< @brief Actions, that are allowed in nodes
@@ -246,6 +253,31 @@ namespace comm::axisprofile::provider
     /// @param[in]  unit            unit of the node (leave empty, when unknown)
     static void createMetaData(const std::string& typeString,
                                const MetaDataInfo& metaData, const comm::datalayer::IClient::ResponseCallback& callback, const std::string& unit = "");
+
+    /// @brief Helper for creating meta data
+    /// @param[in]  address           the address string of the request
+    /// @param[in]  typeString        type of the node
+    /// @param[in]  metaData          All the meta data information (description, class, operations, ...)
+    /// @param[in]  callback          Callback to call when function is finished
+    /// @param[in]  unit              unit of the node (leave empty, when unknown)
+    /// @param[in]  browseable        may this node be browsed? (not allowed for nodes of type Method)
+    static void createMetaData3(const std::string& address, const std::string& typeString,
+                                const MetaDataInfo& metaData, const comm::datalayer::IClient::ResponseCallback& callback, const std::string& unit = "", bool browseable = true);
+
+    /// @brief Helper for creating meta data, with additional create type
+    /// @param[in]  address           the address string of the request
+    /// @param[in]  typeString        type of the node
+    /// @param[in]  createTypeString  type of the node, when a create is used (can be set to the same value as typeString)
+    /// @param[in]  metaData          All the meta data information (description, class, operations, ...)
+    /// @param[in]  callback          Callback to call when function is finished
+    /// @param[in]  unit              unit of the node (leave empty, when unknown)
+    /// @param[in]  browseable        may this node be browsed? (not allowed for nodes of type Method)
+    /// @param[in]  createOutTypeString  type of the data load, that is returned, when a create is used (used for commands to return the command ID)
+    /// @param[in]  typeReadInString  input type of the node, when a read is used
+    /// @param[in]  typeReadOutString output type of the node, when a read is used
+    static void createMetaData3(const std::string& address, const std::string& typeString, const std::string& createTypeString,
+                                const MetaDataInfo& metaData, const comm::datalayer::IClient::ResponseCallback& callback, const std::string& unit = "", bool browseable = true, const std::string& createOutTypeString = "",
+                                const std::string& typeReadInString = "", const std::string& typeReadOutString = "");
 
     /// @brief get the profile name from the address string
     /// @param[in]   address       the address string of the request
@@ -307,5 +339,23 @@ namespace comm::axisprofile::provider
     /// @param[out] newAddress   The modified address string
     /// @return true if the replacement was successful, false otherwise
     static bool replaceFirstWideCharInAddress(const std::string& address, const std::string& replaceStr, std::string& newAddress);
+
+  private: // methods
+
+    /// @brief Helper for creating meta data, with additional create type
+    /// @param[in]  address           the address string of the request
+    /// @param[in]  typeString        type of the node
+    /// @param[in]  createTypeString  type of the node, when a create is used (can be set to the same value as typeString)
+    /// @param[in]  metaData          All the meta data information (description, class, operations, ...)
+    /// @param[in]  callback          Callback to call when function is finished
+    /// @param[in]  unit              unit of the node (leave empty, when unknown)
+    /// @param[in]  browseable        may this node be browsed? (not allowed for nodes of type Method)
+    /// @param[in]  createOutTypeString  type of the data load, that is returned, when a create is used (used for commands to return the command ID)
+    /// @param[in]  typeReadInString  input type of the node, when a read is used
+    /// @param[in]  typeReadOutString output type of the node, when a read is used
+    /// @param[in]  extensions        list of extensions to be added to the metadata as key-value pairs (both are strings)
+    static void createMetaDataInternal(const std::string& address, const std::string& typeString, const std::string& createTypeString,
+                                      const MetaDataInfo& metaData, const comm::datalayer::IClient::ResponseCallback& callback, const std::string& unit, bool browseable, const std::string& createOutTypeString,
+                                      const std::string& typeReadInString, const std::string& typeReadOutString, const std::vector<std::pair<std::string, std::string>>& extensions);
   };
 }

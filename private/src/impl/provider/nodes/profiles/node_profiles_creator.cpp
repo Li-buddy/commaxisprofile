@@ -75,13 +75,28 @@ using namespace comm::axisprofile::provider;
 
 void NodeProfilesCreator::addNodes(ProviderMgr* mgr)
 {
+  // ------------------------------------------------
+  // ----------   out-of-range monitoring  ----------
+  // ------------------------------------------------
+  const auto makeOutOfRangeCounterGetter = [] (ScalingDataCategory category)
+    {
+      return [category] (const IScaling& scaling)
+        {
+          return scaling.getOutOfRangeErrCnt(category);
+        };
+    };
+
   //original parallel compatible node
   mgr->addNode(NodeTree.APR_PROFILES_WC,                             new NodeProfiles(mgr));                                  ///< axisprofile/profiles/[name]
 
   //subnode under cfg node
   mgr->addNode(NodeTree.APR_PROFILES_WC,                             new NodeProfiles(mgr));                                  ///< axisprofile/profiles/[name]
   mgr->addNode(NodeTree.APR_PROFILES_CFG,                            new NodeProfilesConfig(mgr));                            ///< axisprofile/profiles/[name]/config
-
+  mgr->addNode(NodeTree.APR_PROFILES_CFG_SCALINGINFO_OUTOFRANGE_THRESHOLD,
+               new NodeCfgSimple<std::uint32_t, IScaling>(mgr,
+                                                          &IScaling::getOutOfRangeErrLimit,
+                                                          &IScaling::setOutOfRangeErrLimit,
+                                                          {"The max consecutive out of range count", ""}));
   // ----------------------------------------
   // ----------   backup restore  -----------
   // ----------------------------------------
@@ -140,4 +155,18 @@ void NodeProfilesCreator::addNodes(ProviderMgr* mgr)
   mgr->addNode(NodeTree.APR_PROFILES_CHECKSUM_VALUE,                 new NodeProfilesChecksumValue(mgr));                     ///< axisprofile/profiles/[name]/state/device-app-data/checksum-value
   mgr->addNode(NodeTree.APR_PROFILES_CHECKSUM_IDN_LIST,              new NodeProfilesChecksumList(mgr));                      ///< axisprofile/profiles/[name]/state/device-app-data/checksum-idn-list
 
+  mgr->addNode(NodeTree.APR_PROFILES_DATA_OUT_RANGE_TIMES_POS,
+               new NodeStateSimple<std::uint32_t, IScaling>(mgr,
+                                                            makeOutOfRangeCounterGetter(ScalingDataCategory::SCALINGDATA_POSITION),
+                                                            {"Position out-of-range counter", ""}));
+
+  mgr->addNode(NodeTree.APR_PROFILES_DATA_OUT_RANGE_TIMES_VEL,
+               new NodeStateSimple<std::uint32_t, IScaling>(mgr,
+                                                            makeOutOfRangeCounterGetter(ScalingDataCategory::SCALINGDATA_VELOCITY),
+                                                            {"Velocity out-of-range counter", ""}));
+
+  mgr->addNode(NodeTree.APR_PROFILES_DATA_OUT_RANGE_TIMES_TOR,
+               new NodeStateSimple<std::uint32_t, IScaling>(mgr,
+                                                            makeOutOfRangeCounterGetter(ScalingDataCategory::SCALINGDATA_TORQUE),
+                                                            {"Torque/force out-of-range counter", ""}));
 }

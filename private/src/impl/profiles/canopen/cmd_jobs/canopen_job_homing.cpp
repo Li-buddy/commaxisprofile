@@ -70,21 +70,8 @@ AxisProfileResult CanopenJobHoming::onSetArgument(IContainer* arg)
 
   // scaling and validation
   auto scaling = m_shareHandle->getScalingIF();
-  auto deviceParamIf = m_shareHandle->getDeviceParamIF();
-
   m_cmdPosRaw = scaling->convertPositionScaledToRaw(m_cmdData.newPos);
   m_posOffsetRaw = 0;
-
-  // new reference position should in range of travel limit of device
-  const auto& deviceCfgData = deviceParamIf->getDeviceCfgData();
-  if (deviceCfgData.m_softwareLimitActive && // check only when limitation is activated in device
-      (m_cmdPosRaw > deviceCfgData.m_positivePosLimit || m_cmdPosRaw < deviceCfgData.m_negativePosLimit))
-  {
-    Dia::sendDiagnosis(MAIN_DIAG_COMMAND_ERR, DETAILED_DIAG_DEVICE_OUT_OF_TRAVEL_LIMIT,
-                       m_profileInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "%g out range of [0x607D:1, 0x607D:2] of device", m_cmdData.newPos);
-    return AxisProfileResult::ERR_INVALID_ARGUMENT;
-  }
 
   if (m_cmdData.encoder != AxisProfileEncoder::ENCODER_1)
   {

@@ -26,6 +26,7 @@
 #include "i_mapping_handler.h"
 #include "profiles/data_sharing/i_sharing_handler.h"
 #include "profiles/category/i_category_adapter.h"
+#include "comm/axisprofile/defines/axisprofile_defs.h"
 #include <map>
 #include <string>
 
@@ -52,7 +53,7 @@ namespace comm
 
     // ---------------------------------------------------------------------------
     // Declaration of data types
-    // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------    
 
     // ---------------------------------------------------------------------------
     // Declaration of classes and structures
@@ -90,8 +91,8 @@ namespace comm
       const ProfileAssignedInfo& getProfileAssignedInfo() const override;
       AxisProfileResult configureInputCfgInfo(InputMappingValueID valueID, MappingCfgInfo mappingGroup) override;
       AxisProfileResult configureOutputCfgInfo(OutputMappingValueID valueID, MappingCfgInfo mappingGroup) override;
-      AxisProfileResult checkInputMappingItems(IAxisProfileInternal* const pProfile, size_t& nCount, std::set<std::string>& setMapping) final;
-      AxisProfileResult checkOutputMappingItems(IAxisProfileInternal* const pProfile, size_t& nCount, std::set<std::string>& setMapping) final;
+      AxisProfileResult checkInputMappingItems(IAxisProfileInternal* const pProfile, std::multimap<std::string, ProfileMappingCheckInfo>& mapInfo) final;
+      AxisProfileResult checkOutputMappingItems(IAxisProfileInternal* const pProfile, std::multimap<std::string, ProfileMappingCheckInfo>& mapInfo) final;
 
     protected:
 

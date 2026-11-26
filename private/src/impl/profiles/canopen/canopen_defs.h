@@ -36,6 +36,7 @@ namespace comm::axisprofile::canopen
   constexpr ObjectDirEntry STANDSTILL_STATUS              = {0x2212, 4};     ///< Status "n_feedback = 0"
   constexpr ObjectDirEntry ENCODER_2_PROPERTY             = {0x24A0, 1};     ///< object of Property of Encoder 2 of ctrlX drive
   constexpr ObjectDirEntry ENCODER_1_PROPERTY             = {0x24A2, 1};     ///< object of Property of Encoder 1 of ctrlX drive
+  constexpr ObjectDirEntry MEASURING_ENCODER_STATUS       = {0x24CE, 2};     ///< object of Measuring encoder status
   constexpr ObjectDirEntry CANCEL_REF_POINT               = {0x2500, 1};     ///< object of C1500 command of cancel reference point
   constexpr ObjectDirEntry HOMING_DRIVE_CONTROLLED_CMD    = {0x2501, 1};     ///< object of command of homing for ctrlX drive
   constexpr ObjectDirEntry HOMING_OFFSET_CTRLX_DRIVE      = {0x2505, 2};     ///< object of reference homing offset of ctrlX drive
@@ -114,6 +115,9 @@ namespace comm::axisprofile::canopen
 
   // ******************** OBJECT OFFSET ******************** //
   constexpr std::uint16_t OBJ_DIC_OFFSET = 0x800;  ///< object offset,for situations where a single address corresponds to multiple axes
+
+  // ******************** Miscellaneous ******************** //
+  constexpr std::uint16_t CANOPEN_WORD_TOKEN_BIT0 = 0x0001;    ///< Canopen token of bit 0 of word value
 
   /// @brief Container of input all mapping
   static const std::map<InputMappingValueID, MappingCfgInfo> INPUT_ALL_MAPPING

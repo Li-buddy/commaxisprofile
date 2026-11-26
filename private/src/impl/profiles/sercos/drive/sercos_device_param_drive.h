@@ -104,23 +104,7 @@ namespace comm::axisprofile::sercos
     explicit SercosDeviceParamDrive(ProfileBasicInfo& profileBasicInfo, const AcknowledgeTelegram* at, MasterDataTelegram* mdt);
 
     /// @brief Destructor
-    virtual ~SercosDeviceParamDrive() noexcept override = default;
-
-    /// @brief Warp method of deviceParamBase for Sercos device param access with SoE
-    /// @tparam T               Type of internal value to be read/write
-    /// @param[in] info         Profile basic information
-    /// @param[in] jobObj       Job object of device parameter read/write
-    /// @param[in] type         Read or write
-    /// @param[in] idn          IDN of the parameter in the drive
-    /// @param[in,out] value    Value to be read/write
-    /// @param[in] size         Size of the value
-    /// @return Return value indicating success or error.
-    template<typename VALUTE_TYPE>
-    static AxisProfileResult deviceParamSoE(ProfileBasicInfo& info, IJobObj* jobObj, ReadWriteType type,
-                                            std::uint16_t id, VALUTE_TYPE& value, std::size_t size)
-    {
-      return ParamHelper::deviceParamBase<std::uint16_t, VALUTE_TYPE, DatJobDeviceParamSoE>(info, jobObj, type, id, value, size);
-    }
+    virtual ~SercosDeviceParamDrive() noexcept override = default;    
 
     OpModeAvailInfo* getOpModeAvailInfo() final;
     bool checkFunctionSupported(const FunctionSupport function, FunctionSupportErrorInfo& errorInfo) final;

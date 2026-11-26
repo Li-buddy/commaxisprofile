@@ -185,7 +185,7 @@ HRESULT TestProfileDeviceParam::testCInterface() const
 
   log(L"\nCall AXISPROFILE_checkAxisHomed() with valid handle...");
   result = deviceParamItf->checkAxisHomed(deviceParamItf->handle, homed);
-  LOG_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::ERR_NOTIMPLEMENTED); // base class returns ERR_NOTIMPLEMENTED
+  LOG_TEST_RESULT(result, L"\nUnexpected return value", AxisProfileResult::STS_OK);
 
   log(L"\n");
   return hResult;

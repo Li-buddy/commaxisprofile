@@ -15,6 +15,9 @@
 #include "axisprofile_device_param_encoder.h"
 #include "bundle/axisprofile_device_param_c.h"
 #include "diagnosis/dia.h"
+#include "profiles/signal_func/signal_func_factory.h"
+#include "profiles/sercos/sercos_defs.h"
+#include "profiles/canopen/canopen_defs.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -39,8 +42,9 @@ using namespace comm::axisprofile;
 
 AxisProfileDeviceParamEncoder::AxisProfileDeviceParamEncoder(ProfileBasicInfo& profileBasicInfo,
                                                              const AcknowledgeTelegram* at)
-  :AxisProfileDeviceParam(profileBasicInfo), m_telegramAT(at)
+  :AxisProfileDeviceParam(profileBasicInfo, at, nullptr)
 {
+  m_signalFuncHandler = SignalFuncHandlerFactory::createSignalFuncHandler(profileBasicInfo);
 }
 
 bool AxisProfileDeviceParamEncoder::checkBrakeDelaySupport() const
@@ -109,10 +113,16 @@ bool AxisProfileDeviceParamEncoder::checkFunctionSupported(const FunctionSupport
         return false;
       }
       const auto& assigned = m_sharingHandler->getMappingHandlerIF()->getProfileAssignedInfo();
+      // both check IO and measuring encoder on ctrlX drive
       if (assigned.m_input.m_isInReference)
       {
         result = true;
+        return result;
       }
+
+      SignalFunction func;
+      func.function = function;
+      result = m_signalFuncHandler->isFuncInSignalStatusWord(func, errorInfo);
     }
     break;
     case FunctionSupport::HOMING_CMD_CYCLIC:
@@ -141,8 +151,9 @@ bool AxisProfileDeviceParamEncoder::checkFunctionSupported(const FunctionSupport
 void AxisProfileDeviceParamEncoder::loadBootingTasks()
 {
   m_initDeviceParam.clear();
-  m_initDeviceParam.reserve(1);
-  m_initDeviceParam.emplace_back([this]{return initHomeState();});
+  m_initDeviceParam.reserve(2);
+  m_initDeviceParam.emplace_back([this]{return initHomeState();});  
+  m_initDeviceParam.emplace_back([this]{return prepareSignalFuncHandler();});
 }
 
 void AxisProfileDeviceParamEncoder::rejectCmdDiagnosis(const char* cmdNameInfo) const
@@ -159,12 +170,6 @@ AxisProfileResult AxisProfileDeviceParamEncoder::getChecksumIdnList(std::vector<
   return AxisProfileResult::ERR_NOT_SUPPORTED;
 }
 
-SignalFuncHandler* AxisProfileDeviceParamEncoder::getSignalFuncHandler()
-{
-  rejectCmdDiagnosis("getSignalFuncHandler");
-  return nullptr;
-}
-
 AxisProfileResult AxisProfileDeviceParamEncoder::checkAxisHomed(bool& homed)
 {
   if (!m_sharingHandler || !m_sharingHandler->getMappingHandlerIF())
@@ -172,11 +177,24 @@ AxisProfileResult AxisProfileDeviceParamEncoder::checkAxisHomed(bool& homed)
     return AxisProfileResult::ERR_EXEC_NULL;
   }
 
+  // for IO device
   const auto& assigned = m_sharingHandler->getMappingHandlerIF()->getProfileAssignedInfo();
   if (assigned.m_input.m_isInReference)
   {
     m_homed.store(m_telegramAT->m_ioInReference.m_bits.bit0);
+    homed = m_homed.load();
+    return AxisProfileResult::STS_OK;
   }
+
+  // for measuring encoder
+  // check signal status word, if P-0-0331 configured, extract bit0 information
+  updateHomedByCyclicData();
   homed = m_homed.load();
+  // note: async access way is unnecessary
+  // for ctrlX drive, the power command will check homed state
+  // but encoder axis not support power on.
+
+  // if a device not configure cyclic homed data
+  // the homed data will update based on the ctrl based data
   return AxisProfileResult::STS_OK;
 }

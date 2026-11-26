@@ -71,7 +71,7 @@ namespace comm::axisprofile
     explicit AxisProfileDeviceParamEncoder(ProfileBasicInfo& profileBasicInfo, const AcknowledgeTelegram* at);
 
     /// @brief Destructor
-    ~AxisProfileDeviceParamEncoder() noexcept override = default;
+    ~AxisProfileDeviceParamEncoder() noexcept = default;
     AxisProfileResult getChecksumIdnList(std::vector<std::string>& idnStrListRet) const final;
 
   protected: // methods
@@ -89,7 +89,6 @@ namespace comm::axisprofile
     
     AxisProfileResult checkStandstill(bool& standStill) final;
     AxisProfileResult checkAxisHomed(bool& homed) final;
-    SignalFuncHandler* getSignalFuncHandler() final;
 
   private: // methods
 
@@ -100,7 +99,6 @@ namespace comm::axisprofile
   protected: // data
 
     friend class ::TestAxisProfileDeviceParamEncoder;     ///< Unit test of the booting config
-    const AcknowledgeTelegram* m_telegramAT {nullptr};    ///< Pointer to the Acknowledge Telegram (AT)
     DeviceCfgData m_cfgData {};                           ///< the device configured data
   };
 }

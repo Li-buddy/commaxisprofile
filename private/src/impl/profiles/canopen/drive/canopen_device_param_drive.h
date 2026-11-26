@@ -55,23 +55,7 @@ namespace comm::axisprofile::canopen
 
     /// @brief Destructor
     ~CanopenDeviceParamDrive() noexcept override = default;
-
-    /// @brief Warp method of deviceParamBase for Sercos device param access with CoE
-    /// @tparam T               Type of internal value to be read/write
-    /// @param[in] info         Profile basic information
-    /// @param[in] jobObj       Job object of device parameter read/write
-    /// @param[in] type         Read or write
-    /// @param[in] idn          IDN of the parameter in the drive
-    /// @param[in,out] value    Value to be read/write
-    /// @param[in] size         Size of the value
-    /// @return Return value indicating success or error.
-    template<typename VALUTE_TYPE>
-    static AxisProfileResult deviceParamCoE(ProfileBasicInfo& info, IJobObj* jobObj, ReadWriteType type,
-                                            ObjectDirEntry id, VALUTE_TYPE& value, std::size_t size)
-    {
-      return ParamHelper::deviceParamBase<ObjectDirEntry, VALUTE_TYPE, DatJobDeviceParamCoE>(info, jobObj, type, id, value, size);
-    }
-
+    
     OpModeAvailInfo* getOpModeAvailInfo() final;
     bool checkFunctionSupported(const FunctionSupport function, FunctionSupportErrorInfo& errorInfo) final;
     AxisProfileResult checkStandstill(bool& standStill) final;

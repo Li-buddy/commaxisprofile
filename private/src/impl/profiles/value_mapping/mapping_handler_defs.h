@@ -1,23 +1,14 @@
 #pragma once
 
-// ---------------------------------------------------------------------------
-//
-//! @file       mapping_handler_defs.h
-//!
-//! @author     DC-AE/ESW2
-//!
-//! @copyright  Bosch Rexroth Corporation http://www.boschrexroth.com
-//!
-//! @version    1.0.0
-//!
-//! @date       2018
-//
-// ---------------------------------------------------------------------------
-//
-//! This file is part of the axisprofile library and contains defines relevant
-//! for the profile mapping handler.
-//
-// ---------------------------------------------------------------------------
+/// @file
+///
+/// @brief This file is part of the axisprofile library and profile mapping handler definition.
+///
+/// SPDX-FileCopyrightText: Copyright (c) 2018-2026 Bosch Rexroth AG
+///
+/// The reproduction, distribution and utilization of this file as well as the communication of its contents to others
+/// without express authorization is prohibited. Offenders will be held liable for the payment of damages. 
+/// All rights reserved in the event of the grant of a patent, utility model or design.
 
 
 // ---------------------------------------------------------------------------
@@ -195,6 +186,15 @@ namespace comm
         :m_id(id), m_uri(uri), m_group(group), m_bRequired(required)
       {
       }
+    };
+
+    /// @brief Struct to store the profile mapping check information
+    struct ProfileMappingCheckInfo
+    {
+      std::string          m_valueIDStr {};             ///< value ID of the mapping item
+      std::uint16_t        m_deviceAddress {};          ///< Address of the connected device
+      std::uint8_t         m_driveNumber {};            ///< Drive number
+      AxisProfileCategory  m_profileCategory {AxisProfileCategory::CATEGORY_DRIVE};        ///< Category of the profile
     };
 
     //! @brief Supported input mapping value IDs as String

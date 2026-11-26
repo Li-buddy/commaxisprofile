@@ -411,6 +411,7 @@ AxisProfileResult BootMgr::checkFieldbusAndDeviceStatus()
 
   std::int32_t timeout = m_timeoutFieldBusDeviceOP;
   std::int32_t timeourErrorStatus = TIMEOUT_FIELDBUS_DEVICE_ERROR / POLLING_SLEEP_DEVICE_OP_MS;
+  m_context.reset();
   do
   {
     std::vector<AxisProfileResult> resultList;
@@ -454,7 +455,7 @@ AxisProfileResult BootMgr::checkFieldbusAndDeviceStatus()
         }
       }
 
-      result = checkFieldbusStatus(masterIt->first, fieldbusAdapter);
+      result = checkFieldbusStatus(masterIt->first, fieldbusAdapter, m_context);
       if (result == AxisProfileResult::STS_FIELDBUS_NOT_INIT)
       {
         masterNotInitialized = true;
@@ -464,6 +465,7 @@ AxisProfileResult BootMgr::checkFieldbusAndDeviceStatus()
       {
         // already in OP, not check any more.
         masterIt = fieldbusInstances.erase(masterIt);
+        m_context.reset(); // reset timeout counter for next instance, because each master has its own timeout
       }
       else
       {
@@ -527,7 +529,7 @@ AxisProfileResult BootMgr::checkFieldbusAndDeviceStatus()
   return result;
 }
 
-AxisProfileResult BootMgr::checkFieldbusStatus(const std::string& masterName, IFieldbusAdapter* adapter)
+AxisProfileResult BootMgr::checkFieldbusStatus(const std::string& masterName, IFieldbusAdapter* adapter, ECMStatusContext& context)
 {
   if (!adapter)
   {
@@ -551,13 +553,30 @@ AxisProfileResult BootMgr::checkFieldbusStatus(const std::string& masterName, IF
     APR_TRACE_MESSAGE("Master of %s has in OP state.", masterName.c_str());
     return AxisProfileResult::STS_OK;
   }
-
+  
   // not in Init, PreOP or SafeOP, that means master not has not initialized yet
   if (!status.m_statusBits.StateInit &&
       !status.m_statusBits.StatePreOp &&
       !status.m_statusBits.StateSafeOp)
   {
     return AxisProfileResult::STS_FIELDBUS_NOT_INIT;
+  }
+
+  // current equals to request state (init/preop/safeop state)
+  // it means master side not ready
+  // note: previous lines already handle the OP case
+  if (!status.m_statusBits.NotInRequestedState)
+  {
+    APR_TRACE_MESSAGE("Master of %s has in request state, but not in OP.", masterName.c_str());
+
+    // a small timeout to wait for master switch the new target state
+    if(context.isTimeOut())
+    {
+      Dia::sendDiagnosis(MAIN_DIAG_BOOTING_ERR, DETAILED_DIAG_BOOT_MASTER_STATUS_NOT_READY,
+                         __FILE__, __FUNCTION__, __LINE__,
+                         "please switch the master: %s to OP state first.", masterName.c_str());
+      return AxisProfileResult::ERR_FIELDBUS;
+    }
   }
 
   if (status.m_statusBits.NoEthernetLink ||

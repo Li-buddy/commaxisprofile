@@ -261,6 +261,7 @@ namespace comm::axisprofile::sercos
   constexpr std::uint16_t P_0_0224_PROBE1_MARKER_FAILURE          = IDN_P(0, 224);    ///< P-0-0224: Probe1 marker failure counter
   constexpr std::uint16_t P_0_0225_PROBE2_MARKER_FAILURE          = IDN_P(0, 225);    ///< P-0-0225: Probe2 marker failure counter
   constexpr std::uint16_t P_0_0226_PROBE_EXTENDED_CTRL_WORD       = IDN_P(0, 226);    ///< P-0-0226: Probe extended control word
+  constexpr std::uint16_t P_0_0331_MEASURING_ENCODER_STATUS       = IDN_P(0, 331);    ///< P-0-0331: Measuring encoder status
   constexpr std::uint16_t P_0_2755_SYSTEM_FINE_TIME               = IDN_P(0, 2755);   ///< P-0-2755: System fine time, alias of S-0-1305.0.2
   constexpr std::uint16_t P_0_0117_0_1_REACTION_DELAY_F2_F3       = IDN_P(0, 3892);   ///< P-0-0117.0.1: Control unit reaction time F2/3, alias P-0-3892
   constexpr std::uint16_t P_0_0117_0_2_REACTION_DELAY_F4_F6_F7    = IDN_P(0, 3893);   ///< P-0-0117.0.2: Control unit reaction time F4/6/7, alias P-0-3893

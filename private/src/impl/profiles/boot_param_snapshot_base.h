@@ -152,9 +152,10 @@ namespace comm::axisprofile
     virtual const BootParamDescriptorBase* getBootParamDescriptor(const BootParamId& paramId) const = 0;
 
     /// @brief Build protocol-specific fieldbus request data for one parameter.
-    /// @param[in] paramId Protocol-specific parameter identity.
+    /// @param[in] paramId    Protocol-specific parameter identity.
+    /// @param[in] maxLen     The max length of request.
     /// @return Request data object, or nullptr when identity is invalid.
-    virtual std::unique_ptr<ParamReqDataBase> generateReqData(const BootParamId& paramId) const = 0;
+    virtual std::unique_ptr<ParamReqDataBase> generateReqData(const BootParamId& paramId, std::uint32_t maxLen) const = 0;
 
     /// @brief get the length of the boot parameter data
     /// @param type the boot parameter value type

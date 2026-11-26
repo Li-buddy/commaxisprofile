@@ -468,7 +468,7 @@ AxisProfileResult CanopenDeviceParamDrive::getChecksumIdnList(std::vector<std::s
 AxisProfileResult CanopenDeviceParamDrive::checkAxisHomed(bool& homed)
 {
   AxisProfileResult res {AxisProfileResult::STS_OK};
-  if (isHomedInCyclicData())
+  if (updateHomedByCyclicData())
   {
     homed = m_homed.load();
     return res;

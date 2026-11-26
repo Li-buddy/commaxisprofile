@@ -73,7 +73,7 @@ namespace comm::axisprofile
     explicit AxisProfileDeviceParamDrive(ProfileBasicInfo& profileBasicInfo, const AcknowledgeTelegram* at, MasterDataTelegram* mdt);
 
     /// @brief Destructor
-    virtual ~AxisProfileDeviceParamDrive() noexcept override;
+    virtual ~AxisProfileDeviceParamDrive() noexcept = default;
 
     AxisProfileResult booting() final;
 
@@ -101,17 +101,6 @@ namespace comm::axisprofile
     /// @return True when drive boot parameters need to be read.
     bool checkNeedReadBootParams();
 
-    /// @brief This method check if homed state can be access via cyclic way.
-    /// @return if can be accessed, return the homed state via reference,
-    ///         otherwise, just return false
-    bool isHomedInCyclicData();
-
-    /// @brief This method prepares the signal function handler for the drive.
-    /// @return return the result of preparing the signal function handler for the drive.
-    AxisProfileResult prepareSignalFuncHandler();
-
-    SignalFuncHandler* getSignalFuncHandler() final;
-
   private: //methods
 
     /// @brief This method reads the checksum of the parameters.
@@ -131,9 +120,6 @@ namespace comm::axisprofile
   protected: // data
 
     friend class ::TestProfileDeviceParam;     // Unit test of the booting config
-    const comm::axisprofile::AcknowledgeTelegram* m_telegramAT {nullptr};            ///< Pointer to the Acknowledge Telegram (AT)
-    comm::axisprofile::MasterDataTelegram*        m_telegramMDT {nullptr};           ///< Pointer to the Master Data Telegram (MDT)
-    SignalFuncHandler*                            m_signalFuncHandler{nullptr};      ///< Signal function handler
 
     RequestStatemachine requestState {};       ///< Request state machine for async command
     DeviceCfgData m_deviceCfgData;             ///< Data of device configuration

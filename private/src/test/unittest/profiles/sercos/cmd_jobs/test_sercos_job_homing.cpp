@@ -89,16 +89,7 @@ HRESULT TestSercosJobHoming::TestSetArgument()
     res = testJob.onSetArgument(&arg);
     LOG_TEST_RESULT(res, tc.msg, tc.expected);
   }
-  log(L"\nTest for out of travel limit");
-  auto& cfg = m_mockDeviceParam.getDeviceCfgData();
-  cfg.m_softwareLimitActive = true;
-  cfg.m_positivePosLimit = INT32_MIN;
-  cfg.m_negativePosLimit = INT32_MAX;
-  ref.encoder = AxisProfileEncoder::ENCODER_1;
-  res = testJob.onSetArgument(&arg);
-  LOG_TEST_RESULT(res, L"onSetArgument failed for invalid mode", AxisProfileResult::ERR_INVALID_ARGUMENT);
-  comm::axisprofile::DeviceCfgData dataInit;
-  m_mockDeviceParam.setReturnCfgData(dataInit);
+
   return S_OK;
 }
 

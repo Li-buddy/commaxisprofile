@@ -106,7 +106,7 @@ AxisProfileResult BootParamSnapshotBase::readBootParameterFromDrive(const BootPa
   }
 
   APR_TRACE_MESSAGE("read parameter: %s from drive.", paramStr.c_str());
-  std::unique_ptr<ParamReqDataBase> requestData = generateReqData(paramId);
+  std::unique_ptr<ParamReqDataBase> requestData = generateReqData(paramId, static_cast<std::uint32_t>(bufLen));
   if (requestData == nullptr)
   {
     return AxisProfileResult::ERR_INVALID_ARGUMENT;

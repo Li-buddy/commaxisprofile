@@ -188,17 +188,15 @@ namespace comm
 
       /// @brief This method check name consistence with device name and check name duplication from input information.
       /// @param[in]     pProfile      Current profile pointer.
-      /// @param[in,out] nCount        The reference counting of current item, each item can be mapped only once.
       /// @param[in,out] setMapping    The input mapping item which has been mapped.
       /// @return                      Return value indicating success or error.
-      virtual AxisProfileResult checkInputMappingItems(IAxisProfileInternal* const pProfile, size_t& nCount, std::set<std::string>& setMapping) = 0;
+      virtual AxisProfileResult checkInputMappingItems(IAxisProfileInternal* const pProfile, std::multimap<std::string, ProfileMappingCheckInfo>& mapInfo) = 0;
 
       /// @brief This method check name consistence with device name and check name duplication from output information.
       /// @param[in]     pProfile      Current profile pointer.
-      /// @param[in,out] nCount        The reference counting of current item, each item can be mapped only once.
       /// @param[in,out] setMapping    The output mapping item which has been mapped.
       /// @return                      Return value indicating success or error.
-      virtual AxisProfileResult checkOutputMappingItems(IAxisProfileInternal* const pProfile, size_t& nCount, std::set<std::string>& setMapping) = 0;
+      virtual AxisProfileResult checkOutputMappingItems(IAxisProfileInternal* const pProfile, std::multimap<std::string, ProfileMappingCheckInfo>& mapInfo) = 0;
     };
   }
 }

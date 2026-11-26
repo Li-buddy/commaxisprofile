@@ -168,7 +168,7 @@ namespace
       return &m_descriptorCache;
     }
 
-    std::unique_ptr<ParamReqDataBase> generateReqData(const BootParamId& /*paramId*/) const override
+    std::unique_ptr<ParamReqDataBase> generateReqData(const BootParamId& /*paramId*/, std::uint32_t /*maxLen*/) const override
     {
       if (m_generateReqDataNull)
       {

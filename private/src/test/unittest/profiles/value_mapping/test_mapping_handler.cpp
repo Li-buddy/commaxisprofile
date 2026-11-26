@@ -354,8 +354,7 @@ HRESULT TestMappingHandler::testVectorConfig()
   }
 
   log(L"\nTest to read available input mapping.");
-  std::set<std::string> setItems;
-  size_t nCount = 0;
+  std::multimap<std::string, ProfileMappingCheckInfo> mapInfo;
     
   AxisProfileMappingHandler encoderMappingHandler(profileBasicInfo);
   auto scaling = std::make_unique<sercos::ScalingStrategySoEDrive>(sercos::ScalingStrategySoEDrive {profileBasicInfo});
@@ -364,10 +363,10 @@ HRESULT TestMappingHandler::testVectorConfig()
   encoderSharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_MAPHANDLER, &encoderMappingHandler);
   encoderSharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_CATEGORY, encoderCategoryObj.get());
   encoderSharingHandler.registSharingITF(SharingInterfaceType::ITF_TYPE_SCALING, scaling.get());
-  encoderMappingHandler.checkInputMappingItems(nullptr, nCount, setItems);
+  encoderMappingHandler.checkInputMappingItems(nullptr, mapInfo);
 
   log(L"\nTest to read available output mapping.");
-  encoderMappingHandler.checkOutputMappingItems(nullptr, nCount, setItems);
+  encoderMappingHandler.checkOutputMappingItems(nullptr, mapInfo);
 
   return result;
 }

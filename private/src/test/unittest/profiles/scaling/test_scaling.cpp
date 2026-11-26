@@ -2,6 +2,7 @@
 #include "profiles/canopen/drive/canopen_scaling_strategy_drive.h"
 #include "test_scaling.h"
 #include "profiles/data_sharing/sharing_handler.h"
+#include <limits>
 
 // Mockups
 #include "mockup/external_bundles/mock_datalayer_client.h"
@@ -56,6 +57,65 @@ HRESULT TestScaling::doTest()
   hResult |= testcheckScalingUniform();
   hResult |= testGetDeviceType();
   hResult |= testModuloMethods();
+  hResult |= testOutOfRangeHandling();
+
+  ProfileBasicInfo profileBasicInfo;
+  canopen::ScalingStrategyCoEDrive scaling{profileBasicInfo};
+  scaling.setOutOfRangeErrLimit(2U);
+
+  const auto checkClamp = [&](auto toRaw, ScalingDataCategory category, const ClampState& state) -> HRESULT
+  {
+    const auto convert = [&](double value) { return (scaling.*toRaw)(value); };
+    using Raw = decltype(convert(0.0));
+    constexpr Raw minimum = std::numeric_limits<Raw>::min();
+    constexpr Raw maximum = std::numeric_limits<Raw>::max();
+    const auto count = [&]() { return scaling.getOutOfRangeErrCnt(category); };
+
+    if (convert(minimum) != minimum || count() != 0U || convert(maximum) != maximum || count() != 0U)
+    {
+      error(L"Exact limits must not count as a clamp (category %u).", static_cast<unsigned>(category));
+      return E_FAIL;
+    }
+    for (unsigned burst = 0; burst < 2; ++burst)
+    {
+      if (convert(static_cast<double>(minimum) - 1.0) != minimum || count() != 1U || state.reported ||
+          convert(static_cast<double>(maximum) + 1.0) != maximum || count() != 0U || !state.reported)
+      {
+        error(L"Unexpected saturation or threshold state (category %u).", static_cast<unsigned>(category));
+        return E_FAIL;
+      }
+      if (convert(std::numeric_limits<double>::quiet_NaN()) != 0 || count() != 1U ||
+          convert(std::numeric_limits<double>::infinity()) != maximum || count() != 0U || !state.reported ||
+          convert(-std::numeric_limits<double>::infinity()) != minimum || count() != 1U)
+      {
+        error(L"Unexpected conversion or counter for non-finite input (category %u).", static_cast<unsigned>(category));
+        return E_FAIL;
+      }
+      if (convert(-3.75) != -3 || count() != 0U || state.reported)
+      {
+        error(L"An in-range sample must truncate and reset the clamp state (category %u).", static_cast<unsigned>(category));
+        return E_FAIL;
+      }
+    }
+    return S_OK;
+  };
+  hResult |= checkClamp(&Scaling::convertPositionScaledToRaw, ScalingDataCategory::SCALINGDATA_POSITION, scaling.m_positionClamp);
+  hResult |= checkClamp(&Scaling::convertVelocityScaledToRaw, ScalingDataCategory::SCALINGDATA_VELOCITY, scaling.m_velocityClamp);
+  hResult |= checkClamp(&Scaling::convertTorqueScaledToRaw, ScalingDataCategory::SCALINGDATA_TORQUE, scaling.m_torqueClamp);
+
+  scaling.m_posScalingLSBWeight = 2.0;
+  scaling.m_posScalingLSBWeight_inv = 0.5;
+  scaling.m_velScalingLSBWeight = 4.0;
+  scaling.m_velScalingLSBWeight_inv = 0.25;
+  scaling.m_torqueScalingLSBWeight = 0.5;
+  scaling.m_torqueScalingLSBWeight_inv = 2.0;
+  if (scaling.convertPositionRawToScaled(3) != 6.0 || scaling.convertPositionScaledToRaw(6.0) != 3 ||
+      scaling.convertVelocityRawToScaled(3) != 12.0 || scaling.convertVelocityScaledToRaw(12.0) != 3 ||
+      scaling.convertTorqueRawToScaled(3) != 1.5 || scaling.convertTorqueScaledToRaw(1.5) != 3)
+  {
+    error(L"Conversion did not use the configured weight for its category.");
+    hResult = E_FAIL;
+  }
 
   log(L"\n");
   return hResult;
@@ -216,3 +276,189 @@ HRESULT TestScaling::testModuloMethods() const
 
   return S_OK;
 }
+
+HRESULT TestScaling::testOutOfRangeHandling()
+{
+  HRESULT hResult = S_OK;
+
+  log(L"\n\n<b>Test out-of-range handling of "
+      L"scaled-to-raw conversion.</b>");
+
+  ProfileBasicInfo profileBasicInfo;
+  canopen::ScalingStrategyCoEDrive scaling {profileBasicInfo};
+
+  // Use identical scaled and raw values for this test.
+  scaling.m_posScalingLSBWeight_inv = 1.0;
+  scaling.m_velScalingLSBWeight_inv = 1.0;
+  scaling.m_torqueScalingLSBWeight_inv = 1.0;
+
+  // Check the default configuration.
+  if (scaling.getOutOfRangeErrLimit() != 1U)
+  {
+    error(L"\n\tUnexpected default out-of-range error limit.");
+    hResult = E_FAIL;
+  }
+
+  const auto checkOutOfRange = [&](auto toRaw, ScalingDataCategory category, const ClampState& state, const wchar_t* valueName) -> HRESULT
+    {
+      HRESULT result = S_OK;
+
+      const auto convert = [&] (double value)
+        {
+          return (scaling.*toRaw)(value);
+        };
+
+      using Raw = decltype(convert(0.0));
+      constexpr Raw MIN_VAL = std::numeric_limits<Raw>::min();
+      constexpr Raw MAX_VAL = std::numeric_limits<Raw>::max();
+      const double positiveOutOfRange = static_cast<double>(MAX_VAL) + 1.0;
+      const double negativeOutOfRange = static_cast<double>(MIN_VAL) - 1.0;
+
+      const auto count = [&] ()
+        {
+          return scaling.getOutOfRangeErrCnt(category);
+        };
+
+      constexpr std::uint32_t testLimits[] = {1U, 2U, 10U};
+
+      for (const auto limit : testLimits)
+      {
+        log(L"\n\tTest %ls with out-of-range limit %u.",
+            valueName, static_cast<unsigned>(limit));
+
+        scaling.setOutOfRangeErrLimit(limit);
+
+        LOG_TEST_RESULT(scaling.getOutOfRangeErrLimit(),
+                        L"Unexpected out-of-range error limit!",
+                        limit);
+
+        // Reset state using a valid conversion.
+        convert(0.0);
+
+        // -------------------------------------------------------
+        // Test 1: Normal conversion and exact boundaries.
+        // -------------------------------------------------------
+
+        if (convert(123.75) != 123 ||
+            convert(MIN_VAL) != MIN_VAL ||
+            convert(MAX_VAL) != MAX_VAL ||
+            count() != 0U ||
+            state.reported)
+        {
+          error(L"\n\tNormal conversion or boundary check failed.");
+          result = E_FAIL;
+        }
+
+        // -------------------------------------------------------
+        // Test 2: Continuous out-of-range conversions.
+        // -------------------------------------------------------
+
+        for (std::uint32_t i = 1U; i <= limit; ++i)
+        {
+          const auto rawValue = convert(positiveOutOfRange);
+          const std::uint32_t expectedCount = (i == limit) ? 0U : i;
+          const bool expectedReported = (i == limit);
+          if (rawValue != MAX_VAL || count() != expectedCount || state.reported != expectedReported)
+          {
+            error(L"\n\t%ls clamping failed at occurrence %u. "
+                  L"Counter: %u, expected: %u. "
+                  L"Reported: %d, expected: %d.",
+                  valueName,
+                  static_cast<unsigned>(i),
+                  static_cast<unsigned>(count()),
+                  static_cast<unsigned>(expectedCount),
+                  static_cast<int>(state.reported),
+                  static_cast<int>(expectedReported));
+
+            result = E_FAIL;
+          }
+        }
+
+        // -------------------------------------------------------
+        // Test 3: Continue clamping after diagnosis threshold.
+        // -------------------------------------------------------
+
+        for (std::uint32_t i = 0U; i < limit; ++i)
+        {
+          if (convert(negativeOutOfRange) != MIN_VAL || !state.reported)
+          {
+            error(L"\n\tUnexpected state after reporting.");
+            result = E_FAIL;
+          }
+        }
+
+        // -------------------------------------------------------
+        // Test 4: Normal conversion resets the clamp state.
+        // -------------------------------------------------------
+
+        if (convert(0.0) != 0 || count() != 0U || state.reported)
+        {
+          error(L"\n\tClamp state was not reset.");
+          result = E_FAIL;
+        }
+
+        // -------------------------------------------------------
+        // Test 5: Interrupt the consecutive error sequence.
+        // -------------------------------------------------------
+
+        for (std::uint32_t i = 1U; i < limit; ++i)
+        {
+          convert(positiveOutOfRange);
+        }
+
+        if (count() != limit - 1U || state.reported)
+        {
+          error(L"\n\tUnexpected state before threshold.");
+          result = E_FAIL;
+        }
+
+        // Interrupt the error sequence.
+        convert(0.0);
+
+        if (count() != 0U || state.reported)
+        {
+          error(L"\n\tInterrupted clamp sequence was not reset.");
+          result = E_FAIL;
+        }
+
+        // -------------------------------------------------------
+        // Test 6: A new sequence can trigger diagnosis again.
+        // -------------------------------------------------------
+
+        for (std::uint32_t i = 1U; i <= limit; ++i)
+        {
+          const auto rawValue = convert(negativeOutOfRange);
+          const std::uint32_t expectedCount = (i == limit) ? 0U : i;
+          if (rawValue != MIN_VAL ||
+              count() != expectedCount ||
+              state.reported != (i == limit))
+          {
+            error(L"\n\tNew clamping sequence failed.");
+            result = E_FAIL;
+          }
+        }
+
+        // Restore the initial state for the next test case.
+        convert(0.0);
+      }
+
+      if (result == S_OK)
+      {
+        log(L"\n\t%ls out-of-range handling test... "
+            L"<DARK_GREEN>OK</DARK_GREEN>", valueName);
+      }
+
+      return result;
+    };
+
+  hResult |= checkOutOfRange(&Scaling::convertPositionScaledToRaw, ScalingDataCategory::SCALINGDATA_POSITION,
+                             scaling.m_positionClamp, L"Position");
+
+  hResult |= checkOutOfRange(&Scaling::convertVelocityScaledToRaw, ScalingDataCategory::SCALINGDATA_VELOCITY,
+                             scaling.m_velocityClamp, L"Velocity");
+
+  hResult |= checkOutOfRange(&Scaling::convertTorqueScaledToRaw, ScalingDataCategory::SCALINGDATA_TORQUE,
+                             scaling.m_torqueClamp, L"Torque");
+  return hResult;
+}
+

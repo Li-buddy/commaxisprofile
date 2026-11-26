@@ -113,6 +113,111 @@ void ProviderHelper::createMetaData(const std::string& typeString, const MetaDat
   callback(comm::datalayer::DlResult::DL_OK, &variant);
 }
 
+void ProviderHelper::createMetaData3(const std::string& address, const std::string& typeString, const MetaDataInfo& metaData, const comm::datalayer::IClient::ResponseCallback& callback, const std::string& unit, bool browseable)
+{
+  createMetaData3(address, typeString, typeString, metaData, callback, unit, browseable);
+}
+
+void ProviderHelper::createMetaData3(const std::string& address, const std::string& typeString, const std::string& createTypeString, const MetaDataInfo& metaData,
+                                     const comm::datalayer::IClient::ResponseCallback& callback, const std::string& unit, bool browseable, const std::string& createOutTypeString,
+                                     const std::string& typeReadInString, const std::string& typeReadOutString)
+{
+  createMetaDataInternal(address, typeString, createTypeString, metaData, callback, unit, browseable, createOutTypeString, typeReadInString, typeReadOutString, {});
+}
+
+void ProviderHelper::createMetaDataInternal(const std::string& /*address*/, const std::string& typeString, const std::string& createTypeString,
+                                            const MetaDataInfo& metaData, const comm::datalayer::IClient::ResponseCallback& callback, const std::string& unit, bool browseable, const std::string& createOutTypeString,
+                                            const std::string& typeReadInString, const std::string& typeReadOutString, const std::vector<std::pair<std::string, std::string>>& extensions)
+{
+  flatbuffers::FlatBufferBuilder builder;
+
+  // basic data (operations, description, url)
+  auto metaOperations = comm::datalayer::CreateAllowedOperations(builder, metaData.nodeActions & node_actions::READ, metaData.nodeActions & node_actions::WRITE,
+                                                                 metaData.nodeActions & node_actions::CREATE, metaData.nodeActions & node_actions::REMOVE, browseable);
+
+  auto metaDescription = builder.CreateString(metaData.m_description);
+  auto metaDescriptionUrl = builder.CreateString(metaData.m_descriptionUrl);
+
+
+  // references (read types, write types, create types, ...)
+  std::vector<flatbuffers::Offset<comm::datalayer::Reference>> vecReferences;
+  if ((metaData.nodeActions & node_actions::READ) && !typeString.empty())
+  {
+    vecReferences.push_back(comm::datalayer::CreateReferenceDirect(builder, "readType", typeString.c_str()));
+  }
+
+  if ((metaData.nodeActions & node_actions::READ) && !typeReadInString.empty())
+  {
+    vecReferences.push_back(comm::datalayer::CreateReferenceDirect(builder, "readInType", typeReadInString.c_str()));
+  }
+  if ((metaData.nodeActions & node_actions::READ) && !typeReadOutString.empty())
+  {
+    vecReferences.push_back(comm::datalayer::CreateReferenceDirect(builder, "readOutType", typeReadOutString.c_str()));
+  }
+
+  if ((metaData.nodeActions & node_actions::WRITE) && !typeString.empty())
+  {
+    vecReferences.push_back(comm::datalayer::CreateReferenceDirect(builder, "writeType", typeString.c_str()));
+  }
+  if ((metaData.nodeActions & node_actions::CREATE) && !createTypeString.empty())
+  {
+    vecReferences.push_back(comm::datalayer::CreateReferenceDirect(builder, "createType", createTypeString.c_str()));
+  }
+  if ((metaData.nodeActions & node_actions::CREATE) && !createOutTypeString.empty())
+  {
+    vecReferences.push_back(comm::datalayer::CreateReferenceDirect(builder, "createOutType", createOutTypeString.c_str()));
+  }
+  //auto hasSaveNode = determineSaveNodeFromAddress(address);
+  //if (!hasSaveNode.empty() && (metaData.m_nodeClass != comm::datalayer::NodeClass::NodeClass_Method) && (metaData.m_nodeClass != comm::datalayer::NodeClass::NodeClass_Program))
+  //{
+  //  vecReferences.push_back(comm::datalayer::CreateReferenceDirect(builder, "hasSave", hasSaveNode.c_str()));
+  //}
+  auto metaReferences = builder.CreateVectorOfSortedTables(&vecReferences);
+
+  // unit
+  flatbuffers::Offset<flatbuffers::String> metaUnit = 0;
+  if (!unit.empty())
+  {
+    metaUnit = builder.CreateString(unit);
+  }
+
+  // extensions (key-value pairs)
+  ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<comm::datalayer::Extension>>> metaExtensions = 0;
+  if (!extensions.empty())
+  {
+    std::vector<flatbuffers::Offset<comm::datalayer::Extension>> vecExtensions;
+    for (const auto& ext : extensions)
+    {
+      if (!ext.second.empty())
+      {
+        vecExtensions.push_back(comm::datalayer::CreateExtensionDirect(builder, ext.first.c_str(), ext.second.c_str()));
+      }
+    }
+    metaExtensions = builder.CreateVectorOfSortedTables(&vecExtensions);
+  }
+
+  comm::datalayer::MetadataBuilder metadata(builder);
+  metadata.add_operations(metaOperations);
+  metadata.add_description(metaDescription);
+  metadata.add_descriptionUrl(metaDescriptionUrl);
+  metadata.add_references(metaReferences);
+  metadata.add_nodeClass(metaData.m_nodeClass);
+  if (!unit.empty())
+  {
+    metadata.add_unit(metaUnit);
+  }
+  if (!extensions.empty())
+  {
+    metadata.add_extensions(metaExtensions);
+  }
+  auto metaFinished = metadata.Finish();
+  builder.Finish(metaFinished);
+
+  comm::datalayer::Variant variant;
+  variant.copyFlatbuffers(builder);
+  callback(comm::datalayer::DlResult::DL_OK, &variant);
+}
+
 bool ProviderHelper::checkVariantType(const comm::datalayer::Variant* data, comm::datalayer::VariantType expectedType, const comm::datalayer::IClient::ResponseCallback &callback)
 {
   if (!data || (data->getType() != expectedType))

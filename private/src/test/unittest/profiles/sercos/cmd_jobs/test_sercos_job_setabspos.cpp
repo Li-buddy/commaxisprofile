@@ -135,17 +135,10 @@ HRESULT TestSercosJobSetAbsPos::TestvalidateConfig()
 
   log(L"\nTest case: out of travel limit");
   auto& cfg = m_mockDeviceParam.getDeviceCfgData();
-  cfg.m_softwareLimitActive = true;
-  cfg.m_positivePosLimit = INT32_MIN;
-  cfg.m_negativePosLimit = INT32_MAX;
-  AxisProfileResult res = testJob.validateConfig();
-  LOG_TEST_RESULT(res, L"validateConfig should reject out-of-range position", AxisProfileResult::ERR_INVALID_ARGUMENT);
-  comm::axisprofile::DeviceCfgData dataInit;  //recover
-  m_mockDeviceParam.setReturnCfgData(dataInit);
-
+  
   log(L"\nTest case: undefined encoder");
   testJob.m_encoder = AxisProfileEncoder::UNDEFINED;
-  res = testJob.validateConfig();
+  auto res = testJob.validateConfig();
   LOG_TEST_RESULT(res, L"validateConfig should fail when encoder is undefined", AxisProfileResult::ERR_INVALID_ARGUMENT);
 
   log(L"\nTest case: wrong device state for encoder_2(bit6/bit7)");

@@ -94,6 +94,13 @@ namespace comm
         /// @return Return value indicating success or error.
         comm::datalayer::DlResult getObjectData(const std::string& address, IAxisProfileInternal*& axisprofile, const ResponseCallback& callback);
 
+        /// @brief This method uses the given datalayer address string to get the associated scaling instance.
+        /// @param[in]  address Address of the node
+        /// @param[out] scaling Instance of scaling
+        /// @param[in]  callback This is the callback of the request which will only be called on error
+        /// @return Return value indicating success or error.
+        comm::datalayer::DlResult getObjectData(const std::string& address, IScaling*& scaling, const ResponseCallback& callback);
+
         //! @brief This method returns the profile manager of the axisprofile component.
         //! @param[in]   callback   This is the callback of the request which will only be called on error
         //! @return Pointer to the profile manager (success) or nullptr (error).

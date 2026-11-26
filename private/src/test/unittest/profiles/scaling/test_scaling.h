@@ -101,6 +101,10 @@ private: // Methods
   /// @return S_OK, when tests were successful
   HRESULT testModuloMethods() const;
 
+  /// @brief Test the out-of-range handling of scaled-to-raw conversions.
+  /// @return S_OK, when tests were successful.
+  HRESULT testOutOfRangeHandling();
+
 private: // data
 
   const std::vector<TestData> m_testDataSet;

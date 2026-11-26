@@ -722,7 +722,7 @@ AxisProfileResult SercosDeviceParamDrive::checkAxisHomed(bool& homed)
   AxisProfileResult res {AxisProfileResult::STS_OK};
 
   // get homed state via cyclic data
-  if (isHomedInCyclicData())
+  if (updateHomedByCyclicData())
   {
     homed = m_homed.load();
     return res;

@@ -65,9 +65,10 @@ namespace comm::axisprofile
                                                    MasterDataTelegram* mdt, AxisProfileCategory category)
     {
       ICategoryAdapter* pCategory {};
+      profileBasicInfo.m_profileCategory = category;
       switch (category)
       {
-        case AxisProfileCategory::CATEGORY_DRIVE:        
+        case AxisProfileCategory::CATEGORY_DRIVE:
           switch (profileBasicInfo.m_axisProfileType)
           {
             case AxisProfileType::SERVODRIVE_OVER_ETHERCAT:

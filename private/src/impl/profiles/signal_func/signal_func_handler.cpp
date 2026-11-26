@@ -39,7 +39,27 @@ using namespace comm::axisprofile;
 SignalFuncHandler::SignalFuncHandler(ProfileBasicInfo& profileBasicInfo)
   :m_profileBasicInfo(profileBasicInfo)
 {
+  
+}
 
+void SignalFuncHandler::prepareSignalWordInfo(const AxisProfileCategory category)
+{
+  switch (category)
+  {
+    case AxisProfileCategory::CATEGORY_DRIVE:
+    {
+      registDriveSignalWordFuncs();
+    }
+    break;
+    case AxisProfileCategory::CATEGORY_ENCODER:
+    {
+      registEncoderSignalWordFuncs();
+    }
+    break;
+    default:
+    {
+    }
+  }
 }
 
 AxisProfileResult SignalFuncHandler::init(IAxisProfileSharingHandler* sharing)

@@ -288,8 +288,19 @@ AxisProfileResult SercosProfile::getDeviceState()
 AxisProfileScalingStrategyCfg SercosProfile::getProfileScalingStrategyCfg() const
 {
   ScalingStrategy* scaling = static_cast<ScalingStrategy*>(m_profileCategory->getScalingInternal());
-  return AxisProfileScalingStrategyCfg{scaling->getScalingStrategy(), getDeviceScalingType(AxisProfileDeviceValueType::POSITION),
-    scaling->getScalingNumerator(), scaling->getScalingDenominator(), scaling->getEncoderResolution(), scaling->getVelocityFactorCfg()};
+  return AxisProfileScalingStrategyCfg{scaling->getScalingStrategy(),
+                                       getDeviceScalingType(AxisProfileDeviceValueType::POSITION),
+                                       scaling->getScalingNumerator(),
+                                       scaling->getScalingDenominator(),
+                                       scaling->getEncoderResolution(),
+                                       scaling->getVelocityFactorCfg(),
+                                       scaling->getOutOfRangeErrLimit()};
+}
+
+AxisProfileResult SercosProfile::setProfileScalingStrategyCfg(const AxisProfileScalingStrategyCfg& strategyCfg)
+{
+  auto* scaling = m_profileCategory->getScalingInternal();
+  return scaling->setOutOfRangeErrLimit(strategyCfg.m_outOfRangeThreshold) ? AxisProfileResult::STS_OK : AxisProfileResult::ERR_NOK;
 }
 
 std::vector<std::unique_ptr<IJobObj>> SercosProfile::onGetJobList()

@@ -66,7 +66,8 @@ namespace comm::axisprofile
       result = fpu::checkForFPUError(AxisProfileResult::STS_OK, AxisProfileResult::ERR_FPU_DIV_BY_ZERO);
       if (aprStatusFailed(result))
       {
-        Dia::sendDiagnosis(mainCode, detailCode, file, function, line, errTxt == nullptr ? "" : errTxt);
+        Dia::sendDiagnosis(mainCode, detailCode, file, function, line,
+                           "gets error of '%s', Details: %s", axisprofileResultToString(result), errTxt == nullptr ? "none" : errTxt);
         fpu::g_FPUError = true;
       }
     }
@@ -90,7 +91,8 @@ namespace comm::axisprofile
       result = fpu::checkForFPUError(AxisProfileResult::STS_OK, AxisProfileResult::ERR_FPU_DIV_BY_ZERO);
       if (aprStatusFailed(result))
       {
-        Dia::sendDiagnosis(mainCode, detailCode, profile, file, function, line, "%s: %s", profile, errTxt == nullptr ? "" : errTxt);
+        Dia::sendDiagnosis(mainCode, detailCode, profile, file, function, line,
+                           "gets error of '%s', Details: %s", axisprofileResultToString(result), errTxt == nullptr ? "none" : errTxt);
         fpu::g_FPUError = true;
       }
     }

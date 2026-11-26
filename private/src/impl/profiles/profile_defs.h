@@ -255,6 +255,7 @@ namespace comm::axisprofile
     ProfileTrace         m_profileTrace {};           ///< Helper class to generate profile trace messages
     std::uint32_t        m_deviceVendorId {};         ///< Vendor ID of the connected device
     std::uint32_t        m_deviceProductCode {};      ///< Product Code of the connected device
+    AxisProfileCategory  m_profileCategory {AxisProfileCategory::CATEGORY_DRIVE};        ///< Category of the profile
   }ProfileBasicInfo;
 
   /// @brief This struct defined the firmware information data type.

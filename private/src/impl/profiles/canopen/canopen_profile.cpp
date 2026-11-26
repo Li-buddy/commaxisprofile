@@ -289,6 +289,7 @@ AxisProfileResult CanopenProfile::setProfileScalingStrategyCfg(const AxisProfile
   setEncoderResolution(strategyCfg.m_resolution);
   setDeviceScalingType(strategyCfg.m_deviceScalingType);
   setVelocityFactorCfg(strategyCfg.m_velFactor);
+  m_profileCategory->getScalingInternal()->setOutOfRangeErrLimit(strategyCfg.m_outOfRangeThreshold);
 
   loadInitMethod();
   return result;
@@ -297,8 +298,12 @@ AxisProfileResult CanopenProfile::setProfileScalingStrategyCfg(const AxisProfile
 AxisProfileScalingStrategyCfg CanopenProfile::getProfileScalingStrategyCfg() const
 {
   AxisProfileScalingStrategyCfg scalingcfg {getProfileScalingStrategy(),
-    getDeviceScalingType(AxisProfileDeviceValueType::POSITION),getScalingNumerator(),
-    getScalingDenominator(), getEncoderResolution(), getVelocityFactorCfg()};
+                                            getDeviceScalingType(AxisProfileDeviceValueType::POSITION),
+                                            getScalingNumerator(),
+                                            getScalingDenominator(),
+                                            getEncoderResolution(),
+                                            getVelocityFactorCfg(),
+                                            m_profileCategory->getScalingInternal()->getOutOfRangeErrLimit()};
   return scalingcfg;
 }
 

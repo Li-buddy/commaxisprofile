@@ -70,7 +70,7 @@ namespace comm::axisprofile::sercos
 
     const BootParamDescriptorBase* getBootParamDescriptor(const BootParamId& paramId) const override;
     std::string parameterToString(const BootParamId& paramId) const override;
-    std::unique_ptr<ParamReqDataBase> generateReqData(const BootParamId& paramId) const override;
+    std::unique_ptr<ParamReqDataBase> generateReqData(const BootParamId& paramId, std::uint32_t maxLen) const override;
 
   private: // data
 

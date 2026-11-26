@@ -140,19 +140,7 @@ AxisProfileResult SercosJobSetAbsPos::validateConfig()
 
   std::int32_t newRefRaw = scaling->convertPositionScaledToRaw(m_cmdPos);
 
-  // new reference position should in range of travel limit of device
   const auto& deviceCfgData = bootCfg->getDeviceCfgData();
-  if (deviceCfgData.m_softwareLimitActive && // check only when limitation is activated in device
-      (newRefRaw > deviceCfgData.m_positivePosLimit || newRefRaw < deviceCfgData.m_negativePosLimit))
-  {
-    Dia::sendDiagnosis(MAIN_DIAG_COMMAND_ERR, DETAILED_DIAG_DEVICE_OUT_OF_TRAVEL_LIMIT,
-                       m_profileInfo.m_profileName.c_str(), __FILE__, __FUNCTION__, __LINE__,
-                       "new position %g out range of [%s, %s] of device", m_cmdPos,
-                       idnToString(S_0_0049_POSITIVE_POS_LIMIT).c_str(),
-                       idnToString(S_0_0050_NEGATIVE_POS_LIMIT).c_str());
-    return AxisProfileResult::ERR_INVALID_ARGUMENT;
-  }
-
   WordStructure ctrlWordS448;
   WordStructure encoderProperty;
   std::uint16_t encoderPropertyIdn;

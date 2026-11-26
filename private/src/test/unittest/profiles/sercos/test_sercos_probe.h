@@ -20,6 +20,11 @@ public:
   explicit ProbeSignalFuncHandler(ProfileBasicInfo& profileBasicInfo)
     : SignalFuncHandler(profileBasicInfo)
   {
+    prepareSignalWordInfo(profileBasicInfo.m_profileCategory);
+  }
+
+  void registDriveSignalWordFuncs() override
+  {
     auto probe1Validator = [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
       {
         return param == sercos::S_0_0405_ENABLE_PROBE_1 && bit == 0;
@@ -33,6 +38,11 @@ public:
     registerSignalControlWordFuncs(FunctionSupport::PROBE1_ENABLE_CYCLIC, probe1Validator);
     registerSignalStatusWordFuncs(FunctionSupport::PROBE2_ENABLE_CYCLIC, probe2Validator);
     registerSignalControlWordFuncs(FunctionSupport::PROBE2_ENABLE_CYCLIC, probe2Validator);
+  }
+
+  void registEncoderSignalWordFuncs() override
+  {
+
   }
 
   void setProbeSignalsSupported(bool supported)

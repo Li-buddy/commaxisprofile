@@ -126,8 +126,8 @@ namespace test
     const comm::axisprofile::ProfileAssignedInfo& getProfileAssignedInfo() const override { return m_profileAssignedInfo; }
     void setSharingHandler(comm::axisprofile::IAxisProfileSharingHandler* /*handler*/)override {};
     comm::axisprofile::ProfileAssignedInfo& getProfileAssignedInfo() { return m_profileAssignedInfo; }
-    comm::axisprofile::AxisProfileResult checkInputMappingItems(comm::axisprofile::IAxisProfileInternal* const /*pProfile*/, size_t& /*nCount*/, std::set<std::string>& /*setMapping*/)override { return m_returnValue; }
-    comm::axisprofile::AxisProfileResult checkOutputMappingItems(comm::axisprofile::IAxisProfileInternal* const /*pProfile*/, size_t& /*nCount*/, std::set<std::string>& /*setMapping*/)override { return m_returnValue; }
+    comm::axisprofile::AxisProfileResult checkInputMappingItems(comm::axisprofile::IAxisProfileInternal* const /*pProfile*/, std::multimap<std::string, comm::axisprofile::ProfileMappingCheckInfo>& /*setMapping*/)override { return m_returnValue; }
+    comm::axisprofile::AxisProfileResult checkOutputMappingItems(comm::axisprofile::IAxisProfileInternal* const /*pProfile*/, std::multimap<std::string, comm::axisprofile::ProfileMappingCheckInfo>& /*setMapping*/)override { return m_returnValue; }
 
     // ----------------------------- Test methods ---------------------------------
 

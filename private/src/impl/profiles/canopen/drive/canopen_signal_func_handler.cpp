@@ -20,7 +20,7 @@
 #include "profiles/data_sharing/i_sharing_handler.h"
 #include "profiles/i_device_boot_param_snapshot.h"
 #include "diagnosis/dia.h"
-
+#include "helper/device_id_helper.h"
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -46,6 +46,11 @@ using namespace comm::axisprofile::canopen;
 CanopenSignalFuncHandler::CanopenSignalFuncHandler(ProfileBasicInfo& profileBasicInfo)
   :SignalFuncHandler(profileBasicInfo)
 {
+  prepareSignalWordInfo(profileBasicInfo.m_profileCategory);
+}
+
+void CanopenSignalFuncHandler::registDriveSignalWordFuncs()
+{
   // Register function of homing status checking with cyclic data.
   registerSignalStatusWordFuncs(FunctionSupport::HOMING_STATUS_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
                                 {
@@ -63,11 +68,11 @@ CanopenSignalFuncHandler::CanopenSignalFuncHandler(ProfileBasicInfo& profileBasi
                                 });
   // Register function of set absolute position checking with cyclic data.
   registerSignalControlWordFuncs(FunctionSupport::SET_ABS_POS_CMD_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
-                                {
-                                  // Reset command is supported when 0x2510:01 is configured in the signal control word.
-                                  return static_cast<std::uint16_t>(param >> 16) == SET_ABSOLUTE_POSITION_CMD.index
-                                    && static_cast<std::uint8_t>(param >> 8) == SET_ABSOLUTE_POSITION_CMD.subIndex && bit == 0;
-                                });
+                                 {
+                                   // Reset command is supported when 0x2510:01 is configured in the signal control word.
+                                   return static_cast<std::uint16_t>(param >> 16) == SET_ABSOLUTE_POSITION_CMD.index
+                                     && static_cast<std::uint8_t>(param >> 8) == SET_ABSOLUTE_POSITION_CMD.subIndex && bit == 0;
+                                 });
   // Register function of set absolute position checking with cyclic data.
   registerSignalStatusWordFuncs(FunctionSupport::SET_ABS_POS_CMD_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
                                 {
@@ -89,7 +94,17 @@ CanopenSignalFuncHandler::CanopenSignalFuncHandler(ProfileBasicInfo& profileBasi
                                   return static_cast<std::uint16_t>(param >> 16) == HOMING_DRIVE_CONTROLLED_CMD.index
                                     && static_cast<std::uint8_t>(param >> 8) == HOMING_DRIVE_CONTROLLED_CMD.subIndex && bit == 0;
                                 });
+}
 
+void CanopenSignalFuncHandler::registEncoderSignalWordFuncs()
+{
+  // Register function of homing status checking with cyclic data.
+  registerSignalStatusWordFuncs(FunctionSupport::HOMING_STATUS_CYCLIC, [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
+                                {
+                                  // Measuring encoder homed status is supported when this object is configured in the signal status word.
+                                  return static_cast<std::uint16_t>(param >> 16) == MEASURING_ENCODER_STATUS.index
+                                    && static_cast<std::uint8_t>(param >> 8) == MEASURING_ENCODER_STATUS.subIndex && bit == 0;
+                                });
 }
 
 AxisProfileResult CanopenSignalFuncHandler::readDriveSignalStatusWordCfg(std::vector<std::uint32_t>& params, std::vector<std::uint16_t>& assignBits)
@@ -99,6 +114,24 @@ AxisProfileResult CanopenSignalFuncHandler::readDriveSignalStatusWordCfg(std::ve
   // The lists in 0x2C82:02 and 0x2C82:03 have the same length
   params.clear();
   assignBits.clear();
+
+  if (!m_sharingHandler || !m_sharingHandler->getPropertyIF())
+  {
+    return AxisProfileResult::ERR_EXEC_NULL;
+  }
+
+  const DeviceSeries deviceSeries = m_sharingHandler->getPropertyIF()->getDeviceSeries();
+  // Current CoE signal-word implementation is based on ctrlX DRIVE.
+  // IndraDrive uses different parameter definitions.
+  if (!DeviceIdHelper::isRexrothCtrlXDrive(deviceSeries))
+  {
+    APR_TRACE_MESSAGE(
+      "%s; signal status word configuration check skipped for device series %s",
+      m_profileBasicInfo.m_profileTrace.createTraceMsg(),
+      deviceSeriesToString(deviceSeries));
+
+    return AxisProfileResult::STS_OK;
+  }
 
   constexpr std::size_t maxCfgParams = 16;
   auto signalControlObj = getObjDir(SIGNAL_STATUS_WORD_CONFIG_LIST, m_profileBasicInfo.m_driveNumber);
@@ -118,6 +151,22 @@ AxisProfileResult CanopenSignalFuncHandler::readDriveSignalControlWordCfg(std::v
   // The lists in 0x2C82:02 and 0x2C80:03 have the same length
   params.clear();
   assignBits.clear();
+
+  if (!m_sharingHandler || !m_sharingHandler->getPropertyIF())
+  {
+    return AxisProfileResult::ERR_EXEC_NULL;
+  }
+
+  const DeviceSeries deviceSeries = m_sharingHandler->getPropertyIF()->getDeviceSeries();
+  if (!DeviceIdHelper::isRexrothCtrlXDrive(deviceSeries))
+  {
+    APR_TRACE_MESSAGE(
+      "%s; signal control word configuration check skipped for device series %s",
+      m_profileBasicInfo.m_profileTrace.createTraceMsg(),
+      deviceSeriesToString(deviceSeries));
+
+    return AxisProfileResult::STS_OK;
+  }
 
   constexpr std::size_t maxCfgParams = 16;
   auto signalControlObj = getObjDir(SIGNAL_CONTROL_WORD_CONFIG_LIST, m_profileBasicInfo.m_driveNumber);

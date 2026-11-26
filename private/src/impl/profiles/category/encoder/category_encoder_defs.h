@@ -41,7 +41,8 @@ namespace comm::axisprofile::category_encoder
   {
     {InputMappingValueID::POSITION, {MappingGroup::BASE, true}},
     {InputMappingValueID::VELOCITY, {MappingGroup::VELOCITY, false}},
-    {InputMappingValueID::IO_IN_REFERENCE, {MappingGroup::IO_DEVICE, false}}
+    {InputMappingValueID::IO_IN_REFERENCE, {MappingGroup::IO_DEVICE, false}},
+    {InputMappingValueID::SIGNAL_STATUS_WORD, {MappingGroup::IO_DEVICE, false}}// here the signal status word is used for reference check so it is reasonable to exist in IO_DEVICE
   };
 
   /// @brief Container of output all mapping
@@ -56,7 +57,8 @@ namespace comm::axisprofile::category_encoder
   {
     InputMappingValueID::POSITION,
     InputMappingValueID::VELOCITY,
-    InputMappingValueID::IO_IN_REFERENCE
+    InputMappingValueID::IO_IN_REFERENCE,
+    InputMappingValueID::SIGNAL_STATUS_WORD,
   };
 
   /// @brief Container of all available output mapping items

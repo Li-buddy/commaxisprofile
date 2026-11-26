@@ -94,12 +94,22 @@ public:
   explicit TestSignalFuncMgr(ProfileBasicInfo& profileBasicInfo)
     : SignalFuncHandler(profileBasicInfo)
   {
+    prepareSignalWordInfo(profileBasicInfo.m_profileCategory);
+  }
+
+  void registDriveSignalWordFuncs() override
+  {
     auto resetCmdValidator = [] (const std::uint32_t& param, const std::uint16_t& bit) -> bool
       {
         return param == sercos::S_0_0099_RESET_CLASS_1_DIAGNOSTIC && bit == 0;
       };
     registerSignalControlWordFuncs(FunctionSupport::CLEAR_DEVERR_CMD_CYCLIC, resetCmdValidator);
     registerSignalStatusWordFuncs(FunctionSupport::CLEAR_DEVERR_CMD_CYCLIC, resetCmdValidator);
+  }
+
+  void registEncoderSignalWordFuncs() override
+  {
+
   }
 
   void setSignalFuncSupported(bool supported)

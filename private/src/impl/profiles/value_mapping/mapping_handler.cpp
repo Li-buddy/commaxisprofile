@@ -247,7 +247,7 @@ const char* AxisProfileMappingHandler::getConfiguredOutputURI(OutputMappingValue
   }
 }
 
-AxisProfileResult AxisProfileMappingHandler::checkInputMappingItems(IAxisProfileInternal* const pProfile, size_t& nCount, std::set<std::string>& setMapping)
+AxisProfileResult AxisProfileMappingHandler::checkInputMappingItems(IAxisProfileInternal* const pProfile, std::multimap<std::string, ProfileMappingCheckInfo>& mapInfo)
 {
   const auto& inputItems = getConfiguredInputs();
 
@@ -265,6 +265,7 @@ AxisProfileResult AxisProfileMappingHandler::checkInputMappingItems(IAxisProfile
     }
 
     // check name consistence only for non empty device name
+    // the device name should be consistent with the mapping items, otherwise it will cause mapping inconsistence among different profiles
     auto it = std::find(mandatoryInputs.cbegin(), mandatoryInputs.cend(), inputItem.m_id);
     if (it != mandatoryInputs.cend())
     {
@@ -284,22 +285,49 @@ AxisProfileResult AxisProfileMappingHandler::checkInputMappingItems(IAxisProfile
         }
       }
     }
-    nCount++;
     // check name duplication mapping items among different profiles
-    setMapping.insert(inputItem.m_uri);
-    if (nCount > setMapping.size())
+    //   a ctrlX drive can have multiple profiles, for different category
+    //   for now only signal status word is allowed to be mapped in multiple profiles,
+    //   it should have same address, so we skip the duplication check for this item
+
+    // When a URI is mapped to multiple profiles, a mapping inconsistency occurs if:
+    // 1. The device addresses are different.
+    // 2. The device addresses and drive numbers are the same, and the profile categories are also the same.
+    // 3. The device addresses and drive numbers are the same, but the profile categories are different,
+    //    unless both mapped value IDs are SIGNAL_STATUS_WORD.
+    // Profiles with the same device address but different drive numbers are allowed to share the URI.
+    auto [first, last] = mapInfo.equal_range(inputItem.m_uri);
+    for (auto& equalItem = first; equalItem != last; ++equalItem)
     {
-      Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BOOT_VALIDATE_MAPPING_CFG, __FILE__, __FUNCTION__, __LINE__,
-                         "Input variable mapping inconsistence occurred!please check profile : %s, mapping variable : %s",
-                         pProfile->getProfileName(),
-                         inputMappingValueIdToString(inputItem.m_id).c_str());
-      return AxisProfileResult::ERR_PROFILE_CONFIG;
+      const auto& [uri, info] = *equalItem;
+      const bool addressDifferent = info.m_deviceAddress != pProfile->getPropertyInterface()->getDeviceAddress();
+      const bool categorySame = info.m_profileCategory == category;
+      const bool driveNumberSame = info.m_driveNumber == pProfile->getDriveNumber();
+      const bool allowedDuplicateItem = (info.m_valueIDStr == AprInputMappingValueIDStrings.SIGNAL_STATUS_WORD)&&
+                                        (inputItem.m_id == InputMappingValueID::SIGNAL_STATUS_WORD);
+      if (addressDifferent ||
+          (driveNumberSame && (categorySame || !allowedDuplicateItem)))
+      {
+        Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BOOT_VALIDATE_MAPPING_CFG, __FILE__, __FUNCTION__, __LINE__,
+                           "Input variable mapping inconsistence occurred!please check profile : %s, mapping variable : %s",
+                           pProfile->getProfileName(),
+                           inputMappingValueIdToString(inputItem.m_id).c_str());
+        return AxisProfileResult::ERR_PROFILE_CONFIG;
+      }
     }
+
+    ProfileMappingCheckInfo checkInfo {};
+    checkInfo.m_deviceAddress = pProfile->getPropertyInterface()->getDeviceAddress();
+    checkInfo.m_driveNumber = pProfile->getDriveNumber();
+    checkInfo.m_profileCategory = category;
+    checkInfo.m_valueIDStr = inputMappingValueIdToString(inputItem.m_id);
+
+    mapInfo.insert({inputItem.m_uri, checkInfo});    
   }
   return AxisProfileResult::STS_OK;
 }
 
-AxisProfileResult AxisProfileMappingHandler::checkOutputMappingItems(IAxisProfileInternal* const pProfile, size_t& nCount, std::set<std::string>& setMapping)
+AxisProfileResult AxisProfileMappingHandler::checkOutputMappingItems(IAxisProfileInternal* const pProfile, std::multimap<std::string, ProfileMappingCheckInfo>& mapInfo)
 {
   const auto& outputItems = getConfiguredOutputs();
 
@@ -336,17 +364,29 @@ AxisProfileResult AxisProfileMappingHandler::checkOutputMappingItems(IAxisProfil
         }
       }
     }
-    nCount++;
-    // check name duplication mapping items among different profiles
-    setMapping.insert(outputItem.m_uri);
-    if (nCount > setMapping.size())
+
+    auto [first, last] = mapInfo.equal_range(outputItem.m_uri);
+    for (auto& equalItem = first; equalItem != last; ++equalItem)
     {
-      Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BOOT_VALIDATE_MAPPING_CFG, __FILE__, __FUNCTION__, __LINE__,
-                         "Output variable mapping inconsistence occurred!please check profile : %s, mapping variable : %s",
-                         pProfile->getProfileName(),
-                         outputMappingValueIdToString(outputItem.m_id).c_str());
-      return AxisProfileResult::ERR_PROFILE_CONFIG;
+      const auto& [uri, info] = *equalItem;
+      if (info.m_deviceAddress != pProfile->getPropertyInterface()->getDeviceAddress() ||
+          (info.m_profileCategory == category &&
+           info.m_driveNumber == pProfile->getDriveNumber()))
+      {
+        Dia::sendDiagnosis(MAIN_DIAG_CONFIG_ERR, DETAILED_DIAG_BOOT_VALIDATE_MAPPING_CFG, __FILE__, __FUNCTION__, __LINE__,
+                           "Input variable mapping inconsistence occurred!please check profile : %s, mapping variable : %s",
+                           pProfile->getProfileName(),
+                           outputMappingValueIdToString(outputItem.m_id).c_str());
+        return AxisProfileResult::ERR_PROFILE_CONFIG;
+      }
     }
+
+    ProfileMappingCheckInfo checkInfo {};
+    checkInfo.m_deviceAddress = pProfile->getPropertyInterface()->getDeviceAddress();
+    checkInfo.m_driveNumber = pProfile->getDriveNumber();
+    checkInfo.m_profileCategory = category;
+    checkInfo.m_valueIDStr = outputMappingValueIdToString(outputItem.m_id);
+    mapInfo.insert({outputItem.m_uri, checkInfo});
   }
   return AxisProfileResult::STS_OK;
 }

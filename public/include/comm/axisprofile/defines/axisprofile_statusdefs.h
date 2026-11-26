@@ -180,4 +180,84 @@ namespace comm::axisprofile
   {
     return right > left ? right : left;
   }
+
+  /// @brief convert an axisprofile result to a string constant
+  /// @param[in] res  axisprofile result to be converted
+  /// @return converted axisprofile result
+  // LCOV_EXCL_START
+  inline const char* axisprofileResultToString(AxisProfileResult res)
+  {
+    switch (res)
+    {
+      case AxisProfileResult::STS_OK: return "okay";
+      case AxisProfileResult::STS_PENDING: return "process pending";
+      case AxisProfileResult::STS_NO_CONFIG_FILES_FOUND: return "no config files found";
+      case AxisProfileResult::STS_NO_PROFILES_EXIST: return "no profiles exist";
+      case AxisProfileResult::STS_COMMAND_LOCKED: return "command locked";
+      case AxisProfileResult::STS_BOOTING_ABORT: return "booting aborted";
+      case AxisProfileResult::STS_FIELDBUS_NOT_INIT: return "fieldbus not initialized";
+      case AxisProfileResult::STS_WAIT_IN_ASYNCQUEUE: return "waiting in queue";
+      case AxisProfileResult::STS_BOOTING_CONTINUE: return "booting continue";
+      case AxisProfileResult::STS_COMMAND_NOT_EXECUTE: return "command not executing";
+      case AxisProfileResult::ERR_NOK: return "not okay";
+      case AxisProfileResult::ERR_EXEC_NULL: return "null pointer";
+      case AxisProfileResult::ERR_NOTIMPLEMENTED: return "not implemented";
+      case AxisProfileResult::ERR_PROFILE_NOT_FOUND: return "profile not found";
+      case AxisProfileResult::ERR_PROFILE_ALREADY_EXISTS: return "profile already exists";
+      case AxisProfileResult::ERR_PROFILE_IN_USE: return "profile in use";
+      case AxisProfileResult::ERR_WRONGDATASIZE: return "wrong data size";
+      case AxisProfileResult::ERR_WRONGDATATYPE: return "wrong data type";
+      case AxisProfileResult::ERR_INIT_TELEGRAM_OFFSETS: return "telegram error";
+      case AxisProfileResult::ERR_TIMEOUT: return "timeout";
+      case AxisProfileResult::ERR_COMMAND_IN_PROGRESS: return "command in progress";
+      case AxisProfileResult::ERR_INVALID_ARGUMENT: return "invalid argument";
+      case AxisProfileResult::ERR_INVALID_STATE: return "invalid state";
+      case AxisProfileResult::ERR_STATEMACHINE_ADD_CALLBACK: return "statemachine callback error";
+      case AxisProfileResult::ERR_AOX_THREAD: return "AOX thread error";
+      case AxisProfileResult::ERR_WRONG_DEVICE_STATE: return "wrong device state";
+      case AxisProfileResult::ERR_BACKUP_RESTORE: return "backup/restore error";
+      case AxisProfileResult::ERR_SEND_DIAGNOSIS: return "send diagnosis failed";
+      case AxisProfileResult::ERR_MAX_NUMBER_PROFILES: return "max profiles reached";
+      case AxisProfileResult::ERR_OUT_OF_MEMORY: return "out of memory";
+      case AxisProfileResult::ERR_PROFILE_CONFIG: return "invalid profile config";
+      case AxisProfileResult::ERR_MATH: return "math error";
+      case AxisProfileResult::ERR_NOT_IN_CONFIG_STATE: return "not in config state";
+      case AxisProfileResult::ERR_DEFAULT_ERROR_REACTION: return "default error reaction";
+      case AxisProfileResult::ERR_COMMAND_INFO_NOT_FOUND: return "command info not found";
+      case AxisProfileResult::ERR_ERR_DATA_NOT_MAPPED: return "data not mapped";
+      case AxisProfileResult::ERR_NOT_SUPPORTED: return "not supported";
+      case AxisProfileResult::ERR_PROFILE_RESET_FAILED: return "profile reset failed";
+      case AxisProfileResult::ERR_INCONSISTENCY: return "inconsistency error";
+      case AxisProfileResult::ERR_COMMAND_EXECUTION: return "command execution error";
+      case AxisProfileResult::ERR_FPU_DIV_BY_ZERO: return "FPU divide by zero";
+      case AxisProfileResult::ERR_FPU_INVALID: return "FPU invalid number";
+      case AxisProfileResult::ERR_FPU_OVERFLOW: return "FPU overflow";
+      case AxisProfileResult::ERR_FPU_UNKNOWN: return "FPU unknown error";
+      case AxisProfileResult::ERR_CYCLIC_DATA_AT: return "at-data error";
+      case AxisProfileResult::ERR_CYCLIC_DATA_MDT: return "mdt-data error";
+      case AxisProfileResult::ERR_JOB_EXIST: return "job already exists";
+      case AxisProfileResult::ERR_JOB_NOT_EXIST: return "job not exists";
+      case AxisProfileResult::ERR_JOB_DATA_MISMATCH: return "job data mismatch";
+      case AxisProfileResult::ERR_JOB_EMPTY_NAME: return "job name empty";
+      case AxisProfileResult::ERR_JOB_EXECUTION: return "job execution error";
+      case AxisProfileResult::ERR_DATALAYER: return "datalayer error";
+      case AxisProfileResult::ERR_DATALAYER_PERSISTENCE: return "datalayer persistence error";
+      case AxisProfileResult::ERR_DATALAYER_READ_METADATA: return "datalayer read metadata failed";
+      case AxisProfileResult::ERR_DATALAYER_WRONG_TYPE: return "datalayer wrong type";
+      case AxisProfileResult::ERR_DATALAYER_READ_NODE: return "datalayer read node failed";
+      case AxisProfileResult::ERR_DATALAYER_WRITE_NODE: return "datalayer write node failed";
+      case AxisProfileResult::ERR_DATALAYER_BROWSE_NODE: return "datalayer browse node failed";
+      case AxisProfileResult::STS_DATALAYER_RT_NOT_OPEN: return "datalayer RT not open";
+      case AxisProfileResult::ERR_DLRT: return "datalayer RT error";
+      case AxisProfileResult::ERR_DLRT_MEMMAP_VAR_NOT_FOUND: return "RT mem-map var not found";
+      case AxisProfileResult::ERR_FIELDBUS: return "fieldbus error";
+      case AxisProfileResult::ERR_FIELDBUS_NO_MASTER: return "fieldbus no master";
+      case AxisProfileResult::ERR_FIELDBUS_READ_VALUE: return "fieldbus read value failed";
+      case AxisProfileResult::ERR_NEDD_BETTER_ERROR: return "unknown error";
+      default:
+        break;
+    }
+    return "unknown error";
+  }
+  // LCOV_EXCL_STOP
 }

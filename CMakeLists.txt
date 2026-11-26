@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.16)
 #
 # Project information
 #
-set(VERSION 21.0.8)
+set(VERSION 21.9.0)
 project(
   comm_axisprofile_project
   VERSION ${VERSION}

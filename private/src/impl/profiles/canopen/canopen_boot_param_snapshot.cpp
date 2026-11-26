@@ -79,7 +79,7 @@ AxisProfileResult CanopenBootParamSnapshot::getParameter(const ObjectDirEntry& o
   return getParameterImpl(BootParamId(objEntry), bufPtr, bufLen, retLen, forceReadFromDrive);
 }
 
-std::unique_ptr<ParamReqDataBase> CanopenBootParamSnapshot::generateReqData(const BootParamId& paramId) const
+std::unique_ptr<ParamReqDataBase> CanopenBootParamSnapshot::generateReqData(const BootParamId& paramId, std::uint32_t maxLen) const
 {
   const auto* objEntry = paramId.getObjectDirEntry();
   if (objEntry == nullptr)
@@ -87,7 +87,7 @@ std::unique_ptr<ParamReqDataBase> CanopenBootParamSnapshot::generateReqData(cons
     return nullptr;
   }
 
-  return std::make_unique<ParamReqDataCoE>(m_profileBasicInfo.m_deviceAddress, *objEntry);
+  return std::make_unique<ParamReqDataCoE>(m_profileBasicInfo.m_deviceAddress, *objEntry, nullptr, 0, maxLen);
 }
 
 const BootParamSnapshotBase::BootParamDescriptorBase* CanopenBootParamSnapshot::getBootParamDescriptor(const BootParamId& paramId) const

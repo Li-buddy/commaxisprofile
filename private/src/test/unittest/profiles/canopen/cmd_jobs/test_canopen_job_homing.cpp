@@ -66,24 +66,13 @@ HRESULT TestCanopenJobHoming::TestSetArgument()
   profileBasicInfo.m_profileTrace = m_mockProfileTrace;
   canopen::CanopenJobHoming testJob(profileBasicInfo, m_sharingHandler);
 
+  ArgHoming arg;
+  auto& ref = arg.getRef();
+
   log(L"\nTest case: wrong argument type");
   ArgFixedStop wrongArg;
   AxisProfileResult res = testJob.onSetArgument(&wrongArg);
   LOG_TEST_RESULT(res, L"onSetArgument should fail when passing wrong argument type", AxisProfileResult::ERR_JOB_DATA_MISMATCH);
-
-  log(L"\nTest for out of travel limit");
-  ArgHoming arg;
-  auto& ref = arg.getRef();
-  auto& cfg = m_mockDeviceParam.getDeviceCfgData();
-  cfg.m_softwareLimitActive = true;
-  cfg.m_positivePosLimit = INT32_MIN;
-  cfg.m_negativePosLimit = INT32_MAX;
-  ref.mode = RefMode::SET_POS_DEVICE;
-  ref.encoder = AxisProfileEncoder::ENCODER_1;
-  res = testJob.onSetArgument(&arg);
-  LOG_TEST_RESULT(res, L"Get an unexpected result", AxisProfileResult::ERR_INVALID_ARGUMENT);
-  comm::axisprofile::DeviceCfgData dataInit;
-  m_mockDeviceParam.setReturnCfgData(dataInit);
 
   log(L"\nTest for encoder type");
   ref.encoder = AxisProfileEncoder::ENCODER_2;

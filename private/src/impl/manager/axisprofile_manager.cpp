@@ -22,7 +22,6 @@
 // Include Files
 // ---------------------------------------------------------------------------
 #include "axisprofile_manager.h"
-#include <set>
 #include "configuration/i_boot_param_backup_restore_mgr.h"
 #include "common/debug_trace.h"
 #include "common/datalayer/client_internal.h"
@@ -37,6 +36,7 @@
 #include "component/background_thread/i_background_thread.h"
 #include "common/axisprofile_fpu_helper.h"
 #include <future>
+#include <map>
 
 // ---------------------------------------------------------------------------
 // Name Spaces
@@ -113,8 +113,7 @@ AxisProfileResult AxisProfileManager::validatePdoCfg()
   Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_VALIDATE_MAPPING_CFG, __FILE__, __FUNCTION__, __LINE__, "");
 
   // for further check for duplication items
-  size_t nCount{};                             // record mapping count for all profile
-  std::set<std::string> setMapping{};          // record mapping string for all profile
+  std::multimap<std::string, ProfileMappingCheckInfo> mapInfoUri{};          // record mapping string for all profile
 
   // CHECK NAME consistence in mapping and device name
   for ( const auto& it : m_mapAxisProfiles )
@@ -127,14 +126,14 @@ AxisProfileResult AxisProfileManager::validatePdoCfg()
 
     IAxisProfileMappingHandler* pMapping = profile->getMappingHandler();
     // check for all input mapping items
-    AxisProfileResult resCheckMappItem = pMapping->checkInputMappingItems(profile, nCount, setMapping);
+    AxisProfileResult resCheckMappItem = pMapping->checkInputMappingItems(profile, mapInfoUri);
     if ( AxisProfileResult::STS_OK != resCheckMappItem )
     {
       return resCheckMappItem;
     }
 
     // check for all output mapping items
-    resCheckMappItem = pMapping->checkOutputMappingItems(profile, nCount, setMapping);
+    resCheckMappItem = pMapping->checkOutputMappingItems(profile, mapInfoUri);
     if ( AxisProfileResult::STS_OK != resCheckMappItem )
     {
       return resCheckMappItem;
@@ -912,11 +911,13 @@ AxisProfileResult AxisProfileManager::execExternalChecking()
       {
         const std::string& profileName = profile.second.m_axisProfile->getProfileName();
         auto res = chkFunc.second(profileName);
-        profile.second.m_axisProfile->setProfileActivated(res != CheckResponse::OK_DONT_USE_PROFILE);
+        profile.second.m_axisProfile->setProfileActivated(res == CheckResponse::OK_USE_PROFILE);
         if (!profile.second.m_axisProfile->checkProfileActivated())
         {
           Dia::sendDiagnosis(MAIN_DIAG_BOOTING_MSG, DETAILED_DIAG_BOOT_PROFILE_CHECK_RESP_DONTUSE,
-                             __FILE__, __FUNCTION__, __LINE__, "%s, %s", chkFunc.first.c_str(), profileName.c_str());
+                             __FILE__, __FUNCTION__, __LINE__, "%s, %s, %s",
+                             chkFunc.first.c_str(), profileName.c_str(),
+                             res == CheckResponse::OK_DONT_USE_PROFILE ? "disabled by axis" : "not linked to axis");
           break;
         }
       }

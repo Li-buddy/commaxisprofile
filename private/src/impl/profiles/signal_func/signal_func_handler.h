@@ -89,7 +89,7 @@ namespace comm::axisprofile
     /// @param[out] val the current state of the signal function, true if the function is active, false otherwise.
     /// @return returns AxisProfileResult indicating the result of the state retrieval operation, success or error.
     AxisProfileResult getSignalFuncState(SignalFunction& func, bool& val);
-
+        
   protected:
 
     /// @brief Read the configuration of signal status word from drive.
@@ -103,6 +103,18 @@ namespace comm::axisprofile
     /// @param[out]    assignBits    The assign bit list of the signal control word, same size with params.
     /// @return      Return value indicating success or error.
     virtual AxisProfileResult readDriveSignalControlWordCfg(std::vector<std::uint32_t>& params, std::vector<std::uint16_t>& assignBits) = 0;
+
+    /// @brief Register the signal word functions for the drive.
+    virtual void registDriveSignalWordFuncs() = 0;
+
+    /// @brief Register the signal word functions for the encoder.
+    virtual void registEncoderSignalWordFuncs() = 0;
+
+    /// @brief Prepare the required signal word information based on the profile category.
+    ///        this design is to avoid increase new class for each profile category,
+    ///        and the signal word information is prepared at booting.
+    /// @param[in] category The profile category, which is used to determine the required signal word information.
+    void prepareSignalWordInfo(const AxisProfileCategory category);
 
     /// @brief Check and validate the signal status word configuration.
     /// @return      Return value indicating success or error.
@@ -118,8 +130,8 @@ namespace comm::axisprofile
     void registerSignalStatusWordFuncs(const FunctionSupport& function, const SignalWordValidator& validator);
 
     /// @brief Register the predefined functions supported by signal control word.
-    /// @param function The predefined function.
-    /// @param validator The validator, which will be called at booting.
+    /// @param[in] function The predefined function.
+    /// @param[in] validator The validator, which will be called at booting.
     void registerSignalControlWordFuncs(const FunctionSupport& function, const SignalWordValidator& validator);
 
   protected:

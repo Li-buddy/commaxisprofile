@@ -86,6 +86,25 @@ comm::datalayer::DlResult NodeProfilesBase::getObjectData(const std::string& add
   return axisprofile ? comm::datalayer::DlResult::DL_OK : comm::datalayer::DlResult::DL_INVALID_ADDRESS;
 }
 
+comm::datalayer::DlResult NodeProfilesBase::getObjectData(const std::string& address, IScaling*& scaling, const ResponseCallback& callback)
+{
+  scaling = nullptr;
+  IAxisProfileInternal* profile {};
+  const auto dlResult = getObjectData(address, profile, callback);
+  if (comm::datalayer::STATUS_FAILED(dlResult))
+  {
+    return dlResult;
+  }
+
+  scaling = profile->getScaling();
+  if (!scaling)
+  {
+    ProviderHelper::sendDlErrorResponse(callback, comm::datalayer::DlResult::DL_INVALID_HANDLE, MAIN_DIAG_DATALAYER_ERR, DETAILED_DIAG_DL_INVALID_VALUE, "Scaling interface not available");
+    return comm::datalayer::DlResult::DL_INVALID_HANDLE;
+  }
+  return comm::datalayer::DlResult::DL_OK;
+}
+
 comm::axisprofile::IAxisProfileManagerInternal* NodeProfilesBase::getProfileManager(const ResponseCallback & callback)
 {
   if (!m_manager || !m_manager->getAxisProfileCmp() || !m_manager->getAxisProfileCmp()->getAxisProfileManager())
